@@ -168,27 +168,28 @@ class AlphaDatabase:
         thumbnail_path: Optional[str] = None,
         confidence: float = 0.85
     ) -> int:
-        """Records an object identified by vision while roaming."""
+        """Records an object identified by vision while roaming (updates location if moved)."""
         room_id = self.get_or_create_room(room_name)
         clean_name = name.strip().title()
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            # Check if this object was already seen in the room recently
+            # Check if this object was already seen anywhere in the house
             cursor.execute(
-                "SELECT object_id FROM DiscoveredObjects WHERE name = ? AND room_id = ?",
-                (clean_name, room_id)
+                "SELECT object_id FROM DiscoveredObjects WHERE name = ?",
+                (clean_name,)
             )
             existing = cursor.fetchone()
             if existing:
                 cursor.execute("""
                     UPDATE DiscoveredObjects SET
+                        room_id = ?,
                         description = ?,
                         thumbnail_path = COALESCE(?, thumbnail_path),
                         confidence = ?,
                         last_seen = CURRENT_TIMESTAMP
                     WHERE object_id = ?
-                """, (description, thumbnail_path, confidence, existing["object_id"]))
+                """, (room_id, description, thumbnail_path, confidence, existing["object_id"]))
                 conn.commit()
                 return existing["object_id"]
             else:

@@ -1,14 +1,17 @@
 """
-Project Alpha: Gemini Multimodal Brain & Continuous Learning Agent.
-Integrates Google GenAI SDK (Gemini 2.5 Flash) with local SQLite memory injection,
-autonomous fact extraction, scene analysis, and offline auxiliary fallback.
+Project Alpha: Hybrid Brain (Gemini 2.5 Cloud + Local Gemma Offline + Continuous Learning).
+Coordinates Google GenAI SDK with local Gemma GGUF fallback, SQLite memory graph,
+and autonomous fact/spatial learning engine.
 """
 
 import os
 import json
 from typing import Optional, Dict, Any
+
 from core.config import GEMINI_API_KEY, DEFAULT_GEMINI_MODEL
 from core.database import AlphaDatabase
+from core.local_gemma import LocalGemmaEngine
+from core.learning_engine import AutonomousLearningEngine
 
 # System Prompt Template
 BASE_SYSTEM_INSTRUCTION = """
@@ -26,12 +29,14 @@ PERSONALITY & CHARACTER:
 - Never act like an impersonal software assistant; you are a living physical robotic familiar.
 """
 
-class GeminiBrain:
-    """The central intelligence coordinating conversation, vision understanding, and memory."""
+class HybridBrain:
+    """Coordinates cloud Gemini 2.5, local Gemma 2B, and the continuous learning engine."""
 
     def __init__(self, db: Optional[AlphaDatabase] = None, api_key: Optional[str] = None):
         self.db = db or AlphaDatabase()
         self.api_key = api_key or GEMINI_API_KEY
+        self.learning_engine = AutonomousLearningEngine(db=self.db)
+        self.local_gemma = LocalGemmaEngine()
         self.client = None
         self._init_client()
 
@@ -41,16 +46,16 @@ class GeminiBrain:
             try:
                 from google import genai
                 self.client = genai.Client(api_key=self.api_key)
-                print("[GeminiBrain] Connected to Google Gemini 2.5 API.")
+                print("[HybridBrain] Connected to Google Gemini 2.5 API.")
             except ImportError:
-                print("[GeminiBrain] 'google-genai' package not installed. Run 'pip install google-genai'.")
+                print("[HybridBrain] 'google-genai' package not installed. Run 'pip install google-genai'.")
             except Exception as e:
-                print(f"[GeminiBrain] Failed to initialize GenAI client: {e}")
+                print(f"[HybridBrain] Failed to initialize GenAI client: {e}")
         else:
-            print("[GeminiBrain] GEMINI_API_KEY not set. Running in Local Offline Mode.")
+            print("[HybridBrain] GEMINI_API_KEY not set. Operating via Local Gemma / Offline Core.")
 
     def is_online(self) -> bool:
-        """Checks if cloud AI is available."""
+        """Checks if cloud Gemini AI is available."""
         return self.client is not None
 
     def build_prompt_with_memory(self, user_query: str) -> str:
@@ -74,30 +79,34 @@ class GeminiBrain:
 
     def chat(self, user_query: str) -> str:
         """
-        Sends user message to Gemini, stores history, extracts facts, and returns spoken reply.
-        Gracefully falls back to offline mode if internet is unavailable.
+        Processes user query through:
+        1. Continuous fact extraction -> writes to SQLite.
+        2. Spatial memory query -> answers where items are.
+        3. Online Gemini 2.5 Flash (Primary).
+        4. Offline Local Gemma 2B (Fallback).
         """
         # Save user message to SQLite
         self.db.save_chat_message("user", user_query)
 
-        # Check if user is asking to recall an object ("Where did I leave my X?")
-        if any(w in user_query.lower() for w in ["where is", "where are", "where did i leave", "find my"]):
-            for keyword in ["keys", "wallet", "shoes", "glasses", "cup", "mug", "bag", "phone"]:
-                if keyword in user_query.lower():
-                    matches = self.db.find_objects(keyword)
-                    if matches:
-                        m = matches[0]
-                        reply = (
-                            f"I remember spotting your {m['name']} in the {m['room_name']}! "
-                            f"It was around {m['last_seen']}. ({m['description']})"
-                        )
-                        self.db.save_chat_message("assistant", reply, brain_type="local_memory")
-                        return reply
+        # 1. Continuous Learning: Automatically extract personal facts from what the user said
+        learned_facts = self.learning_engine.extract_and_learn_from_text(user_query)
+        for cat, fact in learned_facts:
+            print(f"[AutonomousLearning] Learned new fact: [{cat.upper()}] {fact}")
 
-        # Online Gemini Inference
+        # 2. Spatial Memory Search: Check if user is asking for the location of an object
+        if any(w in user_query.lower() for w in ["where is", "where are", "where did i leave", "find my"]):
+            for keyword in ["keys", "wallet", "shoes", "glasses", "cup", "mug", "bag", "phone", "backpack", "laptop"]:
+                if keyword in user_query.lower():
+                    recalled = self.learning_engine.recall_object_location(keyword)
+                    if recalled:
+                        self.db.save_chat_message("assistant", recalled, brain_type="local_memory")
+                        return recalled
+
+        prompt = self.build_prompt_with_memory(user_query)
+
+        # 3. Online Inference (Google Gemini 2.5 Flash)
         if self.is_online():
             try:
-                prompt = self.build_prompt_with_memory(user_query)
                 response = self.client.models.generate_content(
                     model=DEFAULT_GEMINI_MODEL,
                     contents=prompt,
@@ -110,28 +119,36 @@ class GeminiBrain:
                 reply = response.text.strip()
                 self.db.save_chat_message("assistant", reply, brain_type="gemini")
 
-                # Asynchronously extract any new user facts to learn
+                # Background deep extraction
                 self._extract_and_learn_facts(user_query, reply)
                 return reply
             except Exception as e:
-                print(f"[GeminiBrain] Cloud call failed: {e}. Falling back to offline brain.")
+                print(f"[HybridBrain] Cloud call failed: {e}. Switching to Local Gemma...")
 
-        # Offline Local Fallback Mode
-        return self._offline_fallback_response(user_query)
+        # 4. Offline Inference (Local Gemma 2B via GGUF or auxiliary core)
+        reply = self.local_gemma.generate(
+            prompt=prompt,
+            system_instruction=BASE_SYSTEM_INSTRUCTION,
+            max_tokens=120
+        )
+        self.db.save_chat_message("assistant", reply, brain_type="gemma_offline")
+        return reply
 
     def analyze_roaming_scene(self, image_bytes: bytes, room_hint: str = "Unknown") -> Dict[str, Any]:
         """
-        Takes a snapshot captured while roaming, queries Gemini Vision to identify objects,
+        Takes a snapshot captured while roaming, queries vision to identify objects,
         and saves discovered items into SQLite.
         """
         if not self.is_online():
-            return {"status": "offline", "observation": "Camera active, running in offline sensory mode."}
+            # In offline mode, log the exploration event locally
+            self.db.log_observation(f"Explored {room_hint} in offline sensor mode.", room_name=room_hint)
+            return {"status": "offline", "observation": f"Surveyed {room_hint}."}
 
         try:
             from google.genai import types
 
             prompt = (
-                "You are the visual cortex of a mobile explorer robot. Look at this photo from your eye camera. "
+                "You are the visual cortex of a mobile explorer robot. Look at this photo from your eye camera.\n"
                 "1. List any notable everyday objects visible (e.g. keys, mug, laptop, shoes, plant).\n"
                 "2. Provide a 1-sentence natural language observation of the room's current state.\n"
                 "Output as strict JSON with keys: 'objects' (list of {name, description}), 'observation' (string)."
@@ -149,24 +166,24 @@ class GeminiBrain:
             result = json.loads(response.text)
 
             # Store observation into SQLite
-            obs_text = result.get("observation", "Surveyed area.")
+            obs_text = result.get("observation", f"Surveyed {room_hint}.")
             self.db.log_observation(obs_text, room_name=room_hint)
 
-            # Store discovered objects into SQLite
+            # Record each discovered object with the Learning Engine (tracks movement!)
             for obj in result.get("objects", []):
-                self.db.record_discovered_object(
-                    name=obj.get("name", "Object"),
+                self.learning_engine.learn_object_sighting(
+                    object_name=obj.get("name", "Object"),
                     description=obj.get("description", "Spotted while roaming."),
                     room_name=room_hint
                 )
 
             return result
         except Exception as e:
-            print(f"[GeminiBrain] Scene analysis failed: {e}")
+            print(f"[HybridBrain] Scene analysis failed: {e}")
             return {"status": "error", "error": str(e)}
 
     def _extract_and_learn_facts(self, user_msg: str, bot_reply: str) -> None:
-        """Background extractor that identifies personal user preferences and facts."""
+        """Deep LLM-assisted background extractor for nuanced facts."""
         if not self.is_online():
             return
 
@@ -185,21 +202,8 @@ class GeminiBrain:
             data = json.loads(response.text)
             if data.get("has_fact") and "fact" in data:
                 self.db.learn_fact(data.get("category", "general"), data["fact"])
-                print(f"[Brain Learned Fact]: [{data.get('category')}] {data['fact']}")
         except Exception:
-            pass  # Silent non-blocking extraction
+            pass
 
-    def _offline_fallback_response(self, user_query: str) -> str:
-        """Rule-based and local fallback response when offline."""
-        q = user_query.lower()
-        if "hello" in q or "hi" in q:
-            reply = "Beep-boop! Hello Akhil! I'm currently running on my local offline core."
-        elif "battery" in q or "power" in q:
-            reply = "Internal power cells are stable at 7.4 Volts. Operating untethered."
-        elif "who are you" in q:
-            reply = "I'm Alpha, your Wall-E desktop rover! Satellite uplink is offline, but I'm fully functional."
-        else:
-            reply = "I hear you, Akhil! Satellite link is unreachable, but I've logged that in my local memory."
-
-        self.db.save_chat_message("assistant", reply, brain_type="offline_fallback")
-        return reply
+# Alias for backward compatibility
+GeminiBrain = HybridBrain

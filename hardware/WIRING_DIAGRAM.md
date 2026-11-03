@@ -10,10 +10,10 @@ This document defines the power distribution architecture and the complete pin-t
 > **Brownout Prevention Rule**: Never power the MG90S servos or N20 DC gearmotors from the Raspberry Pi's 5V or 3.3V pins. Inductive motor spikes and high stall currents will cause the Raspberry Pi to reset or corrupt the MicroSD card. Always use the **Dual-Rail architecture** shown below with a common shared ground (`GND`).
 
 ```
-                    ┌───────────────────────────────┐
-                    │  2S 18650 Li-ion Battery Pack │
-                    │     (7.4V Nominal / 8.4V Max) │
-                    └───────────────┬───────────────┘
+                    ┌─────────────────────────────────┐
+                    │  2S 18650 Pack (3500mAh / 25.9Wh)│
+                    │      (7.4V Nominal / 8.4V Peak) │
+                    └────────────────┬────────────────┘
                                     │
                                [Main Switch]
                                     │

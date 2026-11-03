@@ -11,6 +11,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# Auto-load local .env file if present
+ENV_PATH = PROJECT_ROOT / ".env"
+if ENV_PATH.exists():
+    try:
+        with open(ENV_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip().strip("'").strip('"')
+    except Exception:
+        pass
+
 DB_PATH = DATA_DIR / "alpha_memory.db"
 SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -66,7 +79,7 @@ PIN_I2S_SPK_DOUT = 21     # GPIO 21 (Pin 40) - MAX98357A Speaker Data Out
 # =============================================================================
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 LOCAL_GEMMA_GGUF_PATH = os.environ.get(
     "LOCAL_GEMMA_PATH",
     str(DATA_DIR / "models" / "gemma-2-2b-it-Q4_K_M.gguf")

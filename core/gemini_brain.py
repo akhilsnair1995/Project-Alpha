@@ -104,26 +104,30 @@ class HybridBrain:
 
         prompt = self.build_prompt_with_memory(user_query)
 
-        # 3. Online Inference (Google Gemini 2.5 Flash)
+        # 3. Online Inference (Google Gemini Flash with fallback)
         if self.is_online():
-            try:
-                response = self.client.models.generate_content(
-                    model=DEFAULT_GEMINI_MODEL,
-                    contents=prompt,
-                    config={
-                        "system_instruction": BASE_SYSTEM_INSTRUCTION,
-                        "temperature": 0.7,
-                        "max_output_tokens": 150,
-                    }
-                )
-                reply = response.text.strip()
-                self.db.save_chat_message("assistant", reply, brain_type="gemini")
+            candidate_models = [DEFAULT_GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+            for model_name in candidate_models:
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config={
+                            "system_instruction": BASE_SYSTEM_INSTRUCTION,
+                            "temperature": 0.7,
+                            "max_output_tokens": 150,
+                        }
+                    )
+                    reply = response.text.strip()
+                    self.db.save_chat_message("assistant", reply, brain_type=f"gemini:{model_name}")
 
-                # Background deep extraction
-                self._extract_and_learn_facts(user_query, reply)
-                return reply
-            except Exception as e:
-                print(f"[HybridBrain] Cloud call failed: {e}. Switching to Local Gemma...")
+                    # Background deep extraction
+                    self._extract_and_learn_facts(user_query, reply)
+                    return reply
+                except Exception as e:
+                    print(f"[HybridBrain] Model {model_name} failed: {e}. Trying next...")
+
+            print("[HybridBrain] All cloud Gemini candidates failed. Falling back to Local Gemma...")
 
         # 4. Offline Inference (Local Gemma 2B via GGUF or auxiliary core)
         reply = self.local_gemma.generate(
@@ -154,14 +158,24 @@ class HybridBrain:
                 "Output as strict JSON with keys: 'objects' (list of {name, description}), 'observation' (string)."
             )
 
-            response = self.client.models.generate_content(
-                model=DEFAULT_GEMINI_MODEL,
-                contents=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                    prompt
-                ],
-                config={"response_mime_type": "application/json"}
-            )
+            response = None
+            candidate_models = [DEFAULT_GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+            for model_name in candidate_models:
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=[
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                            prompt
+                        ],
+                        config={"response_mime_type": "application/json"}
+                    )
+                    break
+                except Exception as e:
+                    print(f"[HybridBrain] Vision model {model_name} failed: {e}. Trying next...")
+
+            if not response:
+                raise RuntimeError("All vision model candidates failed.")
 
             result = json.loads(response.text)
 

@@ -243,8 +243,18 @@
     /* ROBOT ACTIONS & ARENA STYLES */
     .arena-grid {
       display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 20px;
+      grid-template-columns: minmax(420px, 1.2fr) 340px 380px;
+      gap: 16px;
+    }
+    @media (max-width: 1400px) {
+      .arena-grid {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+    @media (max-width: 900px) {
+      .arena-grid {
+        grid-template-columns: 1fr;
+      }
     }
     .arena-container {
       position: relative;
@@ -524,6 +534,195 @@
       overflow-x: auto;
       margin-top: 12px;
     }
+
+    /* LAPTOP CAMERA & VISION HUD */
+    .cam-feed-container {
+      position: relative;
+      background: #090d13;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #webcamVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Mirror view */
+    }
+    #webcamCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform: scaleX(-1);
+    }
+    .cam-hud-overlay {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: var(--accent-green);
+      text-shadow: 0 0 4px rgba(74, 222, 128, 0.6);
+    }
+
+    /* LIVE AI CHAT CARD */
+    .chat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      height: 280px;
+      overflow: hidden;
+    }
+    .chat-transcript {
+      flex: 1;
+      padding: 10px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .chat-bubble {
+      padding: 6px 10px;
+      border-radius: 8px;
+      max-width: 85%;
+      line-height: 1.35;
+    }
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: #1e3a8a;
+      color: #93c5fd;
+      border-bottom-right-radius: 2px;
+    }
+    .chat-bubble.alpha {
+      align-self: flex-start;
+      background: #1e293b;
+      color: #f1f5f9;
+      border-left: 3px solid var(--accent-blue);
+      border-bottom-left-radius: 2px;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 6px;
+      padding: 8px 10px;
+      background: #111827;
+      border-top: 1px solid var(--card-border);
+    }
+    .chat-input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+    .chat-input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    /* BRAIN & MEMORY GRAPH TAB */
+    .brain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+    }
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .memory-item {
+      background: #111827;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      transition: border-color 0.15s;
+    }
+    .memory-item:hover {
+      border-color: var(--accent-blue);
+    }
+    .memory-category {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    .category-user { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .category-preference { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .category-location { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+    .category-project { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+    .category-default { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+    
+    .tag-moved {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid #ef4444;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+    }
+    .tag-stationary {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Laser Scanner & Visual Alerts */
+    .laser-scanner {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #ef4444;
+      box-shadow: 0 0 10px #f87171, 0 0 20px #ef4444;
+      pointer-events: none;
+      animation: laserSweep 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes laserSweep {
+      0% { top: 0%; opacity: 0.9; }
+      100% { top: 100%; opacity: 0.9; }
+    }
+    .arena-toast {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      z-index: 40;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
   </style>
 </head>
 <body>
@@ -532,11 +731,13 @@
     <div class="brand">
       <h1>PROJECT ALPHA</h1>
       <span class="badge">WALL-E DIGITAL TWIN</span>
-      <span style="font-size: 0.8rem; color: #64748b;">RPi 4B + Dual-Rail Hardware Simulator</span>
+      <span id="brainModePill" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">🟢 Gemini 3.5 Online</span>
     </div>
     <div class="nav-tabs">
-      <button class="nav-btn active" onclick="switchTab('arenaTab')">🎮 Actions & Tabletop Arena</button>
-      <button class="nav-btn" onclick="switchTab('wiringTab')">⚡ Live Wiring Schematic</button>
+      <button class="nav-btn active" id="nav-arenaTab" onclick="switchTab('arenaTab')">🎮 Actions & Tabletop Arena</button>
+      <button class="nav-btn" id="nav-brainTab" onclick="switchTab('brainTab')">🧠 AI Brain & SQLite Memory</button>
+      <button class="nav-btn" id="nav-wiringTab" onclick="switchTab('wiringTab')">⚡ Live Wiring Schematic</button>
+      <button class="nav-btn" style="border: 1px dashed var(--accent-amber); color: var(--accent-amber); padding: 4px 10px; font-size: 0.75rem;" onclick="toggleBrainMode()">Toggle Offline Mode</button>
     </div>
   </header>
 
@@ -606,13 +807,22 @@
               </svg>
             </div>
 
-            <!-- Movable Obstacle Box -->
+            <!-- Movable Obstacle Boxes -->
             <div class="obstacle" id="obstacle1" style="top: 140px; left: 450px;">
               <span>CUBE</span>
             </div>
             <div class="obstacle" id="obstacle2" style="top: 360px; left: 180px;">
               <span>CUP</span>
             </div>
+            <div class="obstacle" id="obstacle3" style="top: 120px; left: 150px; border-color: #c084fc; color: #c084fc;">
+              <span>KEYS</span>
+            </div>
+            <div class="obstacle" id="obstacle4" style="top: 380px; left: 420px; border-color: #38bdf8; color: #38bdf8; width: 65px;">
+              <span>BOOK</span>
+            </div>
+
+            <!-- In-Arena Notification Toast -->
+            <div id="arenaToast" class="arena-toast" style="display: none;"></div>
           </div>
 
           <!-- Real-time Pin State Monitor below arena -->
@@ -731,6 +941,154 @@
 
         </div>
 
+        <!-- Column 3: Vision Cortex (Laptop Camera) & Conversational AI -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          
+          <!-- Laptop Camera Eye & Face Tracking Panel -->
+          <div class="panel">
+            <div class="panel-title">
+              <span>LAPTOP WEBCAM (ALPHA EYE)</span>
+              <span id="camStatusBadge" class="status-pill" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Camera Idle</span>
+            </div>
+
+            <div class="cam-feed-container">
+              <video id="webcamVideo" autoplay playsinline muted></video>
+              <canvas id="webcamCanvas" width="320" height="240"></canvas>
+              <div class="cam-hud-overlay">
+                <span id="camGazeLabel">GAZE: IDLE</span>
+                <span id="camFpsLabel">30 FPS</span>
+              </div>
+              <div id="camLaserScan" class="laser-scanner" style="display: none;"></div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; gap: 8px;">
+              <button class="ctrl-btn" id="btnToggleCam" style="flex: 1; background: #0369a1; border-color: #0284c7;" onclick="toggleLaptopCamera()">
+                🎥 Start Laptop Camera
+              </button>
+              <select id="inspectRoomSelect" style="background: #111827; border: 1px solid var(--card-border); color: #fff; padding: 0 8px; border-radius: 6px; font-size: 0.75rem;">
+                <option value="Work Desk">Work Desk</option>
+                <option value="Living Room">Living Room</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Lab / Bench">Lab / Bench</option>
+              </select>
+            </div>
+
+            <div style="margin-top: 8px;">
+              <button class="ctrl-btn" id="btnInspectFrame" style="width: 100%; background: #065f46; border-color: #059669; color: #6ee7b7;" onclick="inspectCurrentFrame()">
+                🔍 Show & Tell (Gemini Vision)
+              </button>
+            </div>
+            
+            <div id="visionResultBox" style="margin-top: 8px; padding: 8px; background: #0d1219; border-radius: 6px; font-size: 0.72rem; color: var(--text-muted); display: none;">
+            </div>
+          </div>
+
+          <!-- Conversational AI Chat & Voice Card -->
+          <div class="panel" style="display: flex; flex-direction: column; flex: 1;">
+            <div class="panel-title">
+              <span>ALPHA SPEECH & VOICE CORTEX</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="checkbox" id="ttsEnabledToggle" checked> 🔊 Voice
+                </label>
+              </div>
+            </div>
+
+            <div class="chat-card" style="height: 250px;">
+              <div class="chat-transcript" id="chatTranscript">
+                <div class="chat-bubble alpha">
+                  <b>ALPHA:</b> *Beep-boop!* Hi Akhil! My dual eye screens, tank tracks, and neural cortex are online. Show me something in front of your camera or teach me about yourself!
+                </div>
+              </div>
+              <div class="chat-input-row">
+                <input type="text" class="chat-input" id="chatInputText" placeholder="Talk to Alpha (e.g., 'Where are my keys?')" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button class="ctrl-btn" style="padding: 6px 12px; background: var(--accent-blue); color: #0f172a;" onclick="sendChatMessage()">Send</button>
+                <button class="ctrl-btn" id="btnVoiceMic" style="padding: 6px 10px;" onclick="toggleVoiceSpeechRecognition()" title="Voice Input">🎙</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: AI BRAIN & SQLITE MEMORY -->
+    <div id="brainTab" class="tab-content">
+      <div class="panel" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 1.05rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+              🧠 Persistent SQLite Knowledge Graph & Dual Brain Architecture
+            </h2>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;">
+              SQLite Database: <code style="color: var(--accent-blue);">Project Alpha/data/alpha_memory.db</code> • Fully autonomous memory extraction & object movement detection.
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="brainTabEngineBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Google Gemini 3.5 Flash</span>
+            <button class="ctrl-btn" style="padding: 6px 12px; font-size: 0.75rem; border-color: var(--accent-amber); color: var(--accent-amber);" onclick="toggleBrainMode()">Toggle Offline Mode</button>
+            <button class="ctrl-btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="fetchMemoryData()">🔄 Refresh Tables</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="brain-grid">
+        <!-- 1. Learned User Facts -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>👤 LEARNED USER FACTS (UserFacts)</span>
+            <span id="factCountBadge" class="badge">0 Facts</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Personal preferences, identity, and context learned automatically from conversation.
+          </div>
+          <div class="memory-list" id="userFactsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 2. Discovered Objects & Spatial Memory -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>📍 SPATIAL OBJECT TRACKING (DiscoveredObjects)</span>
+            <span id="objectCountBadge" class="badge">0 Objects</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Everyday items spotted across rooms. Automatically detects when an item moves!
+          </div>
+          <div class="memory-list" id="discoveredObjectsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 3. Roaming Scene Observations -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>👁 VISUAL SCENE OBSERVATIONS (RoamingObservations)</span>
+            <span id="obsCountBadge" class="badge">0 Logs</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Synthesized visual descriptions of surveyed environments and tabletop areas.
+          </div>
+          <div class="memory-list" id="observationsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 4. Episodic Conversation History -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>💬 EPISODIC CHAT HISTORY (ChatHistory)</span>
+            <span id="chatCountBadge" class="badge">0 Turns</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Recent conversation history stored locally for prompt injection and continuity.
+          </div>
+          <div class="memory-list" id="chatHistoryList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
       </div>
     </div>
 
@@ -917,13 +1275,25 @@
     });
 
     // --- TAB SWITCHING ---
+    let brainPollInterval = null;
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      event.target.classList.add('active');
+      const contentEl = document.getElementById(tabId);
+      if (contentEl) contentEl.classList.add('active');
+      const navBtn = document.getElementById(`nav-${tabId}`);
+      if (navBtn) navBtn.classList.add('active');
+
+      if (brainPollInterval) {
+        clearInterval(brainPollInterval);
+        brainPollInterval = null;
+      }
+
       if (tabId === 'wiringTab') {
         renderSchematic();
+      } else if (tabId === 'brainTab') {
+        fetchMemoryData();
+        brainPollInterval = setInterval(fetchMemoryData, 3000);
       }
     }
 
@@ -945,9 +1315,12 @@
 
     // Obstacles
     const obstacles = [
-      { id: 'obstacle1', x: 450, y: 140, width: 50, height: 50 },
-      { id: 'obstacle2', x: 180, y: 360, width: 50, height: 50 }
+      { id: 'obstacle1', title: 'Cube', x: 450, y: 140, width: 50, height: 50 },
+      { id: 'obstacle2', title: 'Cup', x: 180, y: 360, width: 50, height: 50 },
+      { id: 'obstacle3', title: 'Keys', x: 150, y: 120, width: 50, height: 50 },
+      { id: 'obstacle4', title: 'Notebook', x: 420, y: 380, width: 65, height: 50 }
     ];
+    const lastSightedTimes = {};
 
     // Draggable Obstacles
     let activeDrag = null;
@@ -1304,6 +1677,14 @@
 
         // Physical obstacle bumper collision
         const distToBody = Math.hypot(cx - ox, cy - oy);
+
+        // Proximity learning trigger (< 95px from rover center)
+        const now = Date.now();
+        if (distToBody < 95 && (!lastSightedTimes[o.id] || (now - lastSightedTimes[o.id]) > 10000)) {
+          lastSightedTimes[o.id] = now;
+          sightProximityObject(o.title, "Work Desk");
+        }
+
         if (distToBody < 45) {
           if (rover.speed > 0) {
             rover.x -= Math.sin(rad) * 3;
@@ -1420,6 +1801,14 @@
           leftPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
           rightPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
           break;
+        case 'analyzing':
+          leftEyelidTop.style.height = '20%';
+          rightEyelidTop.style.height = '20%';
+          leftEyelidBottom.style.height = '20%';
+          rightEyelidBottom.style.height = '20%';
+          leftPupil.style.transform = 'translate(-60%, -50%) scale(1.05)';
+          rightPupil.style.transform = 'translate(-40%, -50%) scale(1.05)';
+          break;
         case 'curious':
         default:
           leftPupil.style.transform = 'translate(-40%, -50%) scale(1)';
@@ -1427,6 +1816,462 @@
           break;
       }
     }
+
+    // --- ARENA TOAST NOTIFICATION & PROXIMITY SENSING ---
+    function showArenaToast(msg, color = '#38bdf8') {
+      const toast = document.getElementById('arenaToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.borderColor = color;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; }, 300);
+      }, 3500);
+    }
+
+    async function sightProximityObject(name, room = 'Work Desk') {
+      showArenaToast(`Spotted "${name}" at ${room}! Recording to SQLite...`);
+      try {
+        const res = await fetch('/api/sight_object', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, room: room, description: 'Encountered on tabletop desk while roaming.' })
+        });
+        const data = await res.json();
+        if (data.sighting && data.sighting.moved) {
+          showArenaToast(`📍 NOTICE: "${name}" moved to ${room}!`, '#fbbf24');
+          setEyeExpression('alert');
+        } else {
+          setEyeExpression('curious');
+        }
+        fetchMemoryData();
+      } catch (err) {
+        console.warn("Could not record sighting:", err);
+      }
+    }
+
+    // --- LAPTOP CAMERA VIEWPORT & REAL-TIME FACE TRACKING ---
+    let webcamStream = null;
+    let isWebcamRunning = false;
+    let camAnimationFrame = null;
+    const webcamVideo = document.getElementById('webcamVideo');
+    const webcamCanvas = document.getElementById('webcamCanvas');
+    const webcamCtx = webcamCanvas ? webcamCanvas.getContext('2d') : null;
+    let trackedFace = { x: 160, y: 120, w: 80, h: 90, detected: false };
+
+    async function toggleLaptopCamera() {
+      const btn = document.getElementById('btnToggleCam');
+      const badge = document.getElementById('camStatusBadge');
+      if (isWebcamRunning) {
+        if (webcamStream) {
+          webcamStream.getTracks().forEach(t => t.stop());
+          webcamStream = null;
+        }
+        if (camAnimationFrame) {
+          cancelAnimationFrame(camAnimationFrame);
+          camAnimationFrame = null;
+        }
+        isWebcamRunning = false;
+        btn.textContent = "🎥 Start Laptop Camera";
+        btn.style.background = "#0369a1";
+        badge.textContent = "Camera Idle";
+        badge.className = "status-pill";
+        badge.style.background = "rgba(148, 163, 184, 0.15)";
+        badge.style.color = "#94a3b8";
+        document.getElementById('camGazeLabel').textContent = "GAZE: IDLE";
+        if (webcamCtx) webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+        return;
+      }
+
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" }
+        });
+        webcamVideo.srcObject = webcamStream;
+        await webcamVideo.play();
+        isWebcamRunning = true;
+        btn.textContent = "🛑 Stop Camera";
+        btn.style.background = "#991b1b";
+        badge.textContent = "Alpha Eye: Active";
+        badge.className = "status-pill status-ok";
+        startCameraProcessingLoop();
+      } catch (err) {
+        alert("Could not access laptop webcam: " + err.message + "\nPlease verify camera permissions in browser.");
+      }
+    }
+
+    function startCameraProcessingLoop() {
+      if (!isWebcamRunning || !webcamCtx) return;
+
+      const w = webcamCanvas.width;
+      const h = webcamCanvas.height;
+
+      // Draw mirrored video to canvas
+      webcamCtx.drawImage(webcamVideo, 0, 0, w, h);
+
+      // Fast Facial / User Centroid Detection
+      const sampleW = 40;
+      const sampleH = 30;
+      const stepX = Math.floor(w / sampleW);
+      const stepY = Math.floor(h / sampleH);
+      
+      let sumX = 0, sumY = 0, count = 0;
+      try {
+        const imgData = webcamCtx.getImageData(0, 0, w, h).data;
+        for (let sy = 0; sy < sampleH; sy++) {
+          for (let sx = 0; sx < sampleW; sx++) {
+            const px = sx * stepX;
+            const py = sy * stepY;
+            const idx = (py * w + px) * 4;
+            const r = imgData[idx];
+            const g = imgData[idx + 1];
+            const b = imgData[idx + 2];
+
+            // Skin tone & facial luminance heuristic in RGB:
+            if (r > 80 && g > 40 && b > 20 && r > g && g >= b && (r - g) > 12 && (r - b) > 15) {
+              sumX += px;
+              sumY += py;
+              count++;
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback if security restrictions apply
+      }
+
+      if (count > 25) {
+        const rawTargetX = sumX / count;
+        const rawTargetY = sumY / count;
+        
+        // Low-pass filter smoothing
+        trackedFace.x += (rawTargetX - trackedFace.x) * 0.25;
+        trackedFace.y += (rawTargetY - trackedFace.y) * 0.25;
+        trackedFace.detected = true;
+
+        // Normalized relative offset [-1 to +1] from center
+        const normDx = -((trackedFace.x - (w / 2)) / (w / 2));
+        const normDy = (trackedFace.y - (h / 2)) / (h / 2);
+
+        // Map to head Pan (-45° to +45°) and Tilt (-20° to +25°)
+        const targetPan = Math.round(normDx * 45);
+        const targetTilt = Math.round(-normDy * 25);
+
+        // Smoothly ease robot neck pan & tilt
+        rover.panAngle += Math.round((targetPan - rover.panAngle) * 0.2);
+        rover.tiltAngle += Math.round((targetTilt - rover.tiltAngle) * 0.2);
+
+        const panSlider = document.getElementById('panSlider');
+        const tiltSlider = document.getElementById('tiltSlider');
+        if (panSlider) panSlider.value = rover.panAngle;
+        if (tiltSlider) tiltSlider.value = rover.tiltAngle;
+        updateServos();
+
+        // Gaze tracking in Dual GC9A01 pupil elements
+        const eyeOffsetPxX = Math.round(normDx * 14);
+        const eyeOffsetPxY = Math.round(normDy * 10);
+        leftPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
+        rightPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
+
+        document.getElementById('camGazeLabel').textContent = `TRACKING: PAN ${rover.panAngle}°, TILT ${rover.tiltAngle}°`;
+
+        // Render Green Futuristic HUD Reticle around detected face
+        const boxW = 75;
+        const boxH = 85;
+        const bx = trackedFace.x - boxW / 2;
+        const by = trackedFace.y - boxH / 2;
+
+        webcamCtx.strokeStyle = "#4ade80";
+        webcamCtx.lineWidth = 2;
+        
+        // Draw HUD Corner brackets
+        const cLen = 12;
+        webcamCtx.beginPath();
+        webcamCtx.moveTo(bx, by + cLen); webcamCtx.lineTo(bx, by); webcamCtx.lineTo(bx + cLen, by);
+        webcamCtx.stroke();
+        webcamCtx.beginPath();
+        webcamCtx.moveTo(bx + boxW - cLen, by); webcamCtx.lineTo(bx + boxW, by); webcamCtx.lineTo(bx + boxW, by + cLen);
+        webcamCtx.stroke();
+        webcamCtx.beginPath();
+        webcamCtx.moveTo(bx, by + boxH - cLen); webcamCtx.lineTo(bx, by + boxH); webcamCtx.lineTo(bx + cLen, by + boxH);
+        webcamCtx.stroke();
+        webcamCtx.beginPath();
+        webcamCtx.moveTo(bx + boxW - cLen, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH - cLen);
+        webcamCtx.stroke();
+
+        // Target center crosshair
+        webcamCtx.strokeStyle = "rgba(74, 222, 128, 0.6)";
+        webcamCtx.lineWidth = 1;
+        webcamCtx.beginPath();
+        webcamCtx.moveTo(trackedFace.x - 6, trackedFace.y); webcamCtx.lineTo(trackedFace.x + 6, trackedFace.y);
+        webcamCtx.moveTo(trackedFace.x, trackedFace.y - 6); webcamCtx.lineTo(trackedFace.x, trackedFace.y + 6);
+        webcamCtx.stroke();
+
+        // Label above box
+        webcamCtx.fillStyle = "#4ade80";
+        webcamCtx.font = "bold 9px monospace";
+        webcamCtx.fillText("USER: AKHIL", bx, by - 4);
+
+      } else {
+        trackedFace.detected = false;
+        document.getElementById('camGazeLabel').textContent = "SEARCHING USER...";
+      }
+
+      camAnimationFrame = requestAnimationFrame(startCameraProcessingLoop);
+    }
+
+    // --- SHOW & TELL (GEMINI VISION INSPECTION) ---
+    async function inspectCurrentFrame() {
+      if (!isWebcamRunning) {
+        alert("Please start the laptop camera first!");
+        return;
+      }
+
+      const roomSelect = document.getElementById('inspectRoomSelect');
+      const room = roomSelect ? roomSelect.value : "Work Desk";
+      const resultBox = document.getElementById('visionResultBox');
+      const laserScan = document.getElementById('camLaserScan');
+
+      resultBox.style.display = "block";
+      resultBox.innerHTML = `<em>Scanning ${room} scene with Gemini Vision cortex...</em>`;
+      if (laserScan) laserScan.style.display = "block";
+
+      setEyeExpression('analyzing');
+
+      // Capture clean snapshot from webcamVideo
+      const offscreen = document.createElement('canvas');
+      offscreen.width = 320;
+      offscreen.height = 240;
+      const offCtx = offscreen.getContext('2d');
+      offCtx.drawImage(webcamVideo, 0, 0, 320, 240);
+      const dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+
+      try {
+        const res = await fetch('/api/inspect_frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: dataUrl, room: room })
+        });
+        const data = await res.json();
+        if (laserScan) laserScan.style.display = "none";
+        setEyeExpression('happy');
+
+        if (data.status === 'success' && data.result) {
+          const obs = data.result.observation || 'Surveyed environment.';
+          const objs = (data.result.objects || []).map(o => `<b>${escapeHtml(o.name)}</b>`).join(', ');
+          resultBox.innerHTML = `<span style="color:#4ade80; font-weight:bold;">[VISION] Sighted in ${escapeHtml(room)}:</span> ${objs || 'Objects recorded.'}<br><span style="color:#cbd5e1;">"${escapeHtml(obs)}"</span>`;
+          
+          const speechMsg = `In ${room}, I see: ${objs ? (data.result.objects || []).map(o => o.name).join(', ') : 'items'}. ${obs}`;
+          addChatMessage("alpha", `*Whirrr!* In ${room}, I spot: ${objs || 'the surroundings'}. ${obs}`);
+          speakText(speechMsg);
+          fetchMemoryData();
+        } else {
+          resultBox.innerHTML = `<span style="color:#f87171;">Inspection logged:</span> ${data.message || 'Offline observation recorded.'}`;
+          addChatMessage("alpha", `*Beep-boop.* Snapshot saved to offline observation memory.`);
+        }
+      } catch (err) {
+        if (laserScan) laserScan.style.display = "none";
+        resultBox.innerHTML = `<span style="color:#f87171;">Error:</span> ${err.message}`;
+        setEyeExpression('curious');
+      }
+    }
+
+    // --- CONVERSATIONAL AI, SPEECH & MEMORY DASHBOARD ---
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function addChatMessage(role, text, tag = "") {
+      const container = document.getElementById('chatTranscript');
+      if (!container) return;
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role}`;
+      const prefix = role === 'user' ? '<b>YOU:</b> ' : `<b>ALPHA ${tag}:</b> `;
+      bubble.innerHTML = `${prefix}${escapeHtml(text)}`;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chatInputText');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+
+      addChatMessage("user", text);
+      setEyeExpression('analyzing');
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        if (data.reply) {
+          const tag = data.brain_type ? `[${data.brain_type}]` : '';
+          addChatMessage("alpha", data.reply, tag);
+          speakText(data.reply);
+          if (data.emotion) setEyeExpression(data.emotion.toLowerCase());
+          else setEyeExpression('happy');
+          fetchMemoryData();
+        }
+      } catch (err) {
+        addChatMessage("alpha", "Bzzzzt! Comm error with my brain cortex.");
+        setEyeExpression('sad');
+      }
+    }
+
+    function speakText(text) {
+      const ttsToggle = document.getElementById('ttsEnabledToggle');
+      if (!ttsToggle || !ttsToggle.checked) return;
+      if (!window.speechSynthesis) return;
+
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/[*_#]/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.pitch = 1.35; // Wall-E friendly pitch
+      utterance.rate = 1.05;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleVoiceSpeechRecognition() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        alert("Speech recognition is not supported in this browser. Please type your message.");
+        return;
+      }
+      const recog = new SpeechRec();
+      recog.lang = "en-US";
+      recog.continuous = false;
+      const micBtn = document.getElementById('btnVoiceMic');
+      micBtn.style.background = "#ef4444";
+
+      recog.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('chatInputText').value = transcript;
+        sendChatMessage();
+      };
+      recog.onend = () => { micBtn.style.background = ""; };
+      recog.onerror = () => { micBtn.style.background = ""; };
+      recog.start();
+    }
+
+    async function toggleBrainMode() {
+      try {
+        const res = await fetch('/api/toggle_brain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'toggle' })
+        });
+        const data = await res.json();
+        const pill = document.getElementById('brainModePill');
+        const badge = document.getElementById('brainTabEngineBadge');
+        if (data.mode === 'online') {
+          pill.textContent = "🟢 Gemini 3.5 Online";
+          pill.style.background = "rgba(74, 222, 128, 0.15)";
+          pill.style.color = "#4ade80";
+          if (badge) badge.textContent = "Google Gemini 3.5 Flash (Online)";
+        } else {
+          pill.textContent = "🟡 Local Gemma Offline";
+          pill.style.background = "rgba(251, 191, 36, 0.15)";
+          pill.style.color = "#fbbf24";
+          if (badge) badge.textContent = "Local Gemma 2B (Auxiliary Core)";
+        }
+      } catch (e) {
+        console.error("Toggle error:", e);
+      }
+    }
+
+    async function fetchMemoryData() {
+      try {
+        const res = await fetch('/api/memory');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. UserFacts
+        const factsList = document.getElementById('userFactsList');
+        if (factsList && data.facts) {
+          document.getElementById('factCountBadge').textContent = `${data.facts.length} Facts`;
+          factsList.innerHTML = data.facts.map(f => {
+            const catClass = `category-${(f.category || 'default').toLowerCase()}`;
+            return `
+              <div class="memory-item">
+                <span class="memory-category ${catClass}">${escapeHtml((f.category || 'FACT').toUpperCase())}</span>
+                <div style="color: #fff; font-weight: 500; margin: 3px 0;">${escapeHtml(f.fact)}</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                  <span>Confidence: ${(f.confidence * 100).toFixed(0)}%</span>
+                  <span>${f.created_at || ''}</span>
+                </div>
+              </div>
+            `;
+          }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No facts learned yet. Talk to Alpha to teach him!</div>';
+        }
+
+        // 2. DiscoveredObjects
+        const objsList = document.getElementById('discoveredObjectsList');
+        if (objsList && data.objects) {
+          document.getElementById('objectCountBadge').textContent = `${data.objects.length} Objects`;
+          objsList.innerHTML = data.objects.map(o => `
+            <div class="memory-item">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <b style="color: #fff; font-size: 0.85rem;">${escapeHtml(o.name)}</b>
+                <span class="${o.is_moved ? 'tag-moved' : 'tag-stationary'}">${o.is_moved ? '📍 MOVED!' : 'Present'}</span>
+              </div>
+              <div style="color: var(--accent-blue); font-size: 0.75rem; margin: 3px 0;">Room: <b>${escapeHtml(o.room_name || 'Work Desk')}</b></div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(o.description || '')}</div>
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
+                <span>Sightings: ${o.sighting_count}</span>
+                <span>Last seen: ${o.last_seen || ''}</span>
+              </div>
+            </div>
+          `).join('') || '<div style="color: var(--text-muted); padding: 8px;">No objects sighted yet. Drive near obstacles or inspect with camera!</div>';
+        }
+
+        // 3. Observations
+        const obsList = document.getElementById('observationsList');
+        if (obsList && data.observations) {
+          document.getElementById('obsCountBadge').textContent = `${data.observations.length} Logs`;
+          obsList.innerHTML = data.observations.map(obs => `
+            <div class="memory-item">
+              <div style="color: #38bdf8; font-size: 0.72rem; font-weight: bold;">[${escapeHtml(obs.room_name || 'Room')}]</div>
+              <div style="color: #e2e8f0; font-size: 0.78rem; margin: 3px 0;">${escapeHtml(obs.observation)}</div>
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-align: right;">${obs.timestamp || ''}</div>
+            </div>
+          `).join('') || '<div style="color: var(--text-muted); padding: 8px;">No visual logs yet.</div>';
+        }
+
+        // 4. ChatHistory
+        const chatHistList = document.getElementById('chatHistoryList');
+        if (chatHistList && data.chat_history) {
+          document.getElementById('chatCountBadge').textContent = `${data.chat_history.length} Turns`;
+          chatHistList.innerHTML = data.chat_history.map(c => `
+            <div class="memory-item">
+              <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 2px;">
+                <b style="color: ${c.role === 'user' ? '#93c5fd' : '#fde047'};">${(c.role || '').toUpperCase()}</b>
+                <span style="color: var(--text-muted);">${c.brain_type || ''}</span>
+              </div>
+              <div style="color: #cbd5e1; font-size: 0.78rem;">${escapeHtml(c.message)}</div>
+              <div style="font-size: 0.65rem; color: var(--text-muted); text-align: right; margin-top: 2px;">${c.timestamp || ''}</div>
+            </div>
+          `).join('') || '<div style="color: var(--text-muted); padding: 8px;">No chat history yet.</div>';
+        }
+
+      } catch (err) {
+        console.warn("Could not fetch memory:", err);
+      }
+    }
+
+    // Initial memory fetch on load
+    fetchMemoryData();
 
     // --- INTERACTIVE CIRCUIT SCHEMATIC CANVAS RENDERER ---
     const canvas = document.getElementById('schematicCanvas');

@@ -84,12 +84,17 @@ python main.py --cli
 * Type `history` to view recent conversational turns.
 * Type `eyes curious` or `eyes wink` to switch expressions.
 
-### 4. Run the Digital Twin Web Simulator
-Launch the interactive 2D arena with tabletop kinematics, draggable obstacles, and cliff detection:
+### 4. Run the Digital Twin & Cognitive Web Simulator
+Launch the full digital twin featuring tabletop kinematics, live SQLite memory tables, laptop camera face tracking, and multimodal Gemini vision:
 ```bash
 python simulator/run_sim.py
 ```
-Open `http://localhost:8085` in your browser.
+Open `http://localhost:8085` in your browser. Key capabilities included:
+* **Tabletop Roam Arena**: Tank drive kinematics, TCRT5000 cliff edge protection, ToF laser raycasting, and draggable objects (`CUBE`, `CUP`, `KEYS`, `BOOK`) with automatic proximity sighting into SQLite.
+* **Dual GC9A01 LCD Screens**: Expressive procedural eyes reflecting 9 emotional states and live eyelid kinematics.
+* **Laptop Webcam (Alpha Eye)**: Uses your laptop's camera to emulate Alpha's nose-bridge camera. Tracks your face in real-time to steer the neck pan/tilt servos and gaze, and provides a **"Show & Tell (Gemini Vision)"** button to inspect objects in front of you.
+* **Live Speech & Voice Cortex**: Chat with Alpha via text or microphone (Web Speech API). Features Wall-E voice TTS playback and automatic personal fact extraction.
+* **AI Brain & SQLite Memory Inspector**: Real-time dashboard of persistent SQLite tables (`UserFacts`, `DiscoveredObjects` with moved tracking, `RoamingObservations`, and `ChatHistory`) with live cloud/offline toggle.
 
 ### 5. Run Unit Tests
 ```bash

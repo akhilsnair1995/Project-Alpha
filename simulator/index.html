@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Alpha - Wall-E Robot Digital Twin & Wiring Simulator</title>
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card-bg: #161e2b;
+      --card-border: #223046;
+      --accent-blue: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-amber: #fbbf24;
+      --accent-red: #f87171;
+      --accent-purple: #c084fc;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --rail-5v: #ef4444;
+      --rail-6v: #f97316;
+      --rail-3v3: #eab308;
+      --rail-gnd: #475569;
+      --rail-spi: #06b6d4;
+      --rail-i2c: #8b5cf6;
+      --rail-i2s: #ec4899;
+      --rail-pwm: #10b981;
+      --rail-gpio: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    header {
+      background: #111827;
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .nav-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-btn.active, .nav-btn:hover {
+      background: var(--card-bg);
+      color: #fff;
+      border-color: var(--card-border);
+    }
+    .nav-btn.active {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* WIRING DIAGRAM STYLES */
+    .schematic-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr 340px;
+      gap: 20px;
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 8px;
+    }
+    /* Pinout Table */
+    .rpi-header {
+      background: #0d1219;
+      border-radius: 8px;
+      padding: 10px;
+      border: 2px solid #2e7d32;
+      position: relative;
+    }
+    .rpi-header-title {
+      color: #4ade80;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .pin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 10px;
+      font-size: 0.72rem;
+      font-family: monospace;
+    }
+    .pin-row {
+      display: flex;
+      align-items: center;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pin-row:hover, .pin-row.highlighted {
+      background: rgba(56, 189, 248, 0.25);
+      outline: 1px solid var(--accent-blue);
+    }
+    .pin-number {
+      font-weight: 800;
+      width: 22px;
+      text-align: center;
+      background: #1e293b;
+      color: #fff;
+      border-radius: 3px;
+      margin-right: 6px;
+      padding: 1px 0;
+    }
+    .pin-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .pin-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pin-state {
+      font-size: 0.65rem;
+      font-weight: bold;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+    .state-high { background: #166534; color: #86efac; }
+    .state-low { background: #374151; color: #9ca3af; }
+    .state-pwm { background: #92400e; color: #fde68a; }
+
+    /* Module cards */
+    .module-card {
+      background: #111827;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .module-card:hover, .module-card.active-module {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+    }
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .module-title { font-size: 0.85rem; font-weight: 700; color: #f1f5f9; }
+    .module-pins { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; line-height: 1.4; }
+
+    /* Center Schematic Canvas */
+    .schematic-canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #schematicCanvas {
+      width: 100%;
+      height: 600px;
+      background: #090d13;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 10px;
+      background: #0d1219;
+      border-radius: 8px;
+      font-size: 0.75rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 14px; height: 4px; border-radius: 2px; }
+
+    /* ROBOT ACTIONS & ARENA STYLES */
+    .arena-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 20px;
+    }
+    .arena-container {
+      position: relative;
+      background: #090d14;
+      border: 2px solid #223046;
+      border-radius: 12px;
+      height: 560px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .desk-surface {
+      position: absolute;
+      top: 45px;
+      left: 45px;
+      right: 45px;
+      bottom: 45px;
+      border: 3px dashed #38bdf8;
+      border-radius: 10px;
+      background: radial-gradient(circle at center, #17253d 0%, #0d1522 100%);
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 0 15px rgba(56, 189, 248, 0.15);
+      pointer-events: none;
+    }
+    .desk-wood-lines {
+      position: absolute;
+      inset: 0;
+      opacity: 0.05;
+      background: repeating-linear-gradient(0deg, #fff, #fff 2px, transparent 2px, transparent 40px);
+      pointer-events: none;
+    }
+    .cliff-warning-label {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.72rem;
+      color: #38bdf8;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.7;
+    }
+    #walleRover {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 60px;
+      height: 70px;
+      transform-origin: 30px 35px;
+      z-index: 20;
+      will-change: transform;
+    }
+    .obstacle {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #475569, #334155);
+      border: 2px solid #94a3b8;
+      border-radius: 8px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #fff;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Eyes & Head Section */
+    .eyes-container {
+      background: #0b0f17;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyes-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .dual-eyes {
+      display: flex;
+      gap: 20px;
+      padding: 10px;
+      background: #1e293b;
+      border-radius: 50px;
+      border: 3px solid #334155;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+    }
+    .eye-round {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: #000;
+      border: 4px solid #475569;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.9), 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+    .pupil {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #bae6fd 0%, #0284c7 60%, #0369a1 100%);
+      transform: translate(-50%, -50%);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
+    }
+    .pupil-inner {
+      position: absolute;
+      top: 25%;
+      left: 25%;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .eyelid-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: #1e293b;
+      transition: height 0.15s ease-out;
+      border-bottom: 2px solid #475569;
+      z-index: 5;
+    }
+    .eyelid-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: #1e293b;
+      transition: height 0.15s ease-out;
+      border-top: 2px solid #475569;
+      z-index: 5;
+    }
+
+    /* Action Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .ctrl-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+      text-align: center;
+      user-select: none;
+    }
+    .ctrl-btn:hover { background: #334155; border-color: var(--accent-blue); }
+    .ctrl-btn:active, .ctrl-btn.active-key {
+      background: var(--accent-blue);
+      color: #0f172a;
+      transform: scale(0.96);
+    }
+    .ctrl-btn.stop { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; }
+    .ctrl-btn.stop:hover { background: #ef4444; color: #fff; }
+
+    /* Sliders and Telemetry */
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .slider-row input[type="range"] {
+      flex: 1;
+      margin: 0 10px;
+      accent-color: var(--accent-blue);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .status-ok { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+    .status-danger { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    /* Expression buttons */
+    .preset-chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .chip-btn {
+      background: #111827;
+      border: 1px solid #334155;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-btn:hover, .chip-btn.active {
+      border-color: var(--accent-blue);
+      color: #fff;
+      background: #1e293b;
+    }
+
+    /* Autonomous Mode Switch */
+    .switch-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      background: #111827;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid var(--card-border);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-toggle { background-color: var(--accent-green); }
+    input:checked + .slider-toggle:before { transform: translateX(20px); }
+
+    /* LOGIC ANALYZER / OSCILLOSCOPE */
+    .signal-timeline {
+      background: #090d13;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px;
+      height: 160px;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>PROJECT ALPHA</h1>
+      <span class="badge">WALL-E DIGITAL TWIN</span>
+      <span style="font-size: 0.8rem; color: #64748b;">RPi 4B + Dual-Rail Hardware Simulator</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-btn active" onclick="switchTab('arenaTab')">🎮 Actions & Tabletop Arena</button>
+      <button class="nav-btn" onclick="switchTab('wiringTab')">⚡ Live Wiring Schematic</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- TAB 1: ACTIONS & TABLETOP ARENA -->
+    <div id="arenaTab" class="tab-content active">
+      <div class="arena-grid">
+        
+        <!-- Left Column: Tabletop Play area -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>TABLETOP ROAM ARENA (VIRTUAL DESK)</span>
+            <div style="display: flex; gap: 8px;">
+              <span id="cliffStatus" class="status-pill status-ok">Cliff Sensors: OK</span>
+              <span id="tofDistanceBadge" class="status-pill status-ok">ToF Laser: 850mm</span>
+            </div>
+          </div>
+          
+          <div class="arena-container" id="arenaBox">
+            <div class="desk-surface">
+              <div class="desk-wood-lines"></div>
+            </div>
+            <div class="cliff-warning-label">⚠ TABLE EDGE / CLIFF DROP BOUNDARY ⚠</div>
+
+            <!-- Real-time Laser Raycast Visualizer -->
+            <svg id="laserOverlay" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 18;">
+              <line id="laserRayLine" x1="0" y1="0" x2="0" y2="0" stroke="#f87171" stroke-width="2" stroke-dasharray="3 3" opacity="0.8" />
+              <circle id="laserHitPoint" cx="-10" cy="-10" r="4" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" opacity="0.9" />
+            </svg>
+
+            <!-- Wall-E Rover Element (Positioned strictly by rover.x, rover.y with ZERO base offset) -->
+            <div id="walleRover" style="top: 0; left: 0;">
+              <svg viewBox="0 0 60 70" width="60" height="70">
+                <!-- Left Track -->
+                <rect x="2" y="5" width="12" height="60" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+                <line id="tL1" x1="2" y1="18" x2="14" y2="18" stroke="#94a3b8" stroke-width="1.5" />
+                <line id="tL2" x1="2" y1="35" x2="14" y2="35" stroke="#94a3b8" stroke-width="1.5" />
+                <line id="tL3" x1="2" y1="52" x2="14" y2="52" stroke="#94a3b8" stroke-width="1.5" />
+                
+                <!-- Right Track -->
+                <rect x="46" y="5" width="12" height="60" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+                <line id="tR1" x1="46" y1="18" x2="58" y2="18" stroke="#94a3b8" stroke-width="1.5" />
+                <line id="tR2" x1="46" y1="35" x2="58" y2="35" stroke="#94a3b8" stroke-width="1.5" />
+                <line id="tR3" x1="46" y1="52" x2="58" y2="52" stroke="#94a3b8" stroke-width="1.5" />
+                
+                <!-- Main Chassis Yellow Body -->
+                <rect x="14" y="15" width="32" height="42" rx="4" fill="#eab308" stroke="#ca8a04" stroke-width="2" />
+                <rect x="18" y="24" width="24" height="20" rx="2" fill="#854d0e" opacity="0.6"/>
+                <circle cx="30" cy="34" r="5" fill="#1e293b" />
+                <text x="30" y="37" font-size="5" fill="#fbbf24" font-weight="bold" text-anchor="middle">W</text>
+
+                <!-- Front Optical Cliff Sensors (TCRT5000 Left & Right) -->
+                <circle id="roverCliffL" cx="8" cy="8" r="3" fill="#22c55e" stroke="#fff" stroke-width="1" />
+                <circle id="roverCliffR" cx="52" cy="8" r="3" fill="#22c55e" stroke="#fff" stroke-width="1" />
+
+                <!-- ToF Distance Sensor Laser Beam indicator -->
+                <polygon points="30,12 18,-35 42,-35" fill="rgba(239, 68, 68, 0.25)" id="tofLaserCone" />
+                <circle cx="30" cy="14" r="2.5" fill="#ef4444" />
+
+                <!-- Head Assembly -->
+                <g id="roverHeadGroup" transform="rotate(0, 30, 16)">
+                  <rect x="18" y="6" width="24" height="12" rx="3" fill="#94a3b8" stroke="#475569" stroke-width="1.5" />
+                  <!-- Eye Lenses -->
+                  <circle cx="23" cy="10" r="4" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
+                  <circle cx="37" cy="10" r="4" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
+                </g>
+              </svg>
+            </div>
+
+            <!-- Movable Obstacle Box -->
+            <div class="obstacle" id="obstacle1" style="top: 140px; left: 450px;">
+              <span>CUBE</span>
+            </div>
+            <div class="obstacle" id="obstacle2" style="top: 360px; left: 180px;">
+              <span>CUP</span>
+            </div>
+          </div>
+
+          <!-- Real-time Pin State Monitor below arena -->
+          <div style="margin-top: 14px; background: #0d1219; padding: 12px; border-radius: 8px; border: 1px solid var(--card-border);">
+            <div style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px;">
+              ACTIVE GPIO BUS TRAFFIC & PIN VOLTAGES
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 0.72rem; font-family: monospace;">
+              <div>IN1 (GPIO 6): <b id="pinG6">LOW</b></div>
+              <div>IN2 (GPIO 12): <b id="pinG12">LOW</b></div>
+              <div>IN3 (GPIO 13): <b id="pinG13">LOW</b></div>
+              <div>IN4 (GPIO 16): <b id="pinG16">LOW</b></div>
+              <div>Pan PWM (G25): <b id="pinG25">1500µs</b></div>
+              <div>Tilt PWM (G5): <b id="pinG5">1500µs</b></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Eyes & Interaction Controls -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          
+          <!-- GC9A01 Dual Round Eyes Screen Widget -->
+          <div class="eyes-container">
+            <div class="eyes-header">
+              <span>DUAL GC9A01 1.28" ROUND IPS LCDs</span>
+              <span id="currentExpressionLabel" class="badge">Curious</span>
+            </div>
+            
+            <div class="dual-eyes">
+              <!-- Left Eye Display (SPI CS0 / GPIO 8) -->
+              <div class="eye-round" id="eyeLeft">
+                <div class="eyelid-top" id="leftEyelidTop"></div>
+                <div class="eyelid-bottom" id="leftEyelidBottom"></div>
+                <div class="pupil" id="leftPupil">
+                  <div class="pupil-inner"></div>
+                </div>
+              </div>
+
+              <!-- Right Eye Display (SPI CS1 / GPIO 7) -->
+              <div class="eye-round" id="eyeRight">
+                <div class="eyelid-top" id="rightEyelidTop"></div>
+                <div class="eyelid-bottom" id="rightEyelidBottom"></div>
+                <div class="pupil" id="rightPupil">
+                  <div class="pupil-inner"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Eye Expression Presets -->
+            <div class="preset-chip-group">
+              <button class="chip-btn active" onclick="setEyeExpression('curious')">Curious</button>
+              <button class="chip-btn" onclick="setEyeExpression('happy')">Happy</button>
+              <button class="chip-btn" onclick="setEyeExpression('squint')">Squint</button>
+              <button class="chip-btn" onclick="setEyeExpression('wink')">Wink</button>
+              <button class="chip-btn" onclick="setEyeExpression('sad')">Sad</button>
+              <button class="chip-btn" onclick="setEyeExpression('sleep')">Sleep</button>
+              <button class="chip-btn" onclick="setEyeExpression('alert')">Alert ⚠</button>
+            </div>
+          </div>
+
+          <!-- Robot Kinematics & Manual Locomotion Controls -->
+          <div class="panel">
+            <!-- Autonomous Patrol Mode Toggle -->
+            <div class="switch-wrap">
+              <div>
+                <b style="font-size: 0.85rem; color: #fff;">Autonomous Roam & Avoidance</b>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Patrols desk, halts at cliffs, evades obstacles</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="autoBrainState" class="badge" style="display: none; background: #065f46; color: #6ee7b7;">CRUISING</span>
+                <label class="switch">
+                  <input type="checkbox" id="autoModeToggle" onchange="toggleAutonomous(this.checked)">
+                  <span class="slider-toggle"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Locomotion Keypad -->
+            <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 8px;">
+              DRV8833 TANK DRIVE (Keyboard: W/A/S/D/Space)
+            </div>
+            <div class="controls-grid">
+              <button class="ctrl-btn" onmousedown="setMotorAction('spinLeft', true)" onmouseup="setMotorAction('stop', true)">↺ Spin L</button>
+              <button class="ctrl-btn" id="btnForward" onmousedown="setMotorAction('forward', true)" onmouseup="setMotorAction('stop', true)">▲ Forward</button>
+              <button class="ctrl-btn" onmousedown="setMotorAction('spinRight', true)" onmouseup="setMotorAction('stop', true)">Spin R ↻</button>
+              <button class="ctrl-btn" id="btnLeft" onmousedown="setMotorAction('left', true)" onmouseup="setMotorAction('stop', true)">◀ Left</button>
+              <button class="ctrl-btn stop" id="btnStop" onclick="setMotorAction('stop', true)">■ STOP</button>
+              <button class="ctrl-btn" id="btnRight" onmousedown="setMotorAction('right', true)" onmouseup="setMotorAction('stop', true)">Right ▶</button>
+              <div></div>
+              <button class="ctrl-btn" id="btnReverse" onmousedown="setMotorAction('reverse', true)" onmouseup="setMotorAction('stop', true)">▼ Reverse</button>
+              <div></div>
+            </div>
+
+            <!-- Head Pan & Tilt Servos -->
+            <div style="margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 10px;">
+              <div class="slider-row">
+                <span style="width: 100px;">Pan (GPIO 25):</span>
+                <input type="range" id="panSlider" min="-85" max="85" value="0" oninput="updateServos()">
+                <span id="panVal" style="width: 40px; text-align: right; font-family: monospace;">0°</span>
+              </div>
+              <div class="slider-row">
+                <span style="width: 100px;">Tilt (GPIO 5):</span>
+                <input type="range" id="tiltSlider" min="-30" max="40" value="0" oninput="updateServos()">
+                <span id="tiltVal" style="width: 40px; text-align: right; font-family: monospace;">0°</span>
+              </div>
+            </div>
+
+            <!-- Petting Touch Sensor Simulation -->
+            <div style="margin-top: 10px;">
+              <button class="ctrl-btn" style="width: 100%; background: #0369a1; border-color: #0284c7;" onclick="simulateHeadPet()">
+                👋 Tap TTP223 Capacitive Touch Sensor (Pet Head)
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE WIRING SCHEMATIC -->
+    <div id="wiringTab" class="tab-content">
+      <div class="schematic-grid">
+        
+        <!-- Left: Subsystem Modules -->
+        <div class="panel">
+          <div class="panel-title">PERIPHERAL MODULES</div>
+          
+          <div class="module-card" onclick="highlightSchematic('power')">
+            <div class="module-header">
+              <span class="module-title">🔋 2S 18650 & Dual Buck Regulators</span>
+              <span class="badge" style="background:#78350f; color:#fde68a;">Power Rail</span>
+            </div>
+            <div class="module-pins">
+              Buck #1: 5.1V @ 3A-5A (Logic: Pi 4, Sensors, LCDs)<br>
+              Buck #2: 6.0V @ 2A (Motors: DRV8833, 2x MG90S)
+            </div>
+          </div>
+
+          <div class="module-card" onclick="highlightSchematic('display')">
+            <div class="module-header">
+              <span class="module-title">👁 Dual GC9A01 Round LCDs</span>
+              <span class="badge" style="background:#155e75; color:#67e8f9;">SPI0 Bus</span>
+            </div>
+            <div class="module-pins">
+              Pins: MOSI(G10), SCLK(G11), DC(G22), RST(G23)<br>
+              CS Left: CE0 (Pin 24) | CS Right: CE1 (Pin 26)
+            </div>
+          </div>
+
+          <div class="module-card" onclick="highlightSchematic('motors')">
+            <div class="module-header">
+              <span class="module-title">⚙ DRV8833 Dual H-Bridge</span>
+              <span class="badge" style="background:#166534; color:#86efac;">PWM Drive</span>
+            </div>
+            <div class="module-pins">
+              IN1/IN2 (Left Track): GPIO 6, GPIO 12<br>
+              IN3/IN4 (Right Track): GPIO 13, GPIO 16
+            </div>
+          </div>
+
+          <div class="module-card" onclick="highlightSchematic('servos')">
+            <div class="module-header">
+              <span class="module-title">🦾 2x MG90S Metal Servos</span>
+              <span class="badge" style="background:#854d0e; color:#fde047;">Neck Pan/Tilt</span>
+            </div>
+            <div class="module-pins">
+              Pan: GPIO 25 (Pin 22) | Tilt: GPIO 5 (Pin 29)<br>
+              VCC: Dedicated 6.0V Motor Buck Rail
+            </div>
+          </div>
+
+          <div class="module-card" onclick="highlightSchematic('sensors')">
+            <div class="module-header">
+              <span class="module-title">🛡 Safety & Ranging Sensors</span>
+              <span class="badge" style="background:#581c87; color:#d8b4fe;">I2C / GPIO</span>
+            </div>
+            <div class="module-pins">
+              VL53L0X ToF: I2C1 SDA(G2), SCL(G3)<br>
+              Cliff IR: D0 Left(G17), D0 Right(G27)<br>
+              Touch Sensor: TTP223 OUT(G4)
+            </div>
+          </div>
+
+          <div class="module-card" onclick="highlightSchematic('audio')">
+            <div class="module-header">
+              <span class="module-title">🔊 MAX98357A & INMP441</span>
+              <span class="badge" style="background:#831843; color:#f472b6;">I2S Audio</span>
+            </div>
+            <div class="module-pins">
+              BCLK(G18), LRCLK(G19), DOUT(G21), DIN(G20)
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: Interactive Schematic Circuit Canvas -->
+        <div class="schematic-canvas-wrap">
+          <canvas id="schematicCanvas" width="900" height="600"></canvas>
+          <div class="legend-bar">
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-5v);"></div> 5.1V Logic Rail</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-6v);"></div> 6.0V Motor Rail</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-3v3);"></div> 3.3V Sensor Rail</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-gnd);"></div> Common Ground (GND)</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-spi);"></div> SPI Data / Clock</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-i2c);"></div> I2C Bus</div>
+            <div class="legend-item"><div class="legend-color" style="background:var(--rail-pwm);"></div> PWM Actuators</div>
+          </div>
+        </div>
+
+        <!-- Right: Raspberry Pi 40-Pin Header Inspector -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>RPI 40-PIN CONNECTOR</span>
+            <span style="font-size:0.7rem; color:var(--text-muted);">Click pin to trace</span>
+          </div>
+
+          <div class="rpi-header">
+            <div class="rpi-header-title">RASPBERRY PI 4B GPIO HEADER</div>
+            <div class="pin-grid" id="pinGrid">
+              <!-- Dynamically populated with all 40 pins -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- 40-PIN RPI MATRIX DEFINITION ---
+    const RPI_PINS = [
+      { pin: 1, name: "3.3V Power", type: "3v3", desc: "Sensors VDD (INMP441 / TTP223)" },
+      { pin: 2, name: "5.0V Power", type: "5v", desc: "Buck #1 Output (+5.1V Rail)" },
+      { pin: 3, name: "GPIO 2 (SDA1)", type: "i2c", desc: "VL53L0X ToF + ADS1115" },
+      { pin: 4, name: "5.0V Power", type: "5v", desc: "Buck #1 Secondary (+5.1V Rail)" },
+      { pin: 5, name: "GPIO 3 (SCL1)", type: "i2c", desc: "VL53L0X ToF + ADS1115" },
+      { pin: 6, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 7, name: "GPIO 4", type: "gpio", desc: "TTP223 Capacitive Touch Sensor" },
+      { pin: 8, name: "GPIO 14 (TX)", type: "gpio", desc: "Debug Serial / Spare" },
+      { pin: 9, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 10, name: "GPIO 15 (RX)", type: "gpio", desc: "Debug Serial / Spare" },
+      { pin: 11, name: "GPIO 17", type: "gpio", desc: "TCRT5000 Left Cliff Sensor (D0)" },
+      { pin: 12, name: "GPIO 18", type: "i2s", desc: "I2S Bit Clock (MAX98357A & INMP441)" },
+      { pin: 13, name: "GPIO 27", type: "gpio", desc: "TCRT5000 Right Cliff Sensor (D0)" },
+      { pin: 14, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 15, name: "GPIO 22", type: "spi", desc: "GC9A01 LCD DC (Data/Command)" },
+      { pin: 16, name: "GPIO 23", type: "spi", desc: "GC9A01 LCD RST (Hardware Reset)" },
+      { pin: 17, name: "3.3V Power", type: "3v3", desc: "Spare 3.3V Logic" },
+      { pin: 18, name: "GPIO 24", type: "spi", desc: "GC9A01 LCD BLK (Backlight)" },
+      { pin: 19, name: "GPIO 10 (MOSI)", type: "spi", desc: "GC9A01 LCD SPI Data (DIN)" },
+      { pin: 20, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 21, name: "GPIO 9 (MISO)", type: "spi", desc: "SPI MISO (Unused by LCD)" },
+      { pin: 22, name: "GPIO 25", type: "pwm", desc: "Pan Servo MG90S PWM Control" },
+      { pin: 23, name: "GPIO 11 (SCLK)", type: "spi", desc: "GC9A01 LCD SPI Clock (CLK)" },
+      { pin: 24, name: "GPIO 8 (CE0)", type: "spi", desc: "Left Eye LCD Chip Select (CS)" },
+      { pin: 25, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 26, name: "GPIO 7 (CE1)", type: "spi", desc: "Right Eye LCD Chip Select (CS)" },
+      { pin: 27, name: "GPIO 0", type: "gpio", desc: "ID EEPROM" },
+      { pin: 28, name: "GPIO 1", type: "gpio", desc: "ID EEPROM" },
+      { pin: 29, name: "GPIO 5", type: "pwm", desc: "Tilt Servo MG90S PWM Control" },
+      { pin: 30, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 31, name: "GPIO 6", type: "pwm", desc: "DRV8833 Left Motor Forward (IN1)" },
+      { pin: 32, name: "GPIO 12 (PWM0)", type: "pwm", desc: "DRV8833 Left Motor Reverse (IN2)" },
+      { pin: 33, name: "GPIO 13 (PWM1)", type: "pwm", desc: "DRV8833 Right Motor Forward (IN3)" },
+      { pin: 34, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 35, name: "GPIO 19", type: "i2s", desc: "I2S Word Select (LRCLK / WS)" },
+      { pin: 36, name: "GPIO 16", type: "pwm", desc: "DRV8833 Right Motor Reverse (IN4)" },
+      { pin: 37, name: "GPIO 26", type: "gpio", desc: "Spare GPIO / Status LED" },
+      { pin: 38, name: "GPIO 20", type: "i2s", desc: "I2S INMP441 Microphone Data (DIN)" },
+      { pin: 39, name: "GND", type: "gnd", desc: "Common System Ground" },
+      { pin: 40, name: "GPIO 21", type: "i2s", desc: "I2S MAX98357A Speaker Data (DOUT)" }
+    ];
+
+    function getPinColor(type) {
+      switch(type) {
+        case '5v': return 'var(--rail-5v)';
+        case '3v3': return 'var(--rail-3v3)';
+        case 'gnd': return 'var(--rail-gnd)';
+        case 'spi': return 'var(--rail-spi)';
+        case 'i2c': return 'var(--rail-i2c)';
+        case 'i2s': return 'var(--rail-i2s)';
+        case 'pwm': return 'var(--rail-pwm)';
+        default: return 'var(--rail-gpio)';
+      }
+    }
+
+    // Populate Pinout Table
+    const pinGrid = document.getElementById('pinGrid');
+    RPI_PINS.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'pin-row';
+      row.id = `pinRow_${p.pin}`;
+      row.title = p.desc;
+      row.innerHTML = `
+        <span class="pin-number">${p.pin}</span>
+        <span class="pin-dot" style="background:${getPinColor(p.type)}"></span>
+        <span class="pin-name">${p.name}</span>
+      `;
+      row.onclick = () => selectPin(p.pin);
+      pinGrid.appendChild(row);
+    });
+
+    // --- TAB SWITCHING ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+      if (tabId === 'wiringTab') {
+        renderSchematic();
+      }
+    }
+
+    // --- ROBOT STATE & KINEMATICS ---
+    let trackAnimOffset = 0;
+    const rover = {
+      x: 320,
+      y: 250,
+      heading: 0, // degrees (0 = pointing UP)
+      speed: 0,
+      turnSpeed: 0,
+      panAngle: 0,
+      tiltAngle: 0,
+      autoMode: false,
+      cliffL: false, // true = edge detected!
+      cliffR: false,
+      tofDistance: 850
+    };
+
+    // Obstacles
+    const obstacles = [
+      { id: 'obstacle1', x: 450, y: 140, width: 50, height: 50 },
+      { id: 'obstacle2', x: 180, y: 360, width: 50, height: 50 }
+    ];
+
+    // Draggable Obstacles
+    let activeDrag = null;
+    let dragOffset = { x: 0, y: 0 };
+    document.querySelectorAll('.obstacle').forEach(obs => {
+      obs.addEventListener('mousedown', (e) => {
+        activeDrag = obs;
+        const rect = obs.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        e.preventDefault();
+      });
+    });
+
+    const arenaBox = document.getElementById('arenaBox');
+    window.addEventListener('mousemove', (e) => {
+      if (!activeDrag) return;
+      const arenaRect = arenaBox.getBoundingClientRect();
+      let nx = e.clientX - arenaRect.left - dragOffset.x;
+      let ny = e.clientY - arenaRect.top - dragOffset.y;
+      nx = Math.max(10, Math.min(arenaRect.width - 60, nx));
+      ny = Math.max(10, Math.min(arenaRect.height - 60, ny));
+      activeDrag.style.left = nx + 'px';
+      activeDrag.style.top = ny + 'px';
+      const obsObj = obstacles.find(o => o.id === activeDrag.id);
+      if (obsObj) { obsObj.x = nx; obsObj.y = ny; }
+    });
+    window.addEventListener('mouseup', () => { activeDrag = null; });
+
+    // Motor Actions & PWM Logic
+    function setMotorAction(action, isManualUserAction = false) {
+      // If user uses manual keyboard/buttons while in auto mode, switch to manual
+      if (isManualUserAction && rover.autoMode && action !== 'stop') {
+        toggleAutonomous(false);
+        const toggleEl = document.getElementById('autoModeToggle');
+        if (toggleEl) toggleEl.checked = false;
+      }
+      
+      const pinG6 = document.getElementById('pinG6');
+      const pinG12 = document.getElementById('pinG12');
+      const pinG13 = document.getElementById('pinG13');
+      const pinG16 = document.getElementById('pinG16');
+
+      switch(action) {
+        case 'forward':
+          rover.speed = 2.2;
+          rover.turnSpeed = 0;
+          if (pinG6) { pinG6.textContent = "HIGH (80%)"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "HIGH (80%)"; pinG16.textContent = "LOW"; }
+          break;
+        case 'reverse':
+          rover.speed = -1.8;
+          rover.turnSpeed = 0;
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (70%)"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (70%)"; }
+          break;
+        case 'left':
+          rover.speed = 1.2;
+          rover.turnSpeed = -2.6;
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "HIGH (80%)"; pinG16.textContent = "LOW"; }
+          break;
+        case 'right':
+          rover.speed = 1.2;
+          rover.turnSpeed = 2.6;
+          if (pinG6) { pinG6.textContent = "HIGH (80%)"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "LOW"; }
+          break;
+        case 'spinLeft':
+          rover.speed = 0;
+          rover.turnSpeed = -3.2;
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (60%)"; }
+          if (pinG13) { pinG13.textContent = "HIGH (60%)"; pinG16.textContent = "LOW"; }
+          break;
+        case 'spinRight':
+          rover.speed = 0;
+          rover.turnSpeed = 3.2;
+          if (pinG6) { pinG6.textContent = "HIGH (60%)"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (60%)"; }
+          break;
+        case 'stop':
+        default:
+          rover.speed = 0;
+          rover.turnSpeed = 0;
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "LOW"; }
+          break;
+      }
+    }
+
+    // Keyboard controls
+    const keyMap = { 'KeyW': 'forward', 'KeyS': 'reverse', 'KeyA': 'spinLeft', 'KeyD': 'spinRight', 'Space': 'stop' };
+    window.addEventListener('keydown', (e) => {
+      if (keyMap[e.code]) {
+        setMotorAction(keyMap[e.code], true);
+        e.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (keyMap[e.code] && e.code !== 'Space') {
+        setMotorAction('stop', true);
+      }
+    });
+
+    // Servos
+    function updateServos() {
+      rover.panAngle = parseInt(document.getElementById('panSlider').value);
+      rover.tiltAngle = parseInt(document.getElementById('tiltSlider').value);
+      document.getElementById('panVal').textContent = `${rover.panAngle}°`;
+      document.getElementById('tiltVal').textContent = `${rover.tiltAngle}°`;
+
+      // Convert angles to standard PWM microsecond timings (1000us - 2000us)
+      const panUs = Math.round(1500 + (rover.panAngle / 90) * 500);
+      const tiltUs = Math.round(1500 + (rover.tiltAngle / 90) * 500);
+      document.getElementById('pinG25').textContent = `${panUs}µs`;
+      document.getElementById('pinG5').textContent = `${tiltUs}µs`;
+
+      // Update head SVG rotation
+      const headGroup = document.getElementById('roverHeadGroup');
+      if (headGroup) {
+        headGroup.setAttribute('transform', `rotate(${rover.panAngle}, 30, 16)`);
+      }
+    }
+
+    // Petting reaction
+    function simulateHeadPet() {
+      setEyeExpression('happy');
+      document.getElementById('tiltSlider').value = 25;
+      updateServos();
+      setTimeout(() => {
+        document.getElementById('panSlider').value = 20;
+        updateServos();
+      }, 300);
+      setTimeout(() => {
+        document.getElementById('panSlider').value = -20;
+        updateServos();
+      }, 600);
+      setTimeout(() => {
+        document.getElementById('panSlider').value = 0;
+        document.getElementById('tiltSlider').value = 0;
+        updateServos();
+      }, 1000);
+    }
+
+    // --- AUTONOMOUS FINITE STATE MACHINE ---
+    let autoState = 'CRUISE'; // 'CRUISE', 'CLIFF_REVERSE', 'CLIFF_SPIN', 'OBSTACLE_AVOID'
+    let autoTimer = 0;
+    let autoTurnDir = 1;
+
+    function setBrainBadge(text, bg, fg) {
+      const b = document.getElementById('autoBrainState');
+      if (!b) return;
+      b.style.display = rover.autoMode ? 'inline-block' : 'none';
+      b.textContent = text;
+      b.style.background = bg;
+      b.style.color = fg;
+    }
+
+    function toggleAutonomous(enabled) {
+      rover.autoMode = enabled;
+      autoState = 'CRUISE';
+      autoTimer = 0;
+      const b = document.getElementById('autoBrainState');
+      if (b) b.style.display = enabled ? 'inline-block' : 'none';
+
+      if (!enabled) {
+        setMotorAction('stop');
+      } else {
+        setEyeExpression('curious');
+        setMotorAction('forward');
+        setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
+      }
+    }
+
+    function runAutonomousLogic() {
+      if (!rover.autoMode) return;
+
+      // 1. EMERGENCY CLIFF DROP DETECTION
+      if (rover.cliffL || rover.cliffR) {
+        if (autoState !== 'CLIFF_REVERSE' && autoState !== 'CLIFF_SPIN') {
+          autoState = 'CLIFF_REVERSE';
+          autoTimer = 40; // reverse for ~0.65s (40 frames)
+          autoTurnDir = rover.cliffL ? 1 : -1; // spin away from detected edge
+          setEyeExpression('alert');
+          setBrainBadge('CLIFF ESCAPE ⚠', '#7f1d1d', '#fca5a5');
+          setMotorAction('reverse');
+          return;
+        }
+      }
+
+      // STATE: Backing away from cliff edge
+      if (autoState === 'CLIFF_REVERSE') {
+        autoTimer--;
+        if (autoTimer <= 0) {
+          autoState = 'CLIFF_SPIN';
+          autoTimer = 35 + Math.floor(Math.random() * 25); // spin 90-140 degrees
+          setBrainBadge('TURNING AWAY', '#854d0e', '#fef08a');
+          setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
+        }
+        return;
+      }
+
+      // STATE: Spinning away from cliff
+      if (autoState === 'CLIFF_SPIN') {
+        autoTimer--;
+        if (autoTimer <= 0) {
+          autoState = 'CRUISE';
+          setEyeExpression('curious');
+          setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
+          setMotorAction('forward');
+        }
+        return;
+      }
+
+      // 2. OBSTACLE PROXIMITY AVOIDANCE (< 220mm)
+      if (rover.tofDistance < 220 && autoState !== 'OBSTACLE_AVOID') {
+        autoState = 'OBSTACLE_AVOID';
+        autoTimer = 35 + Math.floor(Math.random() * 20);
+        autoTurnDir = Math.random() > 0.5 ? 1 : -1;
+        setEyeExpression('squint');
+        setBrainBadge('AVOIDING OBJECT', '#9a3412', '#fed7aa');
+        setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
+        return;
+      }
+
+      // STATE: Evading obstacle
+      if (autoState === 'OBSTACLE_AVOID') {
+        autoTimer--;
+        if (autoTimer <= 0) {
+          if (rover.tofDistance >= 220) {
+            autoState = 'CRUISE';
+            setEyeExpression('curious');
+            setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
+            setMotorAction('forward');
+          } else {
+            autoTimer = 20; // continue spinning if still obstructed
+          }
+        }
+        return;
+      }
+
+      // 3. NORMAL DESK PATROL / CRUISING
+      if (autoState === 'CRUISE') {
+        if (rover.speed === 0) {
+          setMotorAction('forward');
+        }
+
+        // Random head gaze while roaming
+        if (Math.random() < 0.02) {
+          rover.panAngle = Math.round((Math.random() - 0.5) * 60);
+          const panSlider = document.getElementById('panSlider');
+          if (panSlider) panSlider.value = rover.panAngle;
+          updateServos();
+        }
+
+        // Slight natural drift / curvature
+        if (Math.random() < 0.02) {
+          rover.turnSpeed = (Math.random() - 0.5) * 1.4;
+        } else if (Math.random() < 0.02) {
+          rover.turnSpeed = 0; // straighten up
+        }
+      }
+    }
+
+    // MAIN KINEMATICS PHYSICS LOOP
+    const walleEl = document.getElementById('walleRover');
+    const cliffStatusBadge = document.getElementById('cliffStatus');
+    const tofDistanceBadge = document.getElementById('tofDistanceBadge');
+    const roverCliffL = document.getElementById('roverCliffL');
+    const roverCliffR = document.getElementById('roverCliffR');
+
+    function gameLoop() {
+      runAutonomousLogic();
+
+      // Heading and Position Update
+      rover.heading += rover.turnSpeed;
+      const rad = (rover.heading * Math.PI) / 180;
+      rover.x += Math.sin(rad) * rover.speed;
+      rover.y -= Math.cos(rad) * rover.speed;
+
+      // Table Boundary: Dynamically match .desk-surface element coordinates
+      const arenaW = arenaBox.clientWidth;
+      const arenaH = arenaBox.clientHeight;
+      const deskEl = document.querySelector('.desk-surface');
+      const tableMinX = deskEl ? deskEl.offsetLeft : 45;
+      const tableMinY = deskEl ? deskEl.offsetTop : 45;
+      const tableMaxX = deskEl ? (deskEl.offsetLeft + deskEl.clientWidth) : (arenaW - 45);
+      const tableMaxY = deskEl ? (deskEl.offsetTop + deskEl.clientHeight) : (arenaH - 45);
+
+      // Center of Rover (width: 60, height: 70 -> center is 30, 35)
+      const cx = rover.x + 30;
+      const cy = rover.y + 35;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+
+      // Exact Sensor Coordinates (calculated using exact 2D rotation matching SVG)
+      // Left TCRT5000 cliff sensor is at SVG (8, 8) -> rel (-22, -27)
+      const sL_x = cx - 22 * cosR + 27 * sinR;
+      const sL_y = cy - 22 * sinR - 27 * cosR;
+
+      // Right TCRT5000 cliff sensor is at SVG (52, 8) -> rel (+22, -27)
+      const sR_x = cx + 22 * cosR + 27 * sinR;
+      const sR_y = cy + 22 * sinR - 27 * cosR;
+
+      // Detect when either sensor crosses the desk boundary
+      rover.cliffL = (sL_x < tableMinX || sL_x > tableMaxX || sL_y < tableMinY || sL_y > tableMaxY);
+      rover.cliffR = (sR_x < tableMinX || sR_x > tableMaxX || sR_y < tableMinY || sR_y > tableMaxY);
+
+      // Update Cliff Sensor visual LEDs
+      roverCliffL.setAttribute('fill', rover.cliffL ? '#ef4444' : '#22c55e');
+      roverCliffR.setAttribute('fill', rover.cliffR ? '#ef4444' : '#22c55e');
+
+      if (rover.cliffL || rover.cliffR) {
+        cliffStatusBadge.className = 'status-pill status-danger';
+        cliffStatusBadge.textContent = 'CLIFF DROP DETECTED! (HALT)';
+        // Non-autonomous safeguard: stop immediately if human drives off table
+        if (!rover.autoMode && rover.speed > 0) {
+          setMotorAction('stop');
+        }
+      } else {
+        cliffStatusBadge.className = 'status-pill status-ok';
+        cliffStatusBadge.textContent = 'Cliff Sensors: OK';
+      }
+
+      // ToF Laser Sensor Origin in SVG: (30, 14) -> rel (0, -21)
+      const lx = cx + 21 * sinR;
+      const ly = cy - 21 * cosR;
+      const laserAngle = rover.heading + rover.panAngle;
+      const lRad = (laserAngle * Math.PI) / 180;
+      const fwdX = Math.sin(lRad);
+      const fwdY = -Math.cos(lRad);
+
+      let hitDist = 260; // max visual ray distance px
+      let minLaserMm = 1200;
+
+      // Raycast against obstacles
+      obstacles.forEach(o => {
+        const ox = o.x + 25;
+        const oy = o.y + 25;
+        const dx = ox - lx;
+        const dy = oy - ly;
+        const dist = Math.hypot(dx, dy);
+
+        // Ray projection
+        const proj = dx * fwdX + dy * fwdY;
+        if (proj > 0 && proj < hitDist) {
+          const perp = Math.abs(dx * (-fwdY) + dy * fwdX);
+          if (perp < 26) {
+            hitDist = Math.max(15, proj - Math.sqrt(Math.max(0, 26 * 26 - perp * perp)));
+            const mm = Math.round(hitDist * 4.2);
+            if (mm < minLaserMm) minLaserMm = mm;
+          }
+        }
+
+        // Physical obstacle bumper collision
+        const distToBody = Math.hypot(cx - ox, cy - oy);
+        if (distToBody < 45) {
+          if (rover.speed > 0) {
+            rover.x -= Math.sin(rad) * 3;
+            rover.y += Math.cos(rad) * 3;
+            if (rover.autoMode && autoState !== 'OBSTACLE_AVOID') {
+              autoState = 'OBSTACLE_AVOID';
+              autoTimer = 35;
+              autoTurnDir = Math.random() > 0.5 ? 1 : -1;
+              setEyeExpression('squint');
+              setBrainBadge('OBSTACLE BUMP', '#9a3412', '#fed7aa');
+              setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
+            }
+          }
+        }
+      });
+
+      rover.tofDistance = minLaserMm;
+      tofDistanceBadge.textContent = `ToF Laser: ${rover.tofDistance}mm`;
+      tofDistanceBadge.className = rover.tofDistance < 250 ? 'status-pill status-danger' : 'status-pill status-ok';
+
+      // Update Visual Laser Beam Line & Impact Dot
+      const endX = lx + fwdX * hitDist;
+      const endY = ly + fwdY * hitDist;
+      const rayLine = document.getElementById('laserRayLine');
+      const hitDot = document.getElementById('laserHitPoint');
+      if (rayLine) {
+        rayLine.setAttribute('x1', lx);
+        rayLine.setAttribute('y1', ly);
+        rayLine.setAttribute('x2', endX);
+        rayLine.setAttribute('y2', endY);
+      }
+      if (hitDot) {
+        hitDot.setAttribute('cx', endX);
+        hitDot.setAttribute('cy', endY);
+        hitDot.style.opacity = (hitDist < 255) ? '1' : '0.3';
+      }
+
+      // Clamp rover inside outer arena box
+      rover.x = Math.max(0, Math.min(arenaW - 60, rover.x));
+      rover.y = Math.max(0, Math.min(arenaH - 70, rover.y));
+
+      // Animate track tread lines
+      if (rover.speed !== 0 || rover.turnSpeed !== 0) {
+        trackAnimOffset = (trackAnimOffset + (rover.speed >= 0 ? 0.9 : -0.9) + 48) % 48;
+        const o1 = 10 + ((trackAnimOffset + 0) % 46);
+        const o2 = 10 + ((trackAnimOffset + 15) % 46);
+        const o3 = 10 + ((trackAnimOffset + 30) % 46);
+        const l1 = document.getElementById('tL1'); if (l1) { l1.setAttribute('y1', o1); l1.setAttribute('y2', o1); }
+        const l2 = document.getElementById('tL2'); if (l2) { l2.setAttribute('y1', o2); l2.setAttribute('y2', o2); }
+        const l3 = document.getElementById('tL3'); if (l3) { l3.setAttribute('y1', o3); l3.setAttribute('y2', o3); }
+        const r1 = document.getElementById('tR1'); if (r1) { r1.setAttribute('y1', o1); r1.setAttribute('y2', o1); }
+        const r2 = document.getElementById('tR2'); if (r2) { r2.setAttribute('y1', o2); r2.setAttribute('y2', o2); }
+        const r3 = document.getElementById('tR3'); if (r3) { r3.setAttribute('y1', o3); r3.setAttribute('y2', o3); }
+      }
+
+      walleEl.style.transform = `translate(${rover.x}px, ${rover.y}px) rotate(${rover.heading}deg)`;
+
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+
+    // --- DUAL GC9A01 DISPLAY EXPRESSIONS ---
+    const leftPupil = document.getElementById('leftPupil');
+    const rightPupil = document.getElementById('rightPupil');
+    const leftEyelidTop = document.getElementById('leftEyelidTop');
+    const rightEyelidTop = document.getElementById('rightEyelidTop');
+    const leftEyelidBottom = document.getElementById('leftEyelidBottom');
+    const rightEyelidBottom = document.getElementById('rightEyelidBottom');
+    const expressionLabel = document.getElementById('currentExpressionLabel');
+
+    function setEyeExpression(expr) {
+      document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+      expressionLabel.textContent = expr.toUpperCase();
+
+      // Reset eyelids
+      leftEyelidTop.style.height = '0%';
+      rightEyelidTop.style.height = '0%';
+      leftEyelidBottom.style.height = '0%';
+      rightEyelidBottom.style.height = '0%';
+      leftPupil.style.transform = 'translate(-50%, -50%) scale(1)';
+      rightPupil.style.transform = 'translate(-50%, -50%) scale(1)';
+
+      switch(expr) {
+        case 'happy':
+          leftEyelidBottom.style.height = '40%';
+          rightEyelidBottom.style.height = '40%';
+          leftPupil.style.transform = 'translate(-50%, -60%) scale(1.1)';
+          rightPupil.style.transform = 'translate(-50%, -60%) scale(1.1)';
+          break;
+        case 'squint':
+          leftEyelidTop.style.height = '35%';
+          rightEyelidTop.style.height = '35%';
+          leftEyelidBottom.style.height = '35%';
+          rightEyelidBottom.style.height = '35%';
+          break;
+        case 'wink':
+          leftEyelidTop.style.height = '50%';
+          leftEyelidBottom.style.height = '50%';
+          rightPupil.style.transform = 'translate(-40%, -50%) scale(1.2)';
+          break;
+        case 'sad':
+          leftEyelidTop.style.height = '45%';
+          rightEyelidTop.style.height = '45%';
+          leftPupil.style.transform = 'translate(-50%, -30%) scale(0.9)';
+          rightPupil.style.transform = 'translate(-50%, -30%) scale(0.9)';
+          break;
+        case 'sleep':
+          leftEyelidTop.style.height = '50%';
+          leftEyelidBottom.style.height = '50%';
+          rightEyelidTop.style.height = '50%';
+          rightEyelidBottom.style.height = '50%';
+          break;
+        case 'alert':
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
+          break;
+        case 'curious':
+        default:
+          leftPupil.style.transform = 'translate(-40%, -50%) scale(1)';
+          rightPupil.style.transform = 'translate(-40%, -50%) scale(1)';
+          break;
+      }
+    }
+
+    // --- INTERACTIVE CIRCUIT SCHEMATIC CANVAS RENDERER ---
+    const canvas = document.getElementById('schematicCanvas');
+    const ctx = canvas.getContext('2d');
+    let highlightedModule = 'all';
+
+    function highlightSchematic(moduleKey) {
+      highlightedModule = moduleKey;
+      renderSchematic();
+    }
+
+    function selectPin(pinNum) {
+      document.querySelectorAll('.pin-row').forEach(r => r.classList.remove('highlighted'));
+      const row = document.getElementById(`pinRow_${pinNum}`);
+      if (row) row.classList.add('highlighted');
+      // match module
+      if ([24, 26, 19, 23, 15, 16, 18].includes(pinNum)) highlightedModule = 'display';
+      else if ([31, 32, 33, 36].includes(pinNum)) highlightedModule = 'motors';
+      else if ([22, 29].includes(pinNum)) highlightedModule = 'servos';
+      else if ([3, 5, 11, 13, 7].includes(pinNum)) highlightedModule = 'sensors';
+      else if ([12, 35, 38, 40].includes(pinNum)) highlightedModule = 'audio';
+      else if ([1, 2, 4, 6, 9, 14, 20, 25, 30, 34, 39].includes(pinNum)) highlightedModule = 'power';
+      renderSchematic();
+    }
+
+    function drawWire(x1, y1, x2, y2, color, isDashed = false) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      if (isDashed) ctx.setLineDash([5, 5]); else ctx.setLineDash([]);
+      ctx.moveTo(x1, y1);
+      ctx.bezierCurveTo(x1 + (x2 - x1) * 0.5, y1, x1 + (x2 - x1) * 0.5, y2, x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function renderSchematic() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Central Raspberry Pi Block
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.roundRect(350, 160, 200, 280, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText("RASPBERRY PI 4B", 380, 190);
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText("40-Pin GPIO Header", 390, 210);
+
+      // Subsystem Modules
+      const modules = [
+        { key: 'power', title: "2S BATTERY & BUCKS", x: 40, y: 50, w: 180, h: 90, color: '#f59e0b' },
+        { key: 'display', title: "DUAL GC9A01 LCDs", x: 680, y: 50, w: 180, h: 90, color: '#06b6d4' },
+        { key: 'motors', title: "DRV8833 & N20 MOTORS", x: 680, y: 190, w: 180, h: 90, color: '#10b981' },
+        { key: 'servos', title: "PAN/TILT SERVOS", x: 680, y: 330, w: 180, h: 80, color: '#fbbf24' },
+        { key: 'sensors', title: "CLIFF & ToF SENSORS", x: 40, y: 220, w: 180, h: 100, color: '#c084fc' },
+        { key: 'audio', title: "I2S AMP & MIC", x: 40, y: 370, w: 180, h: 80, color: '#ec4899' }
+      ];
+
+      modules.forEach(m => {
+        const isSelected = (highlightedModule === 'all' || highlightedModule === m.key);
+        ctx.fillStyle = '#111827';
+        ctx.strokeStyle = isSelected ? m.color : '#334155';
+        ctx.lineWidth = isSelected ? 3 : 1;
+        ctx.roundRect(m.x, m.y, m.w, m.h, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isSelected ? m.color : '#64748b';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(m.title, m.x + 12, m.y + 24);
+      });
+
+      // Connecting Wires with Bus Colors
+      // Power Buck #1 to Pi
+      drawWire(220, 95, 350, 200, '#ef4444');
+      // Power Buck #2 to DRV8833 & Servos
+      drawWire(220, 115, 680, 230, '#f97316');
+      drawWire(220, 115, 680, 360, '#f97316');
+      // Pi SPI to Displays
+      drawWire(550, 230, 680, 95, '#06b6d4');
+      // Pi PWM to DRV8833
+      drawWire(550, 280, 680, 240, '#10b981');
+      // Pi PWM to Servos
+      drawWire(550, 330, 680, 370, '#10b981');
+      // Pi I2C / GPIO to Sensors
+      drawWire(350, 270, 220, 260, '#8b5cf6');
+      // Pi I2S to Audio
+      drawWire(350, 370, 220, 410, '#ec4899');
+    }
+
+    renderSchematic();
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local SQLite databases & environment keys
+*.db
+data/alpha_memory.db
+.env
+
+# OS files
+.DS_Store
+Thumbs.db

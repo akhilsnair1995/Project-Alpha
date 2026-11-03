@@ -19,10 +19,10 @@ This document contains the complete hardware component list, technical specifica
 
 | Item | Component | Specification / Model | Qty | Key Notes |
 | :--- | :--- | :--- | :---: | :--- |
-| **2.1** | **Eye Display** | **1.28-inch Round IPS LCD** (GC9A01 Driver) | 1 | 240x240 resolution, 7-pin or 8-pin SPI interface. Displays animated expressive pupil, blink, and emotion states. Mounted in the Left eye socket. |
-| **2.2** | **Eye Camera** | **Raspberry Pi Camera Module V2** *(or 160° Wide-Angle OV5647)* | 1 | 5MP / 8MP, CSI ribbon cable interface (20cm–30cm flexible cable). Mounted in the Right eye socket for face tracking and Gemini multimodal vision. |
-| **2.3** | **Pan/Tilt Servos** | **TowerPro MG90S** (Metal Gear 9g Micro-Servos) | 2 | **Must use metal gears.** Plastic gear (SG90) micro-servos will strip under the weight of the binocular head assembly. |
-| **2.4** | **Pan/Tilt Bracket** | Mini 2-Axis FPV Servo Gimbal Bracket | 1 | Cheap standard molded nylon or acrylic kit designed for 9g servos. Screws directly to top plate. |
+| **2.1** | **Eye Displays (Dual)** | **1.28-inch Round IPS LCD** (GC9A01 Driver) | **2** | 240x240 resolution, SPI interface. Dedicated Left and Right screens allowing coordinated pupil movement, independent blinking, winking, and squinting. Mounted symmetrically in the head. |
+| **2.2** | **Nose-Bridge Camera** | **Raspberry Pi Camera Module V2** *(or 160° Wide-Angle OV5647)* | 1 | 5MP / 8MP, CSI ribbon cable interface (20cm–30cm flexible cable). **Centered between the two eyes** on the bridge. Eliminates parallax error for face tracking and gives Wall-E a symmetrical, authentic look. |
+| **2.3** | **Pan/Tilt Servos** | **TowerPro MG90S** (Metal Gear 9g Micro-Servos) | 2 | **Must use metal gears.** Plastic gear (SG90) micro-servos will strip under the weight of the dual-screen head assembly. |
+| **2.4** | **Pan/Tilt Bracket** | Mini 2-Axis FPV Servo Gimbal Bracket | 1 | Standard molded nylon or acrylic kit designed for 9g servos. Screws directly to top plate. |
 
 ---
 

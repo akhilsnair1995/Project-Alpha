@@ -69,9 +69,9 @@ All GPIO assignments are designed to avoid peripheral hardware conflicts:
 | **21** | **GPIO 9 (MISO)** | SPI0 Bus | *(Unused)* | MISO not required by display |
 | **22** | **GPIO 25** | Pan Servo | PWM (Orange) | Neck Left/Right rotation servo control signal |
 | **23** | **GPIO 11 (SCLK)**| SPI0 Bus | CLK / SCLK | GC9A01 LCD SPI Clock |
-| **24** | **GPIO 8 (CE0)** | SPI0 Bus | CS | GC9A01 LCD Chip Select |
+| **24** | **GPIO 8 (CE0)** | SPI0 Bus | CS (Left Eye) | Left Eye GC9A01 LCD Chip Select |
 | **25** | **GND** | System Ground | GND | Common ground reference |
-| **26** | **GPIO 7 (CE1)** | *Available* | — | Reserved for SPI secondary device |
+| **26** | **GPIO 7 (CE1)** | SPI0 Bus | CS (Right Eye)| Right Eye GC9A01 LCD Chip Select |
 | **27** | **GPIO 0 (ID_SD)**| EEPROM / ID | — | Reserved |
 | **28** | **GPIO 1 (ID_SC)**| EEPROM / ID | — | Reserved |
 | **29** | **GPIO 5** | Tilt Servo | PWM (Orange) | Neck Up/Down tilt servo control signal |
@@ -91,18 +91,21 @@ All GPIO assignments are designed to avoid peripheral hardware conflicts:
 
 ## 3. Subsystem Wiring Breakdown
 
-### A. GC9A01 1.28" Round Eye Display (SPI)
+### A. Dual GC9A01 1.28" Round Eye Displays (SPI)
+Both screens share the high-speed SPI bus data and clock lines, but use independent Chip Select (`CS`) pins (`CE0` and `CE1`) to enable simultaneous or individual eye rendering (winks, independent squinting, or synchronized gaze):
+
 ```
-GC9A01 Pin       Raspberry Pi Pin
-----------       ----------------
-VCC        --->  Pin 2 or 4 (5.1V) or 3.3V depending on module regulator
-GND        --->  Pin 20 (GND)
-SCL (CLK)  --->  Pin 23 (GPIO 11 / SPI_CLK)
-SDA (MOSI) --->  Pin 19 (GPIO 10 / SPI_MOSI)
-RES (RST)  --->  Pin 16 (GPIO 23)
-DC         --->  Pin 15 (GPIO 22)
-CS         --->  Pin 24 (GPIO 8 / SPI_CE0)
-BLK        --->  Pin 18 (GPIO 24 / Backlight enable)
+Display Signal     Left Eye Module      Right Eye Module     Raspberry Pi Pin
+--------------     ---------------      ----------------     ----------------
+VCC          --->  VCC                  VCC             ---> Pin 2 or 4 (5.1V Rail)
+GND          --->  GND                  GND             ---> Pin 20 (GND)
+SCL (CLK)    --->  SCL                  SCL             ---> Pin 23 (GPIO 11 / SPI_CLK)
+SDA (MOSI)   --->  SDA                  SDA             ---> Pin 19 (GPIO 10 / SPI_MOSI)
+RES (RST)    --->  RES                  RES             ---> Pin 16 (GPIO 23 - Shared Reset)
+DC           --->  DC                   DC              ---> Pin 15 (GPIO 22 - Shared Command/Data)
+BLK          --->  BLK                  BLK             ---> Pin 18 (GPIO 24 - Shared Backlight)
+CS           --->  CS (Left Only)       —               ---> Pin 24 (GPIO 8 / SPI_CE0)
+CS           --->  —                    CS (Right Only) ---> Pin 26 (GPIO 7 / SPI_CE1)
 ```
 
 ### B. Audio System (I2S Mic & Amp)

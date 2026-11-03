@@ -18,9 +18,10 @@ This guide provides the exact mechanical dimensions, cut-list, drill templates, 
 All plates are designed from standard flat 2mm or 3mm acrylic sheets.
 
 ```
-       ┌────────────────────────┐
-       │     HEAD FACEPLATE     │ 80mm x 40mm
-       └────────────────────────┘
+       ┌────────────────────────────────────────────────────────┐
+       │             BINOCULAR HEAD FACEPLATE                   │ 96mm x 46mm
+       │ [Left Eye 33mm] ── [Center Camera 9mm] ── [Right 33mm] │
+       └────────────────────────────────────────────────────────┘
   
        ┌────────────────────────┐
        │     TOP PLATE (LID)    │ 100mm x 100mm
@@ -45,8 +46,8 @@ All plates are designed from standard flat 2mm or 3mm acrylic sheets.
 | **D. Front Chest Plate** | 100mm × 85mm | 1 | • Center cutout (20mm × 10mm) for VL53L0X ToF laser sensor window.<br>• 3mm hole for INMP441 microphone intake port.<br>• Decorative Wall-E solar charge level decal or power LED. |
 | **E. Rear Access Plate** | 100mm × 85mm | 1 | • Rectangular cutout for KCD11 main power rocker switch.<br>• Cutout for USB-C charging port breakout board.<br>• SIM card slot access window. |
 | **F. Left & Right Side Panels** | 94mm × 85mm | 2 | • Hex ventilation drill pattern for Raspberry Pi passive airflow.<br>• Mounting holes for side brackets / crawler track chassis. |
-| **G. Binocular Head Faceplate** | 80mm × 42mm | 1 | • **Left Socket**: 33mm diameter circular cutout for 1.28" round LCD.<br>• **Right Socket**: 12mm circular hole for camera lens + 4x M2 mounting holes for camera module PCB. |
-| **H. Eye Brow Visors** | 40mm × 15mm | 2 | • Angled sun-shades glued/bolted above each eye socket to give the authentic Wall-E curious expression. |
+| **G. Binocular Head Faceplate** | 96mm × 46mm | 1 | • **Left Socket**: 33mm circular cutout for Left 1.28" Round LCD.<br>• **Center Bridge**: 9mm circular cutout for Pi Camera lens + 4x M2 mounting screw holes.<br>• **Right Socket**: 33mm circular cutout for Right 1.28" Round LCD.<br>• Perfect facial symmetry; zero parallax error for computer vision. |
+| **H. Eye Brow Visors** | 45mm × 18mm | 2 | • Angled sun-shades glued/bolted above Left and Right eye sockets to give the authentic Wall-E curious expression. |
 
 ---
 
@@ -71,8 +72,8 @@ The robot uses standard **M3 hex standoffs** to form a rigid structural skeleton
 ## 4. Head Unit Assembly (Pan / Tilt Mechanism)
 
 ```
-                       [Binocular Eyes]
-                     (LCD Left, Camera Right)
+                       [Dual Binocular Eyes]
+              (Left LCD) ── [Center Camera] ── (Right LCD)
                                 ▲
                                 │
                     [Tilt Servo MG90S] (Up / Down)

@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="570mm" height="280mm" viewBox="0 0 570 280">
 <!-- Project Alpha - Wall-E Complete Chassis & Enclosed Head Cut-Sheet - 1:1 Scale Millimeter Precision -->
 <!-- RED = Vector Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
-  <text x="285.00" y="8.00" font-family="Arial, sans-serif" font-size="3.80" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: WALL-E ROVER & 6-PLATE HEAD ENCLOSURE (3mm ACRYLIC)</text>
+  <text x="285.00" y="8.00" font-family="Arial, sans-serif" font-size="3.80" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: WALL-E ROVER &amp; 6-PLATE HEAD ENCLOSURE (3mm ACRYLIC)</text>
   <text x="65.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">1. BOTTOM BASE (100x100mm)</text>
   <rect x="15.00" y="25.00" width="100.00" height="100.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="20.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -170,14 +170,14 @@
   <circle cx="484.00" cy="89.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="572.00" cy="89.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="515.00" y="75.50" width="26.00" height="10.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="528.00" y="111.00" font-family="Arial, sans-serif" font-size="2.30" text-anchor="middle" fill="#0000FF">12 & 13. HEAD SIDES (25x46mm)</text>
+  <text x="528.00" y="111.00" font-family="Arial, sans-serif" font-size="2.30" text-anchor="middle" fill="#0000FF">12 &amp; 13. HEAD SIDES (25x46mm)</text>
   <rect x="490.00" y="115.00" width="25.00" height="46.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="502.50" cy="120.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="502.50" cy="156.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="535.00" y="115.00" width="25.00" height="46.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="547.50" cy="120.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="547.50" cy="156.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="528.00" y="181.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">14 & 15. DUAL VISORS (45x18mm)</text>
+  <text x="528.00" y="181.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">14 &amp; 15. DUAL VISORS (45x18mm)</text>
   <rect x="480.00" y="185.00" width="45.00" height="18.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="490.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="515.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />

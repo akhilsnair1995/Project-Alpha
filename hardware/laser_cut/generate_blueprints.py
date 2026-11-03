@@ -29,9 +29,15 @@ class SVGSheet:
         )
 
     def text(self, x, y, text, size=3.0, color="#0000FF", anchor="middle"):
+        clean_text = (
+            str(text)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
         self.elements.append(
             f'<text x="{x:.2f}" y="{y:.2f}" font-family="Arial, sans-serif" '
-            f'font-size="{size:.2f}" text-anchor="{anchor}" fill="{color}">{text}</text>'
+            f'font-size="{size:.2f}" text-anchor="{anchor}" fill="{color}">{clean_text}</text>'
         )
 
     def to_svg(self):
@@ -328,14 +334,33 @@ def generate_dock_sheet():
 
 
 if __name__ == "__main__":
+    import xml.etree.ElementTree as ET
+
     out_dir = os.path.dirname(__file__)
+    
+    # 1. Generate & Validate Chassis Cut-Sheet
     chassis_svg = generate_chassis_sheet()
+    try:
+        ET.fromstring(chassis_svg)
+        print("[OK] Chassis SVG is 100% valid XML.")
+    except ET.ParseError as e:
+        print(f"[ERROR] Chassis SVG XML Syntax Error: {e}")
+        raise
+
     chassis_path = os.path.join(out_dir, "walle_chassis_complete_cutsheet.svg")
     with open(chassis_path, "w", encoding="utf-8") as f:
         f.write(chassis_svg)
     print(f"Generated Chassis Cut-Sheet: {chassis_path}")
 
+    # 2. Generate & Validate Dock Cut-Sheet
     dock_svg = generate_dock_sheet()
+    try:
+        ET.fromstring(dock_svg)
+        print("[OK] Dock SVG is 100% valid XML.")
+    except ET.ParseError as e:
+        print(f"[ERROR] Dock SVG XML Syntax Error: {e}")
+        raise
+
     dock_path = os.path.join(out_dir, "walle_charging_dock_cutsheet.svg")
     with open(dock_path, "w", encoding="utf-8") as f:
         f.write(dock_svg)

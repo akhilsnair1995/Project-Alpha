@@ -1,38 +1,42 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="200mm" viewBox="0 0 300 200">
+<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="220mm" viewBox="0 0 300 220">
 <!-- Project Alpha - Wall-E Charging Dock Cut-Sheet - 1:1 Scale Millimeter Precision -->
-  <text x="12.00" y="16.00" font-family="Arial, sans-serif" font-size="2.50mm" fill="#0000FF">1. DOCK FLOOR RAMP (120x140mm)</text>
-  <rect x="10.00" y="10.00" width="120.00" height="140.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="16.00" cy="16.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="124.00" cy="16.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="16.00" cy="144.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="124.00" cy="144.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <rect x="50.00" y="75.00" width="15.00" height="50.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="57.50" cy="68.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <text x="54.00" y="64.00" font-family="Arial, sans-serif" font-size="3.00mm" fill="#0000FF">+</text>
-  <rect x="75.00" y="75.00" width="15.00" height="50.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="82.50" cy="68.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <text x="80.00" y="64.00" font-family="Arial, sans-serif" font-size="3.00mm" fill="#0000FF">-</text>
-  <text x="52.00" y="135.00" font-family="Arial, sans-serif" font-size="2.00mm" fill="#0000FF">ROBOT ENTERS</text>
-  <text x="142.00" y="16.00" font-family="Arial, sans-serif" font-size="2.50mm" fill="#0000FF">2. DOCK BACKBOARD (120x80mm)</text>
-  <rect x="140.00" y="10.00" width="120.00" height="80.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="146.00" cy="16.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="254.00" cy="16.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="146.00" cy="84.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="254.00" cy="84.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <rect x="175.00" y="25.00" width="50.00" height="50.00" rx="0.00" ry="0.00" fill="none" stroke="#0000FF" stroke-width="0.1" />
-  <text x="178.00" y="52.00" font-family="Arial, sans-serif" font-size="2.20mm" fill="#0000FF">ArUco #0 (50x50mm)</text>
-  <rect x="195.00" y="78.00" width="10.00" height="4.20" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="190.00" cy="80.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="210.00" cy="80.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <text x="142.00" y="105.00" font-family="Arial, sans-serif" font-size="2.00mm" fill="#0000FF">3A. LEFT V-FENCE (Funnel Rail)</text>
-  <rect x="140.00" y="100.00" width="130.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="155.00" cy="112.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="205.00" cy="112.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="255.00" cy="112.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <text x="142.00" y="140.00" font-family="Arial, sans-serif" font-size="2.00mm" fill="#0000FF">3B. RIGHT V-FENCE (Funnel Rail)</text>
-  <rect x="140.00" y="135.00" width="130.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="155.00" cy="147.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="205.00" cy="147.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
-  <circle cx="255.00" cy="147.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.1" />
+<!-- RED = Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
+  <text x="150.00" y="8.00" font-family="Arial, sans-serif" font-size="3.80" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: CHARGING DOCK (3mm ACRYLIC)</text>
+  <text x="75.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">1. DOCK FLOOR RAMP (120x140mm)</text>
+  <rect x="15.00" y="25.00" width="120.00" height="140.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="21.00" cy="31.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="129.00" cy="31.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="21.00" cy="159.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="129.00" cy="159.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="55.00" y="80.00" width="15.00" height="50.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="62.50" cy="73.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="62.50" y="67.00" font-family="Arial, sans-serif" font-size="2.50" text-anchor="middle" fill="#0000FF">(+)</text>
+  <rect x="80.00" y="80.00" width="15.00" height="50.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="87.50" cy="73.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="87.50" y="67.00" font-family="Arial, sans-serif" font-size="2.50" text-anchor="middle" fill="#0000FF">(-)</text>
+  <text x="75.00" y="150.00" font-family="Arial, sans-serif" font-size="2.20" text-anchor="middle" fill="#0000FF">ROBOT ENTRANCE</text>
+  <text x="215.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">2. DOCK BACKBOARD (120x80mm)</text>
+  <rect x="155.00" y="25.00" width="120.00" height="80.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="161.00" cy="31.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="269.00" cy="31.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="161.00" cy="99.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="269.00" cy="99.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="190.00" y="35.00" width="50.00" height="50.00" rx="0.00" ry="0.00" fill="none" stroke="#0000FF" stroke-width="0.10" />
+  <text x="215.00" y="61.00" font-family="Arial, sans-serif" font-size="2.50" text-anchor="middle" fill="#0000FF">ArUco #0</text>
+  <text x="215.00" y="67.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">(50x50mm)</text>
+  <rect x="210.00" y="91.00" width="10.00" height="4.20" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="205.00" cy="93.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="225.00" cy="93.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="215.00" y="126.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">3. V-SHAPED GUIDE FENCES (125x25mm)</text>
+  <rect x="155.00" y="130.00" width="125.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="170.00" cy="142.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="217.50" cy="142.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="265.00" cy="142.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="217.50" y="138.00" font-family="Arial, sans-serif" font-size="1.80" text-anchor="middle" fill="#0000FF">3A. LEFT FUNNEL</text>
+  <rect x="155.00" y="162.00" width="125.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="170.00" cy="174.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="217.50" cy="174.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="265.00" cy="174.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="217.50" y="170.00" font-family="Arial, sans-serif" font-size="1.80" text-anchor="middle" fill="#0000FF">3B. RIGHT FUNNEL</text>
 </svg>

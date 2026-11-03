@@ -8,8 +8,11 @@ This guide provides verified product purchase links from top robotics and electr
 
 | Component | Recommended Model | Verified Indian Store Link | Est. Price (INR) |
 | :--- | :--- | :--- | :---: |
-| **Main Computer (SBC)** | **Raspberry Pi 4 Model B (4GB)** *(Official)* | • [Robocraze (Official Pi Partner)](https://robocraze.com/products/raspberry-pi-4-model-b-4gb)<br>• [Robu.in Pi 4 4GB](https://robu.in/product/raspberry-pi-4-model-b-with-4gb-ram/) | ₹5,200 – ₹5,800 |
-| **MicroSD Card** | SanDisk 32GB or 64GB Extreme A1/A2 MicroSD | • [Amazon.in SanDisk 64GB](https://www.amazon.in/SanDisk-Extreme-microSDXC-Memory-Adapter/dp/B07FCMBLV6) | ₹650 – ₹850 |
+| **Main Computer (SBC)** | **Raspberry Pi 5 (16GB)** *(Official)*<br>*(Alt: 8GB model)* | • [Robocraze (Official Pi Partner)](https://robocraze.com/products/raspberry-pi-5-16gb)<br>• [Robu.in Pi 5 16GB](https://robu.in/product/raspberry-pi-5-16gb/) | ₹11,500 – ₹12,500 *(or ₹7,500 for 8GB)* |
+| **Pi 5 Active Cooler** | **Official Raspberry Pi 5 Active Cooler** *(Heatsink + PWM Fan)* | • [Robocraze Pi 5 Active Cooler](https://robocraze.com/products/raspberry-pi-active-cooler)<br>• [Robu.in Pi 5 Active Cooler](https://robu.in/product/raspberry-pi-active-cooler-for-raspberry-pi-5/) | ₹450 |
+| **Chassis Exhaust Fan** | **40mm 5V DC Brushless Fan (4010)** | • [Robu.in 4010 5V DC Cooling Fan](https://robu.in/product/4010-5v-dc-brushless-cooling-fan/) | ₹95 |
+| **Pi 5 Camera Cable** | **22-Pin to 15-Pin Mini MIPI Cable (30cm)** | • [Robu.in RPi 5 Camera Cable 300mm](https://robu.in/product/raspberry-pi-5-camera-cable-300mm/) | ₹85 |
+| **MicroSD Card** | SanDisk 64GB or 128GB Extreme A2 MicroSD | • [Amazon.in SanDisk 128GB Extreme A2](https://www.amazon.in/SanDisk-Extreme-microSDXC-Memory-Adapter/dp/B07FCMBLV6) | ₹950 – ₹1,200 |
 | **4G LTE Cellular Modem** | **Waveshare SIM7600G-H 4G USB Dongle** *(Global LTE bands + GNSS GPS)* | • [Robu.in SIM7600G-H USB Dongle](https://robu.in/product/sim7600g-h-4g-dongle-industrial-grade-lte-usb-dongle-with-antenna/)<br>• Alt (Budget): [Amazon.in Universal 4G USB Dongle](https://www.amazon.in/s?k=4G+LTE+USB+dongle+all+sim) | ₹3,400 (Waveshare) / ₹1,400 (Generic) |
 | **IoT SIM Card** | Airtel / Jio Prepaid Nano SIM (1GB/day or IoT plan) | Available at any local mobile store in Kerala (Jio Store / Airtel Store) | ₹150 – ₹299 |
 

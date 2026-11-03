@@ -73,32 +73,18 @@
   <circle cx="331.00" cy="47.50" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="331.00" cy="96.50" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="290.00" y="80.00" width="24.00" height="10.00" rx="3.00" ry="3.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="302.00" y="151.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">6. LEFT SIDE (94x85mm)</text>
+  <text x="302.00" y="151.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">6. LEFT SIDE - 40mm FAN MOUNT (94x85mm)</text>
   <rect x="255.00" y="155.00" width="94.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="257.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="347.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="257.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="347.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="302.00" cy="197.50" r="18.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="286.00" cy="181.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="286.00" cy="213.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="318.00" cy="181.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="318.00" cy="213.50" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="302.00" y="176.50" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">40mm FAN</text>
   <text x="415.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">7. RIGHT SIDE (94x85mm)</text>
   <rect x="368.00" y="25.00" width="94.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="370.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />

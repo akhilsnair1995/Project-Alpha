@@ -166,14 +166,20 @@ def generate_chassis_sheet():
             sheet.circle(pi_cx + dx, pi_cy + dy, 1.35, CUT)
     sheet.rect(pi_cx - 12, pi_cy + 8, 24, 10, 3, 3, CUT)
 
-    # 6. LEFT SIDE VENT PANEL (94mm x 85mm)
-    sheet.text(col3_x + 47, y2 - 4, "6. LEFT SIDE (94x85mm)", 2.6, ENGRAVE, "middle")
+    # 6. LEFT SIDE PANEL - ACTIVE COOLING FAN MOUNT (94mm x 85mm)
+    sheet.text(col3_x + 47, y2 - 4, "6. LEFT SIDE - 40mm FAN MOUNT (94x85mm)", 2.4, ENGRAVE, "middle")
     sheet.rect(col3_x, y2, 94, 85, 2, 2, CUT)
     for dx, dy in [(2, 5), (92, 5), (2, 80), (92, 80)]:
         sheet.circle(col3_x + dx, y2 + dy, 1.6, CUT)
-    for col in range(5):
-        for row in range(4):
-            sheet.circle(col3_x + 35 + col * 6, y2 + 35 + row * 6, 1.5, CUT)
+    # 40mm Fan Air Intake Aperture (36mm diameter circle centered at x=47, y=42.5)
+    fan_cx = col3_x + 47
+    fan_cy = y2 + 42.5
+    sheet.circle(fan_cx, fan_cy, 18.0, CUT)
+    # 4x M3 Fan Mounting Screw Holes (32mm x 32mm pattern for standard 40mm fan)
+    for dx in [-16.0, 16.0]:
+        for dy in [-16.0, 16.0]:
+            sheet.circle(fan_cx + dx, fan_cy + dy, 1.6, CUT)  # 3.2mm diam for M3 screws
+    sheet.text(fan_cx, fan_cy - 21.0, "40mm FAN", 2.0, ENGRAVE, "middle")
 
     # =========================================================================
     # COLUMN 4: Right Side Vent (Top) + Head Front & Rear Plates

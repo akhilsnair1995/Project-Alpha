@@ -8,10 +8,12 @@ This document contains the complete hardware component list, technical specifica
 
 | Item | Component | Specification / Model | Qty | Key Notes |
 | :--- | :--- | :--- | :---: | :--- |
-| **1.1** | **Main Computer (SBC)** | **Raspberry Pi 4 Model B** (2GB or 4GB) *(Alt: Raspberry Pi Zero 2 W)* | 1 | Runs Linux OS, local OpenCV face tracking, audio pipelines, and Gemini 2.5 API. Pi 4 is recommended for full USB ports and thermal stability under vision workloads. |
-| **1.2** | **Cellular 4G LTE Modem** | **Waveshare 4G Dongle** *(or Huawei E3372 / SIM7600 USB)* | 1 | Plugs directly into Pi USB. Recognised natively in Linux as `eth1`/`wwan0`. Automatic cellular fallback when away from WiFi. |
-| **1.3** | **IoT SIM Card** | Standard Nano SIM (Prepaid or IoT SIM like Hologram/Things Mobile/Local carrier) | 1 | Data-only SIM card with ~500MB–1GB/month for Gemini API and telemetry. |
-| **1.4** | **Storage** | 32GB or 64GB MicroSD Card (Class 10 / A1 or A2) | 1 | High endurance (SanDisk Ultra / Extreme recommended). |
+| **1.1** | **Main Computer (SBC)** | **Raspberry Pi 5 (16GB)** *(Alt: 8GB / Pi 4)* | 1 | Quad-core Cortex-A76 @ 2.4 GHz + 16GB RAM. Runs local Gemma 2 2B (Q4) at 12+ tokens/sec, real-time 30 FPS YOLO vision, and full SQLite memory graph. |
+| **1.2** | **SBC Active Cooler** | **Official Raspberry Pi 5 Active Cooler** | 1 | Custom aluminum heatsink + variable-speed PWM blower. Clips directly to Pi 5 dedicated pushpin and fan headers. |
+| **1.3** | **Chassis Cooling Fan** | **40mm 5V DC Brushless Fan (4010)** | 1 | Bolts directly to pre-cut holes on the Left side acrylic panel (32mm × 32mm M3 pattern). Pulls fresh air across the Pi 5 and exhausts out the right vent. |
+| **1.4** | **Cellular 4G LTE Modem** | **Waveshare 4G Dongle** *(or Huawei E3372 / SIM7600 USB)* | 1 | Plugs directly into Pi USB. Recognised natively in Linux as `eth1`/`wwan0`. Automatic cellular fallback when away from WiFi. |
+| **1.5** | **IoT SIM Card** | Standard Nano SIM (Prepaid or IoT SIM like Hologram/Things Mobile/Local carrier) | 1 | Data-only SIM card with ~500MB–1GB/month for Gemini API and telemetry. |
+| **1.6** | **Storage** | 64GB or 128GB MicroSD Card (A2 Application Class) | 1 | SanDisk Extreme A2 recommended for fast local model loading. |
 
 ---
 

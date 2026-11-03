@@ -73,8 +73,11 @@ Every hole in the blueprint is dimensioned for exact hardware drop-in:
 * **USB-C Charging Board**: 10.0mm × 4.2mm cutout + 2x M2 mounting holes.
 * **SIM / MicroSD Inspection Slot**: 25mm × 12mm service access window.
 
-### 8. Left & Right Side Panels (94mm × 85mm each)
-* **Ventilation Grid**: 20x 3.0mm airflow holes strategically positioned directly across from the Raspberry Pi 4 CPU.
+### 8. Side Panels (Active Wind Tunnel Cooling)
+* **Left Side Panel (94mm × 85mm)**:
+  * **40mm Active Fan Cutout**: 36mm circular intake aperture + 4x M3 screw holes (32mm × 32mm pattern) to bolt a standard 4010 5V DC cooling fan directly with zero drilling.
+* **Right Side Panel (94mm × 85mm)**:
+  * Exhaust airflow grid (20x 3.0mm holes). Cool air is pulled in across the Raspberry Pi 5 Active Cooler and exhausted out the right side.
 
 ---
 

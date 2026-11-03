@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="480mm" height="270mm" viewBox="0 0 480 270">
-<!-- Project Alpha - Wall-E Complete Chassis Cut-Sheet - 1:1 Scale Millimeter Precision -->
-<!-- RED = Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
-  <text x="240.00" y="8.00" font-family="Arial, sans-serif" font-size="4.00" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: WALL-E CHASSIS (3mm ACRYLIC) - 1:1 SCALE</text>
-  <text x="65.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">1. BOTTOM BASE PLATE (100x100mm)</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="570mm" height="280mm" viewBox="0 0 570 280">
+<!-- Project Alpha - Wall-E Complete Chassis & Enclosed Head Cut-Sheet - 1:1 Scale Millimeter Precision -->
+<!-- RED = Vector Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
+  <text x="285.00" y="8.00" font-family="Arial, sans-serif" font-size="3.80" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: WALL-E ROVER & 6-PLATE HEAD ENCLOSURE (3mm ACRYLIC)</text>
+  <text x="65.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">1. BOTTOM BASE (100x100mm)</text>
   <rect x="15.00" y="25.00" width="100.00" height="100.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="20.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="110.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -21,21 +21,21 @@
   <rect x="35.00" y="80.00" width="12.00" height="3.20" rx="1.60" ry="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="83.00" y="60.00" width="12.00" height="3.20" rx="1.60" ry="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="83.00" y="80.00" width="12.00" height="3.20" rx="1.60" ry="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="65.00" y="146.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">2. FRONT CHEST (100x85mm)</text>
-  <rect x="15.00" y="150.00" width="100.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="20.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="110.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="20.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="110.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <rect x="56.00" y="175.00" width="18.00" height="8.00" rx="1.00" ry="1.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="51.00" cy="179.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="79.00" cy="179.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="40.00" cy="200.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="35.00" cy="200.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="45.00" cy="200.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <rect x="63.00" y="197.00" width="32.00" height="7.00" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="79.00" y="210.00" font-family="Arial, sans-serif" font-size="2.20" text-anchor="middle" fill="#0000FF">WALL-E</text>
-  <text x="185.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">3. TOP LID (100x100mm)</text>
+  <text x="65.00" y="151.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">2. FRONT CHEST (100x85mm)</text>
+  <rect x="15.00" y="155.00" width="100.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="20.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="110.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="20.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="110.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="56.00" y="180.00" width="18.00" height="8.00" rx="1.00" ry="1.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="51.00" cy="184.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="79.00" cy="184.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="40.00" cy="205.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="35.00" cy="205.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="45.00" cy="205.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="63.00" y="202.00" width="32.00" height="7.00" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="79.00" y="215.00" font-family="Arial, sans-serif" font-size="2.20" text-anchor="middle" fill="#0000FF">WALL-E</text>
+  <text x="185.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">3. TOP LID (100x100mm)</text>
   <rect x="135.00" y="25.00" width="100.00" height="100.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="140.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="230.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -48,21 +48,21 @@
   <rect x="193.00" y="100.00" width="22.00" height="6.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="217.00" cy="50.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="227.00" cy="50.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="185.00" y="146.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">4. REAR ACCESS (100x85mm)</text>
-  <rect x="135.00" y="150.00" width="100.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="140.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="230.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="140.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="230.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <rect x="153.00" y="175.00" width="19.50" height="13.00" rx="0.50" ry="0.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="163.00" y="193.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">POWER</text>
-  <rect x="195.00" y="180.00" width="10.00" height="4.20" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="189.00" cy="182.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="211.00" cy="182.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="200.00" y="192.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">USB-C</text>
-  <rect x="172.00" y="204.00" width="26.00" height="12.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="185.00" y="222.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">SIM / SD</text>
-  <text x="302.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">5. MID-DECK TRAY (94x94mm)</text>
+  <text x="185.00" y="151.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">4. REAR ACCESS (100x85mm)</text>
+  <rect x="135.00" y="155.00" width="100.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="140.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="230.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="140.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="230.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="153.00" y="180.00" width="19.50" height="13.00" rx="0.50" ry="0.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="163.00" y="198.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">POWER</text>
+  <rect x="195.00" y="185.00" width="10.00" height="4.20" rx="1.50" ry="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="189.00" cy="187.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="211.00" cy="187.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="200.00" y="197.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">USB-C</text>
+  <rect x="172.00" y="209.00" width="26.00" height="12.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="185.00" y="227.00" font-family="Arial, sans-serif" font-size="2.00" text-anchor="middle" fill="#0000FF">SIM / SD</text>
+  <text x="302.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">5. MID-DECK TRAY (94x94mm)</text>
   <rect x="255.00" y="25.00" width="94.00" height="94.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="257.00" cy="27.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="347.00" cy="27.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -73,33 +73,33 @@
   <circle cx="331.00" cy="47.50" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="331.00" cy="96.50" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <rect x="290.00" y="80.00" width="24.00" height="10.00" rx="3.00" ry="3.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="302.00" y="146.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">6. LEFT SIDE (94x85mm)</text>
-  <rect x="255.00" y="150.00" width="94.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="257.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="347.00" cy="155.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="257.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="347.00" cy="230.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="185.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="191.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="197.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="290.00" cy="203.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="185.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="191.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="197.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="296.00" cy="203.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="185.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="191.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="197.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="302.00" cy="203.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="185.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="191.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="197.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="308.00" cy="203.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="185.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="191.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="197.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="314.00" cy="203.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="415.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">7. RIGHT SIDE (94x85mm)</text>
+  <text x="302.00" y="151.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">6. LEFT SIDE (94x85mm)</text>
+  <rect x="255.00" y="155.00" width="94.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="257.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="347.00" cy="160.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="257.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="347.00" cy="235.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="290.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="290.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="290.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="290.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="296.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="296.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="296.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="296.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="302.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="302.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="302.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="302.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="308.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="308.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="308.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="308.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="314.00" cy="190.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="314.00" cy="196.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="314.00" cy="202.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="314.00" cy="208.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="415.00" y="21.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">7. RIGHT SIDE (94x85mm)</text>
   <rect x="368.00" y="25.00" width="94.00" height="85.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="370.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="460.00" cy="30.00" r="1.60" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -125,8 +125,12 @@
   <circle cx="427.00" cy="66.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="427.00" cy="72.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="427.00" cy="78.00" r="1.50" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="416.00" y="121.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">8. BINOCULAR HEAD (96x46mm)</text>
+  <text x="416.00" y="121.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">8. HEAD FRONT (96x46mm)</text>
   <rect x="368.00" y="125.00" width="96.00" height="46.00" rx="3.00" ry="3.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="372.00" cy="129.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="460.00" cy="129.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="372.00" cy="167.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="460.00" cy="167.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="391.00" cy="148.00" r="16.75" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="373.00" cy="130.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="373.00" cy="166.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
@@ -142,13 +146,42 @@
   <circle cx="405.50" cy="154.25" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="426.50" cy="141.75" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
   <circle cx="426.50" cy="154.25" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="408.00" cy="166.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="424.00" cy="166.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <text x="416.00" y="186.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">9. DUAL VISORS (45x18mm)</text>
-  <rect x="368.00" y="190.00" width="45.00" height="18.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="378.00" cy="203.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="403.00" cy="203.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <rect x="419.00" y="190.00" width="45.00" height="18.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="429.00" cy="203.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
-  <circle cx="454.00" cy="203.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="416.00" y="191.00" font-family="Arial, sans-serif" font-size="2.60" text-anchor="middle" fill="#0000FF">9. HEAD REAR (96x46mm)</text>
+  <rect x="368.00" y="195.00" width="96.00" height="46.00" rx="3.00" ry="3.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="372.00" cy="199.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="460.00" cy="199.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="372.00" cy="237.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="460.00" cy="237.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="403.00" y="212.00" width="26.00" height="12.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="408.00" cy="232.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="424.00" cy="232.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="528.00" y="21.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">10. HEAD TOP (96x25mm)</text>
+  <rect x="480.00" y="25.00" width="96.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="484.00" cy="29.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="572.00" cy="29.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="484.00" cy="46.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="572.00" cy="46.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="503.00" cy="37.50" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="553.00" cy="37.50" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="528.00" y="64.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">11. HEAD BOTTOM (96x25mm)</text>
+  <rect x="480.00" y="68.00" width="96.00" height="25.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="484.00" cy="72.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="572.00" cy="72.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="484.00" cy="89.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="572.00" cy="89.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="515.00" y="75.50" width="26.00" height="10.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="528.00" y="111.00" font-family="Arial, sans-serif" font-size="2.30" text-anchor="middle" fill="#0000FF">12 & 13. HEAD SIDES (25x46mm)</text>
+  <rect x="490.00" y="115.00" width="25.00" height="46.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="502.50" cy="120.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="502.50" cy="156.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="535.00" y="115.00" width="25.00" height="46.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="547.50" cy="120.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="547.50" cy="156.00" r="1.35" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <text x="528.00" y="181.00" font-family="Arial, sans-serif" font-size="2.40" text-anchor="middle" fill="#0000FF">14 & 15. DUAL VISORS (45x18mm)</text>
+  <rect x="480.00" y="185.00" width="45.00" height="18.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="490.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="515.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <rect x="531.00" y="185.00" width="45.00" height="18.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="541.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
+  <circle cx="566.00" cy="198.00" r="1.10" fill="none" stroke="#FF0000" stroke-width="0.10" />
 </svg>

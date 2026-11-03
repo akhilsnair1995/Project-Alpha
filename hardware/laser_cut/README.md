@@ -8,7 +8,7 @@ This folder contains the complete, 1:1 scale laser cut sheets for Project Alpha.
 
 | File | Target Material & Thickness | Minimum Sheet Size | Description |
 | :--- | :--- | :---: | :--- |
-| [**`walle_chassis_complete_cutsheet.svg`**](file:///c:/Users/akhil/AI%20Playground/Project%20Alpha/hardware/laser_cut/walle_chassis_complete_cutsheet.svg) | 2mm or 3mm Cast Acrylic (Yellow, Smoked, or Clear) | 420mm × 297mm (A3) | All 8 plates for the Wall-E rover body, binocular dual-screen head, and visors. |
+| [**`walle_chassis_complete_cutsheet.svg`**](file:///c:/Users/akhil/AI%20Playground/Project%20Alpha/hardware/laser_cut/walle_chassis_complete_cutsheet.svg) | 2mm or 3mm Cast Acrylic (Yellow, Smoked, or Clear) | 570mm × 280mm (Fits 600×300mm / 24"×12") | All 7 body plates + complete 6-plate enclosed 3D head box + dual visors (15 plates total). |
 | [**`walle_charging_dock_cutsheet.svg`**](file:///c:/Users/akhil/AI%20Playground/Project%20Alpha/hardware/laser_cut/walle_charging_dock_cutsheet.svg) | 2mm or 3mm Cast Acrylic (Black or Clear) | 300mm × 200mm (A4) | Dock floor ramp, backboard with ArUco target, and V-shaped self-centering funnel rails. |
 | [**`generate_blueprints.py`**](file:///c:/Users/akhil/AI%20Playground/Project%20Alpha/hardware/laser_cut/generate_blueprints.py) | Python script | — | Re-generates the SVGs with mathematical millimeter precision if dimensions need tweaking. |
 
@@ -44,14 +44,24 @@ Every hole in the blueprint is dimensioned for exact hardware drop-in:
 * **Dual Cable Pass-Through Slots**: 20mm × 6mm slots for the camera CSI ribbon and display SPI wires.
 * **TTP223 Touch Sensor Mount**: Pre-cut M2 screw holes under the top lid.
 
-### 4. Binocular Head Faceplate (96mm × 46mm)
-* **Left Eye**: 33.5mm circular cutout for Left 1.28" Round LCD + 4x M2 mounting holes (36mm × 36mm pattern).
-* **Right Eye**: 33.5mm circular cutout for Right 1.28" Round LCD + 4x M2 mounting holes (36mm × 36mm pattern).
-* **Center Bridge**: 9.0mm circular aperture for the Pi Camera lens + 4x M2 holes (21mm × 12.5mm pattern for Camera V2 PCB).
-* **Tilt Servo Link**: 2x M2 holes at the bottom center to bolt onto the tilt bracket horn.
-
-### 5. Dual Eyebrow Visors (45mm × 18mm each)
-* Pre-cut bolt holes matching the top edge of each eye socket.
+### 4. 6-Plate Enclosed 3D Binocular Head Unit
+* **Head Front (96mm × 46mm)**:
+  * Left Eye: 33.5mm circular cutout for Left 1.28" Round LCD + 4x M2 mounting holes.
+  * Right Eye: 33.5mm circular cutout for Right 1.28" Round LCD + 4x M2 mounting holes.
+  * Center Bridge: 9.0mm circular aperture for Pi Camera lens + 4x M2 holes for Camera V2 PCB.
+  * 4x M2.5 corner standoff holes to bolt to the rear plate.
+* **Head Rear (96mm × 46mm)**:
+  * 4x M2.5 corner standoff holes matching the front plate.
+  * Central cable exit slot (26mm × 12mm) for camera CSI ribbon and display wires.
+  * 2x M2.5 mounting holes for Tilt servo horn connection.
+* **Head Top Cover (96mm × 25mm)**:
+  * Roof of the head box. 4x corner holes + 2x mounting holes for Left and Right Eyebrow Visors.
+* **Head Bottom Cover (96mm × 25mm)**:
+  * Floor of the head box. Center tilt gimbal pivot mount & cable routing slot.
+* **Head Left & Right Side Covers (25mm × 46mm each)**:
+  * Encloses both sides, keeping dust and light out of the dual-screen housing.
+* **Dual Eyebrow Visors (45mm × 18mm each)**:
+  * Angled sun-shades bolted onto the top cover.
 
 ### 6. Front Chest Plate (100mm × 85mm)
 * **VL53L0X Laser Distance Sensor**: 18mm × 8mm optical window + 2x M2 mounting holes.

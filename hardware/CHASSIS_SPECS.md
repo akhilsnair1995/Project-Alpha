@@ -46,8 +46,12 @@ All plates are designed from standard flat 2mm or 3mm acrylic sheets.
 | **D. Front Chest Plate** | 100mm × 85mm | 1 | • Center cutout (20mm × 10mm) for VL53L0X ToF laser sensor window.<br>• 3mm hole for INMP441 microphone intake port.<br>• Decorative Wall-E solar charge level decal or power LED. |
 | **E. Rear Access Plate** | 100mm × 85mm | 1 | • Rectangular cutout for KCD11 main power rocker switch.<br>• Cutout for USB-C charging port breakout board.<br>• SIM card slot access window. |
 | **F. Left & Right Side Panels** | 94mm × 85mm | 2 | • Hex ventilation drill pattern for Raspberry Pi passive airflow.<br>• Mounting holes for side brackets / crawler track chassis. |
-| **G. Binocular Head Faceplate** | 96mm × 46mm | 1 | • **Left Socket**: 33mm circular cutout for Left 1.28" Round LCD.<br>• **Center Bridge**: 9mm circular cutout for Pi Camera lens + 4x M2 mounting screw holes.<br>• **Right Socket**: 33mm circular cutout for Right 1.28" Round LCD.<br>• Perfect facial symmetry; zero parallax error for computer vision. |
-| **H. Eye Brow Visors** | 45mm × 18mm | 2 | • Angled sun-shades glued/bolted above Left and Right eye sockets to give the authentic Wall-E curious expression. |
+| **G. Head Front Faceplate** | 96mm × 46mm | 1 | • **Left Socket**: 33.5mm circular cutout for Left 1.28" Round LCD + 4x M2 holes.<br>• **Center Bridge**: 9.0mm circular aperture for Pi Camera lens + 4x M2 mounting screw holes.<br>• **Right Socket**: 33.5mm circular cutout for Right 1.28" Round LCD + 4x M2 holes.<br>• 4x M2.5 corner standoff holes (88mm × 38mm pattern). |
+| **H. Head Rear Plate** | 96mm × 46mm | 1 | • 4x M2.5 corner standoff holes matching front plate.<br>• Central cable exit slot (26mm × 12mm) for camera CSI ribbon and display wires.<br>• 2x M2.5 mounting holes for Tilt servo horn connection. |
+| **I. Head Top Cover** | 96mm × 25mm | 1 | • Roof of head enclosure.<br>• 4x corner holes to fasten to front/rear frame.<br>• 2x screw holes for Left & Right eyebrow visors. |
+| **J. Head Bottom Cover** | 96mm × 25mm | 1 | • Floor of head enclosure.<br>• Center cable pass-through slot and tilt gimbal pivot mount. |
+| **K & L. Head Side Covers** | 25mm × 46mm | 2 | • Left and Right walls enclosing the head box.<br>• Fastens to corner standoffs. |
+| **M. Eye Brow Visors** | 45mm × 18mm | 2 | • Angled sun-shades bolted above Left and Right eye sockets to give the authentic Wall-E curious expression. |
 
 ---
 
@@ -69,26 +73,31 @@ The robot uses standard **M3 hex standoffs** to form a rigid structural skeleton
 
 ---
 
-## 4. Head Unit Assembly (Pan / Tilt Mechanism)
+## 4. Head Unit 3D Box Assembly (Enclosed Housing)
+
+The head is a fully enclosed 3D box (96mm W × 46mm H × 25mm D) that protects the dual screens and camera from dust and physical impact:
 
 ```
-                       [Dual Binocular Eyes]
-              (Left LCD) ── [Center Camera] ── (Right LCD)
-                                ▲
-                                │
-                    [Tilt Servo MG90S] (Up / Down)
-                                ▲
-                                │
-                    [Pan Servo MG90S]  (Left / Right)
-                                ▲
-                                │
-                        [Top Acrylic Lid]
+                      [TOP COVER (96x25mm)] ── Mounts Visors
+                               │
+[LEFT (25x46)] ── [FRONT (96x46)] ─── 4x 25mm Standoffs ─── [REAR (96x46)] ── [RIGHT (25x46)]
+                               │
+                    [BOTTOM COVER (96x25mm)] ── Tilt Horn Mount
+                               │
+                       [Tilt Servo MG90S] (Up / Down)
+                               ▲
+                               │
+                       [Pan Servo MG90S]  (Left / Right)
+                               ▲
+                               │
+                       [Top Acrylic Lid]
 ```
 
-1. **Mounting Pan Servo**: The Pan servo is inserted into the top plate's center cutout from underneath, with its gear horn facing upward.
-2. **Mounting Tilt Bracket**: The mini FPV gimbal bracket attaches to the Pan servo horn.
-3. **Mounting Tilt Servo & Faceplate**: The Tilt servo sits sideways inside the bracket. The acrylic binocular faceplate screws onto the Tilt horn.
-4. **Wiring Slack**: Ensure the CSI camera ribbon cable and 7 display jumper wires have **5cm–7cm of loose slack** so the head can freely pan 180° and tilt 60° without snagging or pulling wires out of the Raspberry Pi.
+1. **Internal Frame**: 4x M2.5 × 25mm female-female standoffs connect the **Front Faceplate** and **Rear Plate** at their 4 corners, creating a rigid protective cage around the two 1.28" LCD modules and the center Pi Camera board.
+2. **Side Enclosures**: The **Top Cover**, **Bottom Cover**, **Left Cover**, and **Right Cover** screw onto this frame, creating a complete, clean 6-sided 3D housing with zero exposed electronics.
+3. **Visors**: The dual eyebrow visors bolt directly to the pre-cut holes on the Top Cover at an angle.
+4. **Mounting to Neck**: The Tilt servo horn screws directly into the Bottom Cover and Rear Plate's pre-cut mounting holes.
+5. **Wiring Slack**: Cables exit smoothly through the central rear/bottom slots down into the main body, with 5cm–7cm of loose slack for 180° pan and 60° tilt motion.
 
 ---
 

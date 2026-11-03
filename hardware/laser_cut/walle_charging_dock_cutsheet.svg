@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="220mm" viewBox="0 0 300 220">
 <!-- Project Alpha - Wall-E Charging Dock Cut-Sheet - 1:1 Scale Millimeter Precision -->
-<!-- RED = Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
+<!-- RED = Vector Cut (#FF0000), BLUE = Surface Engrave/Score (#0000FF) -->
   <text x="150.00" y="8.00" font-family="Arial, sans-serif" font-size="3.80" text-anchor="middle" fill="#0000FF">PROJECT ALPHA: CHARGING DOCK (3mm ACRYLIC)</text>
   <text x="75.00" y="21.00" font-family="Arial, sans-serif" font-size="2.80" text-anchor="middle" fill="#0000FF">1. DOCK FLOOR RAMP (120x140mm)</text>
   <rect x="15.00" y="25.00" width="120.00" height="140.00" rx="2.00" ry="2.00" fill="none" stroke="#FF0000" stroke-width="0.10" />

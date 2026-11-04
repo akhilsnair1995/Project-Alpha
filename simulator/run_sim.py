@@ -601,11 +601,43 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             import speech_recognition as sr
+            import wave
             audio_bytes = base64.b64decode(b64_audio)
+
+            # If raw PCM without RIFF header, wrap as standard 16kHz WAV
+            if not audio_bytes.startswith(b"RIFF"):
+                wav_io = io.BytesIO()
+                with wave.open(wav_io, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(16000)
+                    wf.writeframes(audio_bytes)
+                audio_bytes = wav_io.getvalue()
+
+            transcript = ""
             r_stt = sr.Recognizer()
-            with sr.AudioFile(io.BytesIO(audio_bytes)) as source:
-                audio_data = r_stt.record(source)
-            transcript = r_stt.recognize_google(audio_data)
+            try:
+                with sr.AudioFile(io.BytesIO(audio_bytes)) as source:
+                    audio_data = r_stt.record(source)
+                transcript = r_stt.recognize_google(audio_data)
+            except Exception as stt_e:
+                # If Google STT failed or threw UnknownValueError, try Gemini 2.5 Audio
+                r = get_robot()
+                if r.brain.is_online():
+                    try:
+                        from google.genai import types
+                        prompt = "Transcribe the user's spoken voice command or question accurately. Return ONLY the transcribed text."
+                        resp = r.brain.client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=[
+                                prompt,
+                                types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav")
+                            ]
+                        )
+                        if resp.text:
+                            transcript = resp.text.strip().replace('"', '')
+                    except Exception as ge:
+                        print(f"[TranscribeMic] Gemini audio fallback notice: {ge}")
 
             auto_reply = None
             if data.get("auto_chat", False) and transcript:
@@ -615,12 +647,12 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
                 auto_reply = {
                     "reply": chat_res["reply"],
                     "emotion": chat_res["emotion"].value,
-                    "sound": chat_res.get("sound", "happy")
+                    "sound": chat_res.get("sound_cue", "happy")
                 }
                 r.eyes.set_emotion(chat_res["emotion"])
                 r.motion.express_emotion(chat_res["emotion"])
-                if chat_res.get("sound"):
-                    r.voice.play_sound(chat_res["sound"])
+                if chat_res.get("sound_cue"):
+                    r.voice.play_sound(chat_res["sound_cue"])
 
             self._send_json({
                 "status": "success",

@@ -6,6 +6,7 @@ and provides cross-platform offline Text-to-Speech (TTS) coordinated with eye an
 """
 
 import os
+import re
 import io
 import wave
 import struct
@@ -47,6 +48,28 @@ EMOTION_PROSODY: Dict[str, Dict[str, str]] = {
     "skeptical": {"pitch": "+6Hz", "rate": "-2%", "sound": "confused"},
     "squint": {"pitch": "+10Hz", "rate": "+0%", "sound": "thinking"},
 }
+
+
+def sanitize_speech_text(text: str) -> str:
+    """
+    Cleans raw text for natural, conversational human-like TTS speech.
+    Strips out:
+      - Bracketed tags: [EMOTION: ...], [MOOD: ...]
+      - Stage directions: *wiggles tracks*, (laughs), *chirps happily*
+      - Markdown markers: *, _, #, `, >, ~
+      - Unicode emojis and symbol icons
+      - Multiple spaces
+    """
+    if not text:
+        return ""
+    t = re.sub(r"\[[A-Za-z0-9_: -]+\]", " ", text)
+    t = re.sub(r"\*{2,}([^*]+)\*{2,}", r"\1", t)
+    t = re.sub(r"\*[^*]+\*", " ", t)
+    t = re.sub(r"\([^)]+\)", " ", t)
+    t = re.sub(r"[*_#`>~]", "", t)
+    t = re.sub(r"[\U00010000-\U0010ffff]", "", t)
+    t = re.sub(r"[•★☆✓✔➔➡➜✨🤖👀❤️💖🐾]", "", t)
+    return re.sub(r"\s+", " ", t).strip()
 
 
 def _play_mp3_windows(mp3_abs_path: str) -> bool:
@@ -443,7 +466,7 @@ class VoiceEngine:
         Uses disk caching for sub-10ms retrieval on repeated phrases.
         Returns Path to the cached MP3 file.
         """
-        clean_text = text.replace("*", "").replace("#", "").replace("_", "").strip()
+        clean_text = sanitize_speech_text(text)
         if not clean_text:
             return None
 
@@ -506,6 +529,37 @@ class VoiceEngine:
                 pass
         return b""
 
+    def stop_speaking(self) -> None:
+        """Instantly interrupts any ongoing speech or audio playback (barge-in support)."""
+        self.is_speaking = False
+        if os.name == "nt":
+            try:
+                import ctypes
+                ctypes.windll.winmm.mciSendStringW("close all", None, 0, 0)
+            except Exception:
+                pass
+            if self._sapi_voice:
+                try:
+                    self._sapi_voice.Speak("", 2)  # SVSFPurgeBeforeSpeak
+                except Exception:
+                    pass
+            try:
+                import winsound
+                winsound.PlaySound(None, 0)
+            except Exception:
+                pass
+        elif IS_RASPBERRY_PI or os.name == "posix":
+            try:
+                import subprocess
+                subprocess.run(["pkill", "-9", "-f", "aplay|mpg123|cvlc|espeak"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+        if self.on_speech_end:
+            try:
+                self.on_speech_end()
+            except Exception:
+                pass
+
     def speak(
         self,
         text: str,
@@ -520,7 +574,7 @@ class VoiceEngine:
         if not self.voice_enabled or not text:
             return
 
-        clean_text = text.replace("*", "").replace("#", "").replace("_", "").strip()
+        clean_text = sanitize_speech_text(text)
         _, _, sound_preset = self._get_emotion_prosody(emotion)
 
         def _speak_worker():

@@ -18,6 +18,7 @@ from core.vision_pipeline import VisionPipeline
 from core.gemini_brain import GeminiBrain
 from core.voice_engine import VoiceEngine, WallESoundSynthesizer
 from core.behavior_engine import AlphaBehaviorEngine, BehaviorAction
+from core.live_listener import LiveMicrophoneListener
 
 class AlphaRobot:
     """The unified physical and cognitive robot instance."""
@@ -35,6 +36,13 @@ class AlphaRobot:
         self.voice = VoiceEngine(voice_enabled=voice_enabled)
         self.brain = GeminiBrain(db=self.db)
         self.behavior = AlphaBehaviorEngine(brain=self.brain)
+        self.listener = LiveMicrophoneListener(
+            voice_engine=self.voice,
+            brain=self.brain,
+            eyes=self.eyes,
+            motion=self.motion,
+            db=self.db
+        )
 
         # Wire up speech synchronization with eyes
         self.voice.on_speech_start = lambda: self.eyes.talking_pulse(cycles=1)
@@ -66,6 +74,7 @@ class AlphaRobot:
         print("Commands: 'exit' | 'facts' | 'history' | 'eyes <emotion>' | 'sound <name>' | 'voice on/off'\n")
 
         self.eyes.set_emotion(Emotion.HAPPY)
+        self.listener.start()
 
         while True:
             try:
@@ -76,6 +85,7 @@ class AlphaRobot:
                     print("Alpha > Beep-boop! Goodbye, Akhil! Powering down into low-power idle.")
                     self.eyes.set_emotion(Emotion.SLEEPY)
                     self.voice.play_sound("shutdown", async_play=False)
+                    self.listener.stop()
                     break
                 elif user_input.lower() == "facts":
                     facts = self.db.get_user_facts()
@@ -163,6 +173,7 @@ class AlphaRobot:
             print("Press Ctrl+C to stop.\n")
 
         self.eyes.set_emotion(Emotion.IDLE)
+        self.listener.start()
 
         try:
             while True:
@@ -207,6 +218,7 @@ class AlphaRobot:
                 cv2.destroyAllWindows()
             except Exception:
                 pass
+            self.listener.stop()
             self.motion.cleanup()
             self.vision.release()
 

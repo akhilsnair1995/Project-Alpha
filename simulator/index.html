@@ -3906,8 +3906,70 @@
       }
     }
 
+    function encodeWavPcm16(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      function writeString(view, offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM format
+      view.setUint16(22, 1, true); // Mono
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    let liveAudioBuffer = [];
+    let liveSpeechStart = 0;
+    let liveSilenceStart = 0;
+    let micScriptProcessor = null;
+
+    async function sendWavToTranscribe(wavBlob) {
+      if (isAlphaSpeaking) return;
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const b64 = reader.result;
+        try {
+          const res = await fetch('/api/transcribe_mic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio_base64: b64, auto_chat: false })
+          });
+          const data = await res.json();
+          if (data.transcript && data.transcript.trim() && !isAlphaSpeaking) {
+            const chatInput = document.getElementById('chatInputText');
+            if (chatInput) chatInput.value = data.transcript.trim();
+            stopListeningTurn();
+            sendChatMessage();
+          }
+        } catch(err) {
+          console.warn("[WavTranscribe] error:", err);
+        }
+      };
+      reader.readAsDataURL(wavBlob);
+    }
+
     async function requestMicStreamAccess() {
-      if (micMediaStream && micAudioContext) return true;
+      if (micMediaStream && micAudioContext) {
+        if (micAudioContext.state === 'suspended') {
+          try { await micAudioContext.resume(); } catch(e) {}
+        }
+        return true;
+      }
       try {
         micMediaStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -3917,17 +3979,70 @@
           }
         });
         micAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (micAudioContext.state === 'suspended') {
+          try { await micAudioContext.resume(); } catch(e) {}
+        }
         const source = micAudioContext.createMediaStreamSource(micMediaStream);
         micAnalyserNode = micAudioContext.createAnalyser();
         micAnalyserNode.fftSize = 64;
         source.connect(micAnalyserNode);
+
+        // Continuous Web Audio VAD with PCM WAV capture
+        micScriptProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
+        micScriptProcessor.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0);
+          let sum = 0;
+          for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+          const rms = Math.sqrt(sum / input.length);
+
+          // Barge-in check: If Alpha is speaking and user speaks loudly, stop Alpha!
+          if (isAlphaSpeaking && rms > 0.065) {
+            console.log("[VAD] Barge-in detected! Stopping Alpha speech.");
+            interruptAlphaSpeech();
+            startListeningTurn();
+            return;
+          }
+
+          if (!isListeningActive || isAlphaSpeaking) return;
+
+          if (rms > 0.022) { // speech threshold
+            if (liveAudioBuffer.length === 0) {
+              liveSpeechStart = Date.now();
+              updateMicBadge('hearing_user', '🎙️ Hearing your voice...');
+            }
+            liveSilenceStart = 0;
+            liveAudioBuffer.push(new Float32Array(input));
+          } else if (liveAudioBuffer.length > 0) {
+            liveAudioBuffer.push(new Float32Array(input));
+            if (!liveSilenceStart) {
+              liveSilenceStart = Date.now();
+            } else if (Date.now() - liveSilenceStart > 900) {
+              // Silence gap detected after speech utterance!
+              const totalLen = liveAudioBuffer.reduce((acc, c) => acc + c.length, 0);
+              if (totalLen > micAudioContext.sampleRate * 0.45) { // at least 0.45s of speech
+                const merged = new Float32Array(totalLen);
+                let off = 0;
+                for (const chunk of liveAudioBuffer) {
+                  merged.set(chunk, off);
+                  off += chunk.length;
+                }
+                const wavBlob = encodeWavPcm16(merged, micAudioContext.sampleRate);
+                sendWavToTranscribe(wavBlob);
+              }
+              liveAudioBuffer = [];
+              liveSilenceStart = 0;
+            }
+          }
+        };
+        source.connect(micScriptProcessor);
+        micScriptProcessor.connect(micAudioContext.destination);
 
         micDataArray = new Uint8Array(micAnalyserNode.frequencyBinCount);
         startMicVUMeterLoop();
         updateMicBadge('ready', '🎙️ Live Mic Stream Active');
         return true;
       } catch (err) {
-        console.warn("[MicStream] getUserMedia permission prompt or error:", err);
+        console.warn("[MicStream] getUserMedia notice:", err);
         updateMicBadge('ready', '⚠️ Click to Grant Mic Access');
         return false;
       }
@@ -4184,7 +4299,16 @@
 
       const ttsToggle = document.getElementById('ttsEnabledToggle');
       const hwToggle = document.getElementById('hardwareAudioToggle');
-      const clean = text.replace(/[*_#]/g, '').trim();
+      const clean = text
+        .replace(/\[[A-Za-z0-9_: -]+\]/g, ' ')
+        .replace(/\*{2,}([^*]+)\*{2,}/g, '$1')
+        .replace(/\*[^*]+\*/g, ' ')
+        .replace(/\([^)]+\)/g, ' ')
+        .replace(/[*_#`>~]/g, '')
+        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+        .replace(/[•★☆✓✔➔➡➜✨🤖👀❤️💖🐾]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
       const currentEmo = (expressionLabel ? expressionLabel.textContent : 'happy').toLowerCase().trim();
 
       // Trigger PC / Physical Hardware Speaker TTS if selected
@@ -4513,6 +4637,15 @@
     }
 
     renderSchematic();
+
+    // Auto-arm Live Listening on first user interaction with page
+    window.addEventListener('click', () => {
+      if (!micMediaStream && isHandsFreeListening) {
+        requestMicStreamAccess().then(() => {
+          startListeningTurn();
+        });
+      }
+    }, { once: true });
   </script>
 </body>
 </html>

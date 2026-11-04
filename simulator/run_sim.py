@@ -694,6 +694,10 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         with worker._lock:
             res = worker.last_res
             act = worker.last_action
+            sound_event = None
+            if act and act.sound:
+                sound_event = act.sound
+                act.sound = None  # One-shot consumption so sound only emits once
 
         self._send_json({
             "active": worker.active,
@@ -713,7 +717,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "gaze_y": act.gaze_y if act else r.eyes.left_eye.gaze_y,
             "pan": act.target_pan if act else r.motion.current_pan,
             "tilt": act.target_tilt if act else r.motion.current_tilt,
-            "sound": act.sound if act else None,
+            "sound": sound_event,
             "gesture": act.gesture if act else None,
             "speech_message": act.speech_message if act else None,
             "inner_thought": act.inner_thought if act else None,

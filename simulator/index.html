@@ -1936,7 +1936,11 @@
           if (rover.speed > 0) {
             rover.x -= Math.sin(rad) * 3;
             rover.y += Math.cos(rad) * 3;
-            playWallESound('bump');
+            if (!rover._bumpAlertFired) {
+              rover._bumpAlertFired = true;
+              playWallESound('bump');
+              setTimeout(() => { rover._bumpAlertFired = false; }, 1500);
+            }
             if (rover.autoMode && autoState !== 'OBSTACLE_AVOID') {
               autoState = 'OBSTACLE_AVOID';
               autoTimer = 35;
@@ -2965,10 +2969,9 @@
           showArenaToast("👀 Alpha spotted Akhil! Greeting...", "#38bdf8");
         }
 
-        if (state.sound && state.sound !== lastPlayedVisionSound) {
+        if (state.sound && (state.sound !== lastPlayedVisionSound || state.state !== companionState)) {
           playWallESound(state.sound);
           lastPlayedVisionSound = state.sound;
-          setTimeout(() => { lastPlayedVisionSound = null; }, 2000);
         }
 
         companionState = state.state;
@@ -2983,13 +2986,13 @@
           }
           if (companionState !== 'searching') {
             showArenaToast("🌀 User left view! Alpha searching...", "#c084fc");
-            if (state.sound && state.sound !== lastPlayedVisionSound) {
+            if (state.sound && (state.sound !== lastPlayedVisionSound || state.state !== companionState)) {
               playWallESound(state.sound);
               lastPlayedVisionSound = state.sound;
-              setTimeout(() => { lastPlayedVisionSound = null; }, 2000);
             }
           }
         } else if (state.state === 'disappointed') {
+          lastPlayedVisionSound = null;
           setEyeExpression('sad', false);
           if (gazeLabel) gazeLabel.textContent = "USER ABSENT. WAITING...";
           if (emotionBadge) {
@@ -2997,6 +3000,7 @@
             emotionBadge.style.color = "#94a3b8";
           }
         } else {
+          lastPlayedVisionSound = null;
           setEyeExpression('idle', false);
           if (gazeLabel) gazeLabel.textContent = "GAZE: IDLE";
           if (emotionBadge) {

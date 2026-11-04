@@ -303,11 +303,11 @@ class AlphaBehaviorEngine:
                     sound_to_play = "alpha_voice"
                     self.last_voice_clip_time = now
                     self.last_sound_time = now
-                elif now - self.last_sound_time > 2.0:
+                elif now - self.last_sound_time > 45.0:
                     sound_to_play = "curious"
                     self.last_sound_time = now
 
-                if now - self.last_gesture_time > 2.0:
+                if now - self.last_gesture_time > 15.0:
                     gesture_to_run = "curious_tilt"
                     self.last_gesture_time = now
 
@@ -347,11 +347,9 @@ class AlphaBehaviorEngine:
                     emo = Emotion.SURPRISED
                     self.last_startle_time = now
 
-                    if just_startled or (now - self.last_sound_time > 2.0):
+                    if just_startled:
                         sound_to_play = "alert"
                         self.last_sound_time = now
-
-                    if just_startled or (now - self.last_gesture_time > 2.0):
                         gesture_to_run = "alert_recoil"
                         self.last_gesture_time = now
 
@@ -378,11 +376,9 @@ class AlphaBehaviorEngine:
                     emo = Emotion.EXCITED
                     self.last_smile_time = now
 
-                    if just_smiled or (now - self.last_sound_time > 2.0):
+                    if just_smiled:
                         sound_to_play = "excited"
                         self.last_sound_time = now
-
-                    if just_smiled or (now - self.last_gesture_time > 2.0):
                         gesture_to_run = "excited_wiggle"
                         self.last_gesture_time = now
 
@@ -415,11 +411,9 @@ class AlphaBehaviorEngine:
                         self.bonding_start_time = now
                         trigger_wink = True
 
-                    if just_bonded or (now - self.last_sound_time > 2.5):
+                    if just_bonded:
                         sound_to_play = "love"
                         self.last_sound_time = now
-
-                    if just_bonded or (now - self.last_gesture_time > 2.5):
                         gesture_to_run = "head_pet_reaction"
                         self.last_gesture_time = now
 
@@ -464,7 +458,9 @@ class AlphaBehaviorEngine:
                         else:
                             speech_msg = self._generate_offline_organism_reaction("companion_idle", stim)["speech"]
                             self.last_speech_time = now
-                        sound_to_play = "curious"
+                        if now - self.last_sound_time > 30.0:
+                            sound_to_play = "curious"
+                            self.last_sound_time = now
                         emo = Emotion.CURIOUS
 
             if pending_emotion:
@@ -500,11 +496,9 @@ class AlphaBehaviorEngine:
             self.current_state = BehaviorState.SEARCHING
             emo = Emotion.CONFUSED
 
-            if just_searching or (now - self.last_search_sound_time > 3.0):
+            if just_searching:
                 sound_to_play = "confused"
                 self.last_search_sound_time = now
-
-            if just_searching or (now - self.last_gesture_time > 3.0):
                 gesture_to_run = "confused_wobble"
                 self.last_gesture_time = now
 

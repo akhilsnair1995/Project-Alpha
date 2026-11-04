@@ -96,16 +96,81 @@ class MotionController:
         """Expressive affirmative nod."""
         orig_tilt = self.current_tilt
         for _ in range(repeats):
-            self.set_head_pose(self.current_pan, orig_tilt + 20)
-            time.sleep(0.15)
-            self.set_head_pose(self.current_pan, orig_tilt - 10)
-            time.sleep(0.15)
+            self.set_head_pose(self.current_pan, orig_tilt + 18)
+            time.sleep(0.12)
+            self.set_head_pose(self.current_pan, orig_tilt - 8)
+            time.sleep(0.12)
         self.set_head_pose(self.current_pan, orig_tilt)
 
     def curious_tilt(self) -> None:
         """Expressive Wall-E curious head tilt."""
         self.set_head_pose(self.current_pan + 15, self.current_tilt + 18)
+        time.sleep(0.25)
+
+    def head_shake(self, repeats: int = 2) -> None:
+        """Expressive side-to-side head shake (disagreement / confusion)."""
+        orig_pan = self.current_pan
+        for _ in range(repeats):
+            self.set_head_pose(orig_pan - 20, self.current_tilt)
+            time.sleep(0.12)
+            self.set_head_pose(orig_pan + 20, self.current_tilt)
+            time.sleep(0.12)
+        self.set_head_pose(orig_pan, self.current_tilt)
+
+    def excited_wiggle(self) -> None:
+        """Joyful rapid wiggle and double nod."""
+        orig_pan = self.current_pan
+        orig_tilt = self.current_tilt
+        for offset in [-12, 12, -12, 12, 0]:
+            self.set_head_pose(orig_pan + offset, orig_tilt + 12)
+            time.sleep(0.08)
+        self.set_head_pose(orig_pan, orig_tilt)
+
+    def alert_recoil(self) -> None:
+        """Startled sudden head snap up and center."""
+        self.set_head_pose(0.0, 25.0)
         time.sleep(0.2)
+
+    def sad_droop(self) -> None:
+        """Slow melancholic head droop down."""
+        self.set_head_pose(self.current_pan, -22.0)
+        time.sleep(0.3)
+
+    def confused_wobble(self) -> None:
+        """Quizzical asymmetrical head wobble."""
+        orig_pan = self.current_pan
+        orig_tilt = self.current_tilt
+        self.set_head_pose(orig_pan + 18, orig_tilt - 10)
+        time.sleep(0.15)
+        self.set_head_pose(orig_pan - 14, orig_tilt + 15)
+        time.sleep(0.2)
+        self.set_head_pose(orig_pan, orig_tilt)
+
+    def head_pet_reaction(self) -> None:
+        """Loving reaction when head touch sensor is triggered or pet."""
+        self.set_head_pose(self.current_pan, 22.0)
+        time.sleep(0.2)
+        self.nod(repeats=1)
+
+    def express_emotion(self, emotion_str: str) -> None:
+        """Triggers appropriate physical head gesture matching an emotion."""
+        emo = str(emotion_str).lower().replace("emotion.", "")
+        if emo in ("happy", "idle"):
+            self.nod(repeats=1)
+        elif emo == "curious":
+            self.curious_tilt()
+        elif emo == "excited":
+            self.excited_wiggle()
+        elif emo in ("alert", "surprised"):
+            self.alert_recoil()
+        elif emo == "sad":
+            self.sad_droop()
+        elif emo == "confused":
+            self.confused_wobble()
+        elif emo == "love":
+            self.head_pet_reaction()
+        elif emo in ("angry", "skeptical", "squint"):
+            self.head_shake(repeats=1)
 
     # =========================================================================
     # Crawler Locomotion & Table-Edge Safety

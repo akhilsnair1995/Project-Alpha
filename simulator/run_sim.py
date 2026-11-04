@@ -1,7 +1,8 @@
 """
 Project Alpha: Live Simulator Server & Cognitive Streaming Backend.
 Serves the digital twin simulator and streams live SQLite memory,
-Gemini 2.5 / Local Gemma AI brain responses, and continuous learning updates over REST APIs.
+dual-eye expressions, procedural Wall-E audio, Text-to-Speech (TTS),
+and Gemini 2.5 / Local Gemma AI brain responses over REST APIs.
 """
 
 import os
@@ -19,6 +20,7 @@ if PROJECT_ROOT not in sys.path:
 
 from main import AlphaRobot
 from core.eye_animator import Emotion
+from core.voice_engine import WallESoundSynthesizer
 
 PORT = 8085
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -29,11 +31,11 @@ robot = None
 def get_robot() -> AlphaRobot:
     global robot
     if robot is None:
-        robot = AlphaRobot()
+        robot = AlphaRobot(voice_enabled=True)
     return robot
 
 class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
-    """Serves static simulator files and handles live AI & memory streaming endpoints."""
+    """Serves static simulator files and handles live AI, expression & audio endpoints."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
@@ -47,10 +49,18 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/status":
+        path = parsed.path
+
+        if path == "/api/status":
             self._handle_status()
-        elif parsed.path == "/api/memory":
+        elif path == "/api/memory":
             self._handle_memory()
+        elif path == "/api/expression":
+            self._handle_get_expression()
+        elif path == "/api/sound_presets":
+            self._handle_sound_presets()
+        elif path.startswith("/api/audio/"):
+            self._handle_audio_stream(path)
         else:
             super().do_GET()
 
@@ -65,6 +75,12 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/chat":
             self._handle_chat(data)
+        elif parsed.path == "/api/expression":
+            self._handle_set_expression(data)
+        elif parsed.path == "/api/sound":
+            self._handle_play_sound(data)
+        elif parsed.path == "/api/speak":
+            self._handle_speak(data)
         elif parsed.path == "/api/inspect_frame":
             self._handle_inspect_frame(data)
         elif parsed.path == "/api/sight_object":
@@ -89,11 +105,14 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         objects = r.db.find_objects("")
         self._send_json({
             "status": "online" if r.brain.is_online() else "offline",
-            "brain_name": "Google Gemini 3.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)",
+            "brain_name": "Google Gemini 2.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)",
             "facts_count": len(facts),
             "objects_count": len(objects),
             "emotion": r.eyes.left_eye.current_emotion.value,
-            "battery_volts": 7.85
+            "gaze_x": r.eyes.left_eye.gaze_x,
+            "gaze_y": r.eyes.left_eye.gaze_y,
+            "battery_volts": 7.85,
+            "voice_enabled": r.voice.voice_enabled
         })
 
     def _handle_memory(self):
@@ -105,6 +124,92 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "chat_history": r.db.get_recent_chat(limit=10)
         })
 
+    def _handle_get_expression(self):
+        r = get_robot()
+        self._send_json(r.eyes.get_state())
+
+    def _handle_set_expression(self, data: dict):
+        r = get_robot()
+        emo_str = data.get("emotion")
+        if emo_str:
+            emo = Emotion.from_str(emo_str)
+            r.eyes.set_emotion(emo)
+            if data.get("gesture", True):
+                r.motion.express_emotion(emo)
+
+        if "gaze_x" in data and "gaze_y" in data:
+            r.eyes.set_gaze(float(data["gaze_x"]), float(data["gaze_y"]))
+
+        if data.get("blink", False):
+            r.eyes.blink()
+
+        if data.get("wink", False):
+            r.eyes.wink()
+
+        if data.get("play_sound", False) and emo_str:
+            sound_map = {
+                "happy": "happy", "curious": "curious", "alert": "alert",
+                "excited": "excited", "love": "love", "sad": "sad",
+                "confused": "confused", "wink": "wink", "sleep": "shutdown",
+                "angry": "angry"
+            }
+            snd = sound_map.get(emo_str.lower(), "happy")
+            r.voice.play_sound(snd)
+
+        self._send_json({
+            "status": "success",
+            "current_state": r.eyes.get_state()
+        })
+
+    def _handle_play_sound(self, data: dict):
+        r = get_robot()
+        snd_name = data.get("sound", "happy")
+        r.voice.play_sound(snd_name)
+        self._send_json({"status": "playing", "sound": snd_name})
+
+    def _handle_speak(self, data: dict):
+        r = get_robot()
+        text = data.get("text", "")
+        emo_str = data.get("emotion", "happy")
+        emo = Emotion.from_str(emo_str)
+        with_chirp = data.get("with_chirp", True)
+
+        r.eyes.set_emotion(emo)
+        r.motion.express_emotion(emo)
+        r.voice.speak(text, emotion=emo, with_chirp=with_chirp)
+        self._send_json({"status": "spoken", "text": text, "emotion": emo.value})
+
+    def _handle_sound_presets(self):
+        presets = [
+            {"id": "startup", "label": "Startup Chime", "icon": "🎵"},
+            {"id": "happy", "label": "Happy Chirp", "icon": "😊"},
+            {"id": "curious", "label": "Curious Trill", "icon": "❓"},
+            {"id": "excited", "label": "Excited Fanfare", "icon": "⚡"},
+            {"id": "alert", "label": "Alert Siren", "icon": "🚨"},
+            {"id": "love", "label": "Love Hum", "icon": "💖"},
+            {"id": "sad", "label": "Sad Whimper", "icon": "😢"},
+            {"id": "bump", "label": "Bump Squeak", "icon": "💥"},
+            {"id": "wink", "label": "Wink Twinkle", "icon": "😉"},
+            {"id": "confused", "label": "Confused Warble", "icon": "🌀"},
+            {"id": "shutdown", "label": "Power Down", "icon": "💤"},
+        ]
+        self._send_json({"presets": presets})
+
+    def _handle_audio_stream(self, path: str):
+        """Generates and serves procedural WAV audio directly to browser."""
+        sound_name = path.replace("/api/audio/", "").replace(".wav", "").lower()
+        try:
+            wav_bytes = WallESoundSynthesizer.generate_sound(sound_name)
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/wav")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(wav_bytes)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(wav_bytes)
+        except Exception as e:
+            self.send_error(500, f"Error generating sound: {e}")
+
     def _handle_chat(self, data: dict):
         user_msg = data.get("message", "").strip()
         if not user_msg:
@@ -112,15 +217,26 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         r = get_robot()
-        # Set eyes to analyzing while processing
         r.eyes.set_emotion(Emotion.ANALYZING)
-        reply = r.brain.chat(user_msg)
-        r.eyes.set_emotion(Emotion.HAPPY)
+        chat_res = r.brain.chat_with_emotion(user_msg)
+
+        reply = chat_res["reply"]
+        emo = chat_res["emotion"]
+        sound_cue = chat_res.get("sound_cue", "happy")
+
+        # Update robot eyes and motion
+        r.eyes.set_emotion(emo)
+        r.motion.express_emotion(emo)
+
+        # Optionally speak on PC/Hardware speaker if requested
+        if data.get("speak_hardware", False):
+            r.voice.speak(reply, emotion=emo, with_chirp=True)
 
         self._send_json({
             "reply": reply,
-            "emotion": r.eyes.left_eye.current_emotion.value,
-            "brain_type": "gemini" if r.brain.is_online() else "local_gemma",
+            "emotion": emo.value,
+            "sound_cue": sound_cue,
+            "brain_type": chat_res.get("brain_type", "gemini"),
             "facts": r.db.get_user_facts(limit=15),
             "observations": r.db.get_recent_observations(limit=5)
         })
@@ -132,7 +248,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         room_name = data.get("room", "Work Desk")
         if "," in b64_data:
             b64_data = b64_data.split(",", 1)[1]
-        
+
         try:
             image_bytes = base64.b64decode(b64_data)
             r.eyes.set_emotion(Emotion.ANALYZING)
@@ -160,6 +276,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         )
 
         r.eyes.set_emotion(Emotion.CURIOUS)
+        r.motion.curious_tilt()
         self._send_json({
             "status": "recorded",
             "sighting": sighting,
@@ -169,7 +286,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_toggle_brain(self, data: dict):
         r = get_robot()
         target_mode = data.get("mode", "toggle")
-        
+
         if target_mode == "offline":
             r.brain.client = None
         elif target_mode == "online":
@@ -183,7 +300,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         mode_name = "online" if r.brain.is_online() else "offline"
         self._send_json({
             "mode": mode_name,
-            "brain_name": "Google Gemini 3.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)"
+            "brain_name": "Google Gemini 2.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)"
         })
 
 def main():

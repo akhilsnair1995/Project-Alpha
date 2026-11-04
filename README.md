@@ -11,20 +11,20 @@ Project Alpha is a physical desktop robot companion inspired by Wall-E. It featu
                       │             PROJECT ALPHA               │
                       └────────────────────┬────────────────────┘
                                            │
-         ┌──────────────────┬──────────────┴─────┬──────────────────┐
-         ▼                  ▼                    ▼                  ▼
-  [Vision Cortex]   [Dual-Eye Engine]    [Knowledge Graph]   [Motion & Kinematics]
-  • OpenCV Face     • 2x 1.28" GC9A01    • SQLite Onboard    • Pan/Tilt Servos
-  • ArUco Docking   • Expressive Pupils  • User Fact Memory  • Crawler Tracks
-  • Scene Novelty   • Blink & Winks      • Episodic Logs     • Table Cliff IR
-         │                  │                    │                  │
-         └──────────────────┼────────────────────┴──────────────────┘
-                            ▼
-              ┌───────────────────────────┐
-              │     HYBRID BRAIN CORE     │
-              │  Online: Gemini 2.5 Flash │
-              │  Offline: Local Gemma GGUF│
-              └───────────────────────────┘
+         ┌──────────────────┬──────────────┼──────────────────┬──────────────────┐
+         ▼                  ▼              ▼                  ▼                  ▼
+  [Vision Cortex]   [Dual-Eye Engine] [Voice Cortex]   [Knowledge Graph]  [Motion & Kinematics]
+  • OpenCV Face     • 2x 1.28" GC9A01 • Wall-E Chirps  • SQLite Onboard   • Pan/Tilt Servos
+  • ArUco Docking   • 16 Expressions  • SAPI5/TTS      • User Fact Memory • Crawler Tracks
+  • Scene Novelty   • Blink & Winks   • Soundboard     • Episodic Logs    • Table Cliff IR
+         │                  │              │                  │                  │
+         └──────────────────┴──────────────┼──────────────────┴──────────────────┘
+                                           ▼
+                             ┌───────────────────────────┐
+                             │     HYBRID BRAIN CORE     │
+                             │  Online: Gemini 2.5 Flash │
+                             │  Offline: Local Gemma GGUF│
+                             └───────────────────────────┘
 ```
 
 ---
@@ -35,9 +35,10 @@ Project Alpha is a physical desktop robot companion inspired by Wall-E. It featu
 ├── core/
 │   ├── config.py              # Pin assignments, thresholds, and paths
 │   ├── database.py            # SQLite knowledge graph & user memory manager
-│   ├── eye_animator.py        # Dual 1.28" LCD (GC9A01) procedural animation engine
-│   ├── gemini_brain.py        # Gemini 2.5 multimodal agent with memory extraction
-│   ├── motion_controller.py   # MG90S neck servos & DRV8833 crawler track driver
+│   ├── eye_animator.py        # Dual 1.28" LCD (GC9A01) procedural 16-expression engine
+│   ├── voice_engine.py        # Procedural Wall-E sound synthesizer & cross-platform TTS
+│   ├── gemini_brain.py        # Gemini 2.5 multimodal agent with emotional expression parsing
+│   ├── motion_controller.py   # MG90S neck servos, DRV8833 tracks & emotional body gestures
 │   └── vision_pipeline.py     # Face detection, ArUco dock homing & scene analysis
 ├── hardware/
 │   ├── BOM.md                 # Complete Bill of Materials
@@ -49,10 +50,13 @@ Project Alpha is a physical desktop robot companion inspired by Wall-E. It featu
 │       └── walle_charging_dock_cutsheet.svg     # 1:1 scale dock laser cut blueprint
 ├── simulator/
 │   ├── index.html             # Interactive Digital Twin browser simulator
-│   └── run_sim.py             # Python HTTP server launcher for simulator
+│   └── run_sim.py             # Python HTTP server launcher with REST & audio streaming
 ├── tests/
-│   └── test_database.py       # Unit tests for SQLite memory engine
-├── data/snapshots/            # Exported renders of eye emotional states
+│   ├── test_database.py       # Unit tests for SQLite memory engine
+│   ├── test_learning.py       # Unit tests for continuous fact & spatial learning
+│   ├── test_expressions.py    # Unit tests for 16 eye expressions & gaze clamping
+│   └── test_voice.py          # Unit tests for procedural sound synthesis & TTS
+├── data/snapshots/            # Exported renders of all 16 eye emotional states
 ├── main.py                    # Main daemon entrypoint (CLI chat & autonomous loop)
 └── requirements.txt           # Python dependencies
 ```
@@ -69,31 +73,34 @@ pip install -r requirements.txt
 ```
 
 ### 2. Export & Preview Dual-Eye Expressions
-Generate PNG renders of the dual eyes across all 9 emotional states (`happy`, `curious`, `wink`, `sleepy`, `skeptical`, `surprised`, `analyzing`, `offline`):
+Generate PNG renders of the dual eyes across all 16 emotional states (`idle`, `happy`, `curious`, `squint`, `wink`, `sad`, `sleepy`, `surprised`, `alert`, `analyzing`, `excited`, `love`, `angry`, `confused`, `skeptical`, `offline`):
 ```bash
 python main.py --preview-eyes
 ```
 Renders are saved in `data/snapshots/`.
 
-### 3. Interactive Chat & Continuous Memory Test
-Chat with Alpha in terminal to test its memory, fact-learning engine, and personality:
+### 3. Interactive Chat with Voice & Continuous Memory
+Chat with Alpha in terminal to test its voice synthesis, emotional expressions, memory, and personality:
 ```bash
-python main.py --cli
+python main.py --cli --voice
 ```
 * Type `facts` to see what Alpha currently remembers about you in SQLite.
 * Type `history` to view recent conversational turns.
-* Type `eyes curious` or `eyes wink` to switch expressions.
+* Type `eyes excited` or `eyes love` to switch expressions and trigger expressive head gestures.
+* Type `sound happy`, `sound alert`, or `sound startup` to play procedural Wall-E chimes.
+* Type `voice on` / `voice off` to toggle spoken speech.
 
 ### 4. Run the Digital Twin & Cognitive Web Simulator
-Launch the full digital twin featuring tabletop kinematics, live SQLite memory tables, laptop camera face tracking, and multimodal Gemini vision:
+Launch the full digital twin featuring tabletop kinematics, live SQLite memory tables, laptop camera face tracking, procedural Wall-E audio synthesizer, and multimodal Gemini vision:
 ```bash
 python simulator/run_sim.py
 ```
 Open `http://localhost:8085` in your browser. Key capabilities included:
 * **Tabletop Roam Arena**: Tank drive kinematics, TCRT5000 cliff edge protection, ToF laser raycasting, and draggable objects (`CUBE`, `CUP`, `KEYS`, `BOOK`) with automatic proximity sighting into SQLite.
-* **Dual GC9A01 LCD Screens**: Expressive procedural eyes reflecting 9 emotional states and live eyelid kinematics.
-* **Laptop Webcam (Alpha Eye)**: Uses your laptop's camera to emulate Alpha's nose-bridge camera. Tracks your face in real-time to steer the neck pan/tilt servos and gaze, and provides a **"Show & Tell (Gemini Vision)"** button to inspect objects in front of you.
-* **Live Speech & Voice Cortex**: Chat with Alpha via text or microphone (Web Speech API). Features Wall-E voice TTS playback and automatic personal fact extraction.
+* **Dual GC9A01 LCD Screens (16 Expressions)**: Expressive procedural eyes reflecting 16 emotional states, interactive 2D gaze trackpad, and auto-blink.
+* **Wall-E Sound Synthesizer & Soundboard**: 12 procedural sound trigger buttons (`Startup`, `Happy`, `Curious`, `Excited`, `Alert`, `Love`, `Sad`, `Bump`, `Wink`, `Confused`, `Angry`, `Power Down`) powered by Web Audio API and Python backend WAV generation.
+* **Live Speech & Voice Cortex**: Chat with Alpha via text or microphone (Web Speech API). Features Wall-E voice pitch modulation (1.35x), speed control, real-time dynamic audio spectrum visualizer, and talking eye pupil pulsing.
+* **Wired Simulation Reactions**: Table cliff edge triggers alert siren and recoil; obstacle bump triggers impact squeak; proximity triggers curious chirps; head petting triggers purrs and loving tilts!
 * **AI Brain & SQLite Memory Inspector**: Real-time dashboard of persistent SQLite tables (`UserFacts`, `DiscoveredObjects` with moved tracking, `RoamingObservations`, and `ChatHistory`) with live cloud/offline toggle.
 
 ### 5. Run Unit Tests

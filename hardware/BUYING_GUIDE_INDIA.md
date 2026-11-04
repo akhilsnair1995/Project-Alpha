@@ -70,6 +70,7 @@ This guide provides verified product purchase links from top robotics and electr
 
 | Item | Qty | Verified Indian Store Link | Est. Price (INR) |
 | :--- | :---: | :--- | :---: |
+| **M3 Internal L-Angle Brackets / Corner Braces** *(15x15mm or 20x20mm, M3 holes)* | **1 pack (10–20 pcs)** | • [Amazon.in 20mm Stainless Steel L Corner Braces (Pack of 10-20)](https://www.amazon.in/s?k=20mm+corner+brace+stainless+steel)<br>• [Robu.in Mechanical Brackets & L-Clamps](https://robu.in/product-category/diy-kits-parts/mechanical-components/brackets/) | ₹149 – ₹199 |
 | **M3 Brass Standoffs Assortment Kit (Male-Female & Female-Female)** | 1 box | • [Amazon.in M3 Brass Standoffs & Screws Kit (120+ pcs)](https://www.amazon.in/s?k=M3+brass+standoffs+kit) | ₹399 |
 | **M2 / M2.5 Screws & Nuts Kit (For Pi & Sensors)** | 1 box | • [Amazon.in M2 M2.5 Screw Assortment](https://www.amazon.in/s?k=M2+M2.5+screw+assortment+kit) | ₹299 |
 | **Dupont Jumper Wires (40 pcs F-to-F & 40 pcs M-to-F)** | 2 ribbons | • [Robu.in 20cm Dupont Jumper Ribbon Wires](https://robu.in/product/40-pcs-20cm-female-to-female-jumper-cable/) | ₹120 |

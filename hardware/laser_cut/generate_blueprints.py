@@ -73,19 +73,19 @@ def generate_chassis_sheet():
     y1 = 25
     sheet.text(col1_x + 50, y1 - 4, "1. BOTTOM BASE (100x100mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col1_x, y1, 100, 100, 2, 2, CUT)
-    # 4x M3 Corner Standoff Holes (5mm offset from edges -> 90x90mm pattern)
-    for dx, dy in [(5, 5), (95, 5), (5, 95), (95, 95)]:
+    # 4x M3 Corner Standoff & Internal L-Bracket Holes (8mm offset -> 84x84mm pattern)
+    for dx, dy in [(8, 8), (92, 8), (8, 92), (92, 92)]:
         sheet.circle(col1_x + dx, y1 + dy, 1.6, CUT)
     # 2x Underside Charging Contactor Holes (30mm apart, 20mm from rear edge)
     sheet.circle(col1_x + 35, y1 + 80, 1.6, CUT)
     sheet.circle(col1_x + 65, y1 + 80, 1.6, CUT)
     sheet.text(col1_x + 35, y1 + 74, "(+)", 2.2, ENGRAVE, "middle")
     sheet.text(col1_x + 65, y1 + 74, "(-)", 2.2, ENGRAVE, "middle")
-    # 2x Cliff Sensor Slots on Front (TCRT5000)
-    sheet.rect(col1_x + 8, y1 + 4, 10, 6, 1, 1, CUT)
-    sheet.circle(col1_x + 13, y1 + 14, 1.6, CUT)
-    sheet.rect(col1_x + 82, y1 + 4, 10, 6, 1, 1, CUT)
-    sheet.circle(col1_x + 87, y1 + 14, 1.6, CUT)
+    # 2x Cliff Sensor Slots on Front (TCRT5000) - shifted inward to guarantee ample wall margin
+    sheet.rect(col1_x + 18, y1 + 5, 10, 6, 1, 1, CUT)
+    sheet.circle(col1_x + 23, y1 + 16, 1.6, CUT)
+    sheet.rect(col1_x + 72, y1 + 5, 10, 6, 1, 1, CUT)
+    sheet.circle(col1_x + 77, y1 + 16, 1.6, CUT)
     # 4x Track Mounting Slots
     sheet.rect(col1_x + 20, y1 + 35, 12, 3.2, 1.6, 1.6, CUT)
     sheet.rect(col1_x + 20, y1 + 55, 12, 3.2, 1.6, 1.6, CUT)
@@ -96,8 +96,8 @@ def generate_chassis_sheet():
     y2 = 155
     sheet.text(col1_x + 50, y2 - 4, "2. FRONT CHEST (100x85mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col1_x, y2, 100, 85, 2, 2, CUT)
-    # 4x M3 Corner Standoff Holes
-    for dx, dy in [(5, 5), (95, 5), (5, 80), (95, 80)]:
+    # 4x M3 Corner Internal L-Bracket Holes (8mm from horizontal/vertical edges)
+    for dx, dy in [(8, 8), (92, 8), (8, 77), (92, 77)]:
         sheet.circle(col1_x + dx, y2 + dy, 1.6, CUT)
     # VL53L0X ToF Laser Distance Sensor Window (18mm x 8mm)
     sheet.rect(col1_x + 41, y2 + 25, 18, 8, 1, 1, CUT)
@@ -119,23 +119,25 @@ def generate_chassis_sheet():
     # 3. TOP ACCESS LID (100mm x 100mm)
     sheet.text(col2_x + 50, y1 - 4, "3. TOP LID (100x100mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col2_x, y1, 100, 100, 2, 2, CUT)
-    for dx, dy in [(5, 5), (95, 5), (5, 95), (95, 95)]:
+    # 4x M3 Corner Standoff & Internal L-Bracket Holes
+    for dx, dy in [(8, 8), (92, 8), (8, 92), (92, 92)]:
         sheet.circle(col2_x + dx, y1 + dy, 1.6, CUT)
-    # Pan Servo Cutout (MG90S: 23.5mm x 12.5mm centered at x=50, y=50)
-    sheet.rect(col2_x + 38.25, y1 + 43.75, 23.5, 12.5, 0.5, 0.5, CUT)
-    sheet.circle(col2_x + 36, y1 + 50, 1.1, CUT)
-    sheet.circle(col2_x + 64, y1 + 50, 1.1, CUT)
+    # Pan Servo Cutout (MG90S: 23.0mm x 12.5mm centered at x=50, y=50)
+    sheet.rect(col2_x + 38.5, y1 + 43.75, 23.0, 12.5, 0.5, 0.5, CUT)
+    sheet.circle(col2_x + 36.0, y1 + 50, 1.1, CUT)
+    sheet.circle(col2_x + 64.0, y1 + 50, 1.1, CUT)
     # Dual Cable Pass-Through Slots
     sheet.rect(col2_x + 20, y1 + 75, 22, 6, 2, 2, CUT)
     sheet.rect(col2_x + 58, y1 + 75, 22, 6, 2, 2, CUT)
     # TTP223 Touch Sensor Mounting Holes
-    sheet.circle(col2_x + 82, y1 + 25, 1.1, CUT)
-    sheet.circle(col2_x + 92, y1 + 25, 1.1, CUT)
+    sheet.circle(col2_x + 78, y1 + 25, 1.1, CUT)
+    sheet.circle(col2_x + 88, y1 + 25, 1.1, CUT)
 
     # 4. REAR ACCESS PLATE (100mm x 85mm)
     sheet.text(col2_x + 50, y2 - 4, "4. REAR ACCESS (100x85mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col2_x, y2, 100, 85, 2, 2, CUT)
-    for dx, dy in [(5, 5), (95, 5), (5, 80), (95, 80)]:
+    # 4x M3 Corner Internal L-Bracket Holes
+    for dx, dy in [(8, 8), (92, 8), (8, 77), (92, 77)]:
         sheet.circle(col2_x + dx, y2 + dy, 1.6, CUT)
     # KCD11 Power Switch Cutout (19.5mm x 13.0mm)
     sheet.rect(col2_x + 18, y2 + 25, 19.5, 13.0, 0.5, 0.5, CUT)
@@ -157,9 +159,10 @@ def generate_chassis_sheet():
     # 5. SEPARATOR MID-DECK TRAY (94mm x 94mm)
     sheet.text(col3_x + 47, y1 - 4, "5. MID-DECK TRAY (94x94mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col3_x, y1, 94, 94, 2, 2, CUT)
-    for dx, dy in [(2, 2), (92, 2), (2, 92), (92, 92)]:
+    # 4x M3 Corner Standoff Pass-Through Holes (5mm offset -> 84x84mm pattern matching base, 3.4mm edge margin)
+    for dx, dy in [(5, 5), (89, 5), (5, 89), (89, 89)]:
         sheet.circle(col3_x + dx, y1 + dy, 1.6, CUT)
-    # 4x M2.5 Raspberry Pi 4 Holes (58mm x 49mm centered at x=47, y=47)
+    # 4x M2.5 Raspberry Pi 4/5 Holes (58mm x 49mm centered at x=47, y=47)
     pi_cx, pi_cy = col3_x + 47, y1 + 47
     for dx in [-29, 29]:
         for dy in [-24.5, 24.5]:
@@ -169,7 +172,8 @@ def generate_chassis_sheet():
     # 6. LEFT SIDE PANEL - ACTIVE COOLING FAN MOUNT (94mm x 85mm)
     sheet.text(col3_x + 47, y2 - 4, "6. LEFT SIDE - 40mm FAN MOUNT (94x85mm)", 2.4, ENGRAVE, "middle")
     sheet.rect(col3_x, y2, 94, 85, 2, 2, CUT)
-    for dx, dy in [(2, 5), (92, 5), (2, 80), (92, 80)]:
+    # 4x M3 Corner Internal L-Bracket Holes (6mm from vertical edge, 8mm from horizontal, 4.4mm margin)
+    for dx, dy in [(6, 8), (88, 8), (6, 77), (88, 77)]:
         sheet.circle(col3_x + dx, y2 + dy, 1.6, CUT)
     # 40mm Fan Air Intake Aperture (36mm diameter circle centered at x=47, y=42.5)
     fan_cx = col3_x + 47
@@ -189,7 +193,8 @@ def generate_chassis_sheet():
     # 7. RIGHT SIDE VENT PANEL (94mm x 85mm)
     sheet.text(col4_x + 47, y1 - 4, "7. RIGHT SIDE (94x85mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col4_x, y1, 94, 85, 2, 2, CUT)
-    for dx, dy in [(2, 5), (92, 5), (2, 80), (92, 80)]:
+    # 4x M3 Corner Internal L-Bracket Holes (4.4mm margin)
+    for dx, dy in [(6, 8), (88, 8), (6, 77), (88, 77)]:
         sheet.circle(col4_x + dx, y1 + dy, 1.6, CUT)
     for col in range(5):
         for row in range(4):
@@ -199,26 +204,21 @@ def generate_chassis_sheet():
     y_hfront = 125
     sheet.text(col4_x + 48, y_hfront - 4, "8. HEAD FRONT (96x46mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col4_x, y_hfront, 96, 46, 3, 3, CUT)
-    # 4x M2.5 Corner Standoff Holes (spacing 88mm x 38mm)
-    for dx, dy in [(4, 4), (92, 4), (4, 42), (92, 42)]:
+    # 4x M2.5 Corner Standoff Holes (spacing 86mm x 36mm, 5mm offset from edges)
+    for dx, dy in [(5, 5), (91, 5), (5, 41), (91, 41)]:
         sheet.circle(col4_x + dx, y_hfront + dy, 1.35, CUT)
-    # Left Eye Cutout (33.5mm diameter) + 4x M2 screw holes
-    lex, ley = col4_x + 23, y_hfront + 23
+    # Left Eye Cutout (33.5mm diameter press-fit / bezel socket for 1.28" GC9A01 LCD)
+    lex, ley = col4_x + 24, y_hfront + 23
     sheet.circle(lex, ley, 16.75, CUT)
-    for dx in [-18, 18]:
-        for dy in [-18, 18]:
-            sheet.circle(lex + dx, ley + dy, 1.1, CUT)
-    # Right Eye Cutout (33.5mm diameter) + 4x M2 screw holes
-    rex, rey = col4_x + 73, y_hfront + 23
+    # Right Eye Cutout (33.5mm diameter press-fit / bezel socket for 1.28" GC9A01 LCD)
+    rex, rey = col4_x + 72, y_hfront + 23
     sheet.circle(rex, rey, 16.75, CUT)
-    for dx in [-18, 18]:
-        for dy in [-18, 18]:
-            sheet.circle(rex + dx, rey + dy, 1.1, CUT)
-    # Center Bridge Camera Lens Cutout (9.0mm diameter) + 4x M2 camera PCB holes
+    # Center Bridge Camera Lens Cutout (9.0mm diameter)
     cam_x, cam_y = col4_x + 48, y_hfront + 23
     sheet.circle(cam_x, cam_y, 4.5, CUT)
-    for dx in [-10.5, 10.5]:
-        for dy in [-6.25, 6.25]:
+    # 4x M2 Camera PCB Mounting Holes in Portrait Pattern (dx=±6.25mm, dy=±10.5mm -> 2.77mm clean clearance to eyes!)
+    for dx in [-6.25, 6.25]:
+        for dy in [-10.5, 10.5]:
             sheet.circle(cam_x + dx, cam_y + dy, 1.1, CUT)
 
     # 9. HEAD REAR ENCLOSURE PLATE (96mm x 46mm)
@@ -226,7 +226,7 @@ def generate_chassis_sheet():
     sheet.text(col4_x + 48, y_hrear - 4, "9. HEAD REAR (96x46mm)", 2.6, ENGRAVE, "middle")
     sheet.rect(col4_x, y_hrear, 96, 46, 3, 3, CUT)
     # 4x M2.5 Corner Standoff Holes (matches Front Plate exactly!)
-    for dx, dy in [(4, 4), (92, 4), (4, 42), (92, 42)]:
+    for dx, dy in [(5, 5), (91, 5), (5, 41), (91, 41)]:
         sheet.circle(col4_x + dx, y_hrear + dy, 1.35, CUT)
     # Central Cable Exit Slot (26mm x 12mm)
     sheet.rect(col4_x + 35, y_hrear + 17, 26, 12, 2, 2, CUT)
@@ -244,18 +244,45 @@ def generate_chassis_sheet():
     sheet.text(col5_x + 48, y_htop - 4, "10. HEAD TOP (96x25mm)", 2.4, ENGRAVE, "middle")
     sheet.rect(col5_x, y_htop, 96, 25, 2, 2, CUT)
     # 4x M2.5 Corner Screw Holes
-    for dx, dy in [(4, 4), (92, 4), (4, 21), (92, 21)]:
+    for dx, dy in [(5, 5), (91, 5), (5, 20), (91, 20)]:
         sheet.circle(col5_x + dx, y_htop + dy, 1.35, CUT)
-    # Visor Mount Holes (Left & Right Visor screws)
-    sheet.circle(col5_x + 23, y_htop + 12.5, 1.1, CUT)
-    sheet.circle(col5_x + 73, y_htop + 12.5, 1.1, CUT)
+    # Visor Mount Holes (Left & Right Visor screws aligned over eyes)
+    sheet.circle(col5_x + 24, y_htop + 12.5, 1.1, CUT)
+    sheet.circle(col5_x + 72, y_htop + 12.5, 1.1, CUT)
 
     # 11. HEAD BOTTOM COVER (96mm x 25mm)
     y_hbot = 68
     sheet.text(col5_x + 48, y_hbot - 4, "11. HEAD BOTTOM (96x25mm)", 2.4, ENGRAVE, "middle")
     sheet.rect(col5_x, y_hbot, 96, 25, 2, 2, CUT)
-    for dx, dy in [(4, 4), (92, 4), (4, 21), (92, 21)]:
+    for dx, dy in [(5, 5), (91, 5), (5, 20), (91, 20)]:
         sheet.circle(col5_x + dx, y_hbot + dy, 1.35, CUT)
+    # Cable Pass-Through Slot & Tilt Pivot Mount
+    sheet.rect(col5_x + 35, y_hbot + 7.5, 26, 10, 2, 2, CUT)
+
+    # 12 & 13. HEAD LEFT & RIGHT SIDE COVERS (25mm x 46mm each)
+    y_hsides = 115
+    sheet.text(col5_x + 48, y_hsides - 4, "12 & 13. HEAD SIDES (25x46mm)", 2.3, ENGRAVE, "middle")
+    # Left Side Cover
+    sheet.rect(col5_x + 10, y_hsides, 25, 46, 2, 2, CUT)
+    sheet.circle(col5_x + 22.5, y_hsides + 5, 1.35, CUT)
+    sheet.circle(col5_x + 22.5, y_hsides + 41, 1.35, CUT)
+    # Right Side Cover
+    sheet.rect(col5_x + 55, y_hsides, 25, 46, 2, 2, CUT)
+    sheet.circle(col5_x + 67.5, y_hsides + 5, 1.35, CUT)
+    sheet.circle(col5_x + 67.5, y_hsides + 41, 1.35, CUT)
+
+    # 14 & 15. DUAL EYEBROW VISORS (45mm x 18mm each)
+    y_vis = 185
+    sheet.text(col5_x + 48, y_vis - 4, "14 & 15. DUAL VISORS (45x18mm)", 2.4, ENGRAVE, "middle")
+    sheet.rect(col5_x, y_vis, 45, 18, 2, 2, CUT)
+    sheet.circle(col5_x + 10, y_vis + 13, 1.1, CUT)
+    sheet.circle(col5_x + 35, y_vis + 13, 1.1, CUT)
+
+    sheet.rect(col5_x + 51, y_vis, 45, 18, 2, 2, CUT)
+    sheet.circle(col5_x + 61, y_vis + 13, 1.1, CUT)
+    sheet.circle(col5_x + 86, y_vis + 13, 1.1, CUT)
+
+    return sheet.to_svg()
     # Cable Pass-Through Slot & Tilt Pivot Mount
     sheet.rect(col5_x + 35, y_hbot + 7.5, 26, 10, 2, 2, CUT)
 

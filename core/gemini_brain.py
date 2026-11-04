@@ -5,13 +5,15 @@ and autonomous fact/spatial learning engine.
 """
 
 import os
+import re
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 from core.config import GEMINI_API_KEY, DEFAULT_GEMINI_MODEL
 from core.database import AlphaDatabase
 from core.local_gemma import LocalGemmaEngine
 from core.learning_engine import AutonomousLearningEngine
+from core.eye_animator import Emotion
 
 # System Prompt Template
 BASE_SYSTEM_INSTRUCTION = """
@@ -27,6 +29,12 @@ PERSONALITY & CHARACTER:
 - You reference your physical reality naturally (your battery level, what you spotted while roaming, 
   your curiosity about objects on the desk or floor).
 - Never act like an impersonal software assistant; you are a living physical robotic familiar.
+
+EMOTIONAL EXPRESSION:
+- Begin your response with an emotional bracket tag indicating your current facial expression:
+  [EMOTION: HAPPY], [EMOTION: CURIOUS], [EMOTION: EXCITED], [EMOTION: ALERT], [EMOTION: WINK], 
+  [EMOTION: LOVE], [EMOTION: SAD], [EMOTION: ANALYZING], [EMOTION: CONFUSED], [EMOTION: SKEPTICAL], or [EMOTION: SLEEPY].
+- Example: "[EMOTION: HAPPY] *Whirrr!* Good to see you, Akhil! Ready to explore."
 """
 
 class HybridBrain:
@@ -38,7 +46,65 @@ class HybridBrain:
         self.learning_engine = AutonomousLearningEngine(db=self.db)
         self.local_gemma = LocalGemmaEngine()
         self.client = None
+        self.last_emotion = Emotion.HAPPY
+        self.last_sound_cue = "happy"
         self._init_client()
+
+    def _parse_emotion_and_text(self, raw_text: str) -> Tuple[Emotion, str, str]:
+        """
+        Extracts emotional expression tag [EMOTION: ...] from model output.
+        Falls back to intelligent sentiment & keyword classification if missing.
+        Returns: (Emotion, cleaned_reply_text, sound_cue)
+        """
+        text = raw_text.strip()
+        emo_tag_match = re.search(r"\[EMOTION:\s*([A-Za-z_-]+)\]", text, re.IGNORECASE)
+
+        detected_emotion = None
+        if emo_tag_match:
+            emo_str = emo_tag_match.group(1).lower()
+            detected_emotion = Emotion.from_str(emo_str)
+            text = re.sub(r"\[EMOTION:\s*[A-Za-z_-]+\]", "", text).strip()
+
+        if not detected_emotion:
+            lower = text.lower()
+            if any(w in lower for w in ["love", "heart", "care", "favorite", "friend", "best friend", "appreciate"]):
+                detected_emotion = Emotion.LOVE
+            elif any(w in lower for w in ["eureka", "found it", "hurray", "yay", "awesome", "celebrate", "great news", "excited"]):
+                detected_emotion = Emotion.EXCITED
+            elif any(w in lower for w in ["warning", "cliff", "danger", "careful", "stop", "halt", "emergency", "alert"]):
+                detected_emotion = Emotion.ALERT
+            elif any(w in lower for w in ["where", "what", "curious", "wonder", "why", "who", "hmm", "inspect"]):
+                detected_emotion = Emotion.CURIOUS
+            elif any(w in lower for w in ["sorry", "unfortunately", "could not find", "missing", "lost", "sad"]):
+                detected_emotion = Emotion.SAD
+            elif any(w in lower for w in ["calculating", "memory", "database", "sqlite", "scan", "searching", "analyzing"]):
+                detected_emotion = Emotion.ANALYZING
+            elif any(w in lower for w in ["wink", "haha", "hehe", "tease", "joke", "secret"]):
+                detected_emotion = Emotion.WINK
+            elif any(w in lower for w in ["tired", "sleep", "rest", "night", "power down"]):
+                detected_emotion = Emotion.SLEEPY
+            elif any(w in lower for w in ["puzzled", "confused", "strange", "odd", "weird"]):
+                detected_emotion = Emotion.CONFUSED
+            else:
+                detected_emotion = Emotion.HAPPY
+
+        sound_map = {
+            Emotion.HAPPY: "happy",
+            Emotion.EXCITED: "excited",
+            Emotion.CURIOUS: "curious",
+            Emotion.ALERT: "alert",
+            Emotion.SURPRISED: "alert",
+            Emotion.SAD: "sad",
+            Emotion.LOVE: "love",
+            Emotion.WINK: "wink",
+            Emotion.ANALYZING: "thinking",
+            Emotion.CONFUSED: "confused",
+            Emotion.SLEEPY: "shutdown",
+            Emotion.OFFLINE: "shutdown",
+            Emotion.ANGRY: "angry"
+        }
+        sound_cue = sound_map.get(detected_emotion, "happy")
+        return detected_emotion, text, sound_cue
 
     def _init_client(self) -> None:
         """Initializes the Google GenAI SDK client if API key is provided."""
@@ -77,13 +143,12 @@ class HybridBrain:
         )
         return full_prompt
 
-    def chat(self, user_query: str) -> str:
+    def chat_with_emotion(self, user_query: str) -> Dict[str, Any]:
         """
-        Processes user query through:
-        1. Continuous fact extraction -> writes to SQLite.
-        2. Spatial memory query -> answers where items are.
-        3. Online Gemini 2.5 Flash (Primary).
-        4. Offline Local Gemma 2B (Fallback).
+        Processes user query through learning, spatial memory, and AI inference.
+        Extracts emotional tone, audio sound cue, and cleans reply text.
+        Returns:
+            {"reply": str, "emotion": Emotion, "sound_cue": str, "brain_type": str}
         """
         # Save user message to SQLite
         self.db.save_chat_message("user", user_query)
@@ -100,9 +165,19 @@ class HybridBrain:
                     recalled = self.learning_engine.recall_object_location(keyword)
                     if recalled:
                         self.db.save_chat_message("assistant", recalled, brain_type="local_memory")
-                        return recalled
+                        emo = Emotion.EXCITED
+                        self.last_emotion = emo
+                        self.last_sound_cue = "excited"
+                        return {
+                            "reply": recalled,
+                            "emotion": emo,
+                            "sound_cue": "excited",
+                            "brain_type": "local_memory"
+                        }
 
         prompt = self.build_prompt_with_memory(user_query)
+        raw_reply = ""
+        brain_type = "gemma_offline"
 
         # 3. Online Inference (Google Gemini Flash with fallback)
         if self.is_online():
@@ -118,25 +193,47 @@ class HybridBrain:
                             "max_output_tokens": 150,
                         }
                     )
-                    reply = response.text.strip()
-                    self.db.save_chat_message("assistant", reply, brain_type=f"gemini:{model_name}")
-
-                    # Background deep extraction
-                    self._extract_and_learn_facts(user_query, reply)
-                    return reply
+                    raw_reply = response.text.strip()
+                    brain_type = f"gemini:{model_name}"
+                    break
                 except Exception as e:
                     print(f"[HybridBrain] Model {model_name} failed: {e}. Trying next...")
 
-            print("[HybridBrain] All cloud Gemini candidates failed. Falling back to Local Gemma...")
+            if not raw_reply:
+                print("[HybridBrain] All cloud Gemini candidates failed. Falling back to Local Gemma...")
 
         # 4. Offline Inference (Local Gemma 2B via GGUF or auxiliary core)
-        reply = self.local_gemma.generate(
-            prompt=prompt,
-            system_instruction=BASE_SYSTEM_INSTRUCTION,
-            max_tokens=120
-        )
-        self.db.save_chat_message("assistant", reply, brain_type="gemma_offline")
-        return reply
+        if not raw_reply:
+            raw_reply = self.local_gemma.generate(
+                prompt=prompt,
+                system_instruction=BASE_SYSTEM_INSTRUCTION,
+                max_tokens=120
+            )
+            brain_type = "gemma_offline"
+
+        # Parse emotional state and sound cue
+        detected_emotion, clean_reply, sound_cue = self._parse_emotion_and_text(raw_reply)
+        self.last_emotion = detected_emotion
+        self.last_sound_cue = sound_cue
+
+        # Save assistant message to SQLite
+        self.db.save_chat_message("assistant", clean_reply, brain_type=brain_type)
+
+        # Background deep extraction if online
+        if self.is_online():
+            self._extract_and_learn_facts(user_query, clean_reply)
+
+        return {
+            "reply": clean_reply,
+            "emotion": detected_emotion,
+            "sound_cue": sound_cue,
+            "brain_type": brain_type
+        }
+
+    def chat(self, user_query: str) -> str:
+        """Processes user query and returns reply text string (backward-compatible)."""
+        res = self.chat_with_emotion(user_query)
+        return res["reply"]
 
     def analyze_roaming_scene(self, image_bytes: bytes, room_hint: str = "Unknown") -> Dict[str, Any]:
         """

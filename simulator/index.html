@@ -484,6 +484,110 @@
       background: #1e293b;
     }
 
+    /* Dynamic Expression Pupil Themes */
+    .pupil.emo-happy { background: radial-gradient(circle at 40% 40%, #bae6fd 0%, #0284c7 60%, #0369a1 100%); box-shadow: 0 0 16px rgba(56, 189, 248, 0.9); }
+    .pupil.emo-curious { background: radial-gradient(circle at 40% 40%, #cffafe 0%, #06b6d4 60%, #0e7490 100%); box-shadow: 0 0 14px rgba(6, 182, 212, 0.8); }
+    .pupil.emo-squint { background: radial-gradient(circle at 40% 40%, #bae6fd 0%, #0284c7 60%, #0369a1 100%); }
+    .pupil.emo-sad { background: radial-gradient(circle at 40% 40%, #cbd5e1 0%, #64748b 60%, #334155 100%); box-shadow: 0 0 8px rgba(100, 116, 139, 0.5); }
+    .pupil.emo-sleep, .pupil.emo-sleepy { background: radial-gradient(circle at 40% 40%, #fef08a 0%, #d97706 60%, #78350f 100%); box-shadow: 0 0 8px rgba(217, 119, 6, 0.5); opacity: 0.65; }
+    .pupil.emo-alert { background: radial-gradient(circle at 40% 40%, #ffffff 0%, #38bdf8 45%, #0284c7 100%); box-shadow: 0 0 24px rgba(56, 189, 248, 1), 0 0 40px rgba(56, 189, 248, 0.6); animation: alertPulse 0.5s infinite alternate; }
+    .pupil.emo-analyzing { background: radial-gradient(circle at 40% 40%, #f3e8ff 0%, #a855f7 55%, #6b21a8 100%); box-shadow: 0 0 20px rgba(168, 85, 247, 0.9); }
+    .pupil.emo-excited { background: radial-gradient(circle at 40% 40%, #fef08a 0%, #38bdf8 55%, #0284c7 100%); box-shadow: 0 0 22px rgba(56, 189, 248, 1), 0 0 35px rgba(250, 204, 21, 0.7); animation: excitedBounce 0.4s infinite alternate; }
+    .pupil.emo-love { background: radial-gradient(circle at 40% 40%, #ffe4e6 0%, #f43f5e 55%, #be123c 100%); box-shadow: 0 0 22px rgba(244, 63, 94, 0.95); animation: lovePulse 0.8s infinite alternate; }
+    .pupil.emo-angry { background: radial-gradient(circle at 40% 40%, #fecaca 0%, #ef4444 60%, #991b1b 100%); box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); }
+    .pupil.emo-confused { background: radial-gradient(circle at 40% 40%, #fed7aa 0%, #f97316 60%, #c2410c 100%); box-shadow: 0 0 14px rgba(249, 115, 22, 0.75); }
+    .pupil.emo-skeptical { background: radial-gradient(circle at 40% 40%, #bae6fd 0%, #0284c7 60%, #0369a1 100%); }
+    .pupil.emo-offline { background: radial-gradient(circle at 40% 40%, #fef08a 0%, #d97706 60%, #78350f 100%); box-shadow: 0 0 8px rgba(217, 119, 6, 0.4); opacity: 0.55; }
+
+    @keyframes alertPulse { from { transform: translate(-50%, -50%) scale(1.35); } to { transform: translate(-50%, -50%) scale(1.45); } }
+    @keyframes excitedBounce { from { transform: translate(-50%, -55%) scale(1.22); } to { transform: translate(-50%, -45%) scale(1.28); } }
+    @keyframes lovePulse { from { transform: translate(-50%, -50%) scale(1.15); } to { transform: translate(-50%, -50%) scale(1.25); } }
+
+    /* Interactive Gaze Touchpad */
+    .gaze-pad {
+      width: 100%;
+      height: 64px;
+      background: #080c14;
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      position: relative;
+      cursor: crosshair;
+      user-select: none;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .gaze-pad:hover { border-color: var(--accent-blue); }
+    .gaze-reticle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px var(--accent-blue);
+      pointer-events: none;
+      top: 50%;
+      left: 50%;
+      transition: background 0.1s;
+    }
+    .gaze-crosshair-h {
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      background: rgba(51, 65, 85, 0.5);
+      top: 50%;
+      left: 0;
+      pointer-events: none;
+    }
+    .gaze-crosshair-v {
+      position: absolute;
+      height: 100%;
+      width: 1px;
+      background: rgba(51, 65, 85, 0.5);
+      top: 0;
+      left: 50%;
+      pointer-events: none;
+    }
+
+    /* Soundboard Grid */
+    .soundboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .sound-btn {
+      background: #111827;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 6px 4px;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      user-select: none;
+    }
+    .sound-btn:hover {
+      background: #1e293b;
+      border-color: var(--accent-cyan);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .sound-btn:active {
+      background: var(--accent-cyan);
+      color: #0f172a;
+      transform: scale(0.95);
+    }
+
     /* Autonomous Mode Switch */
     .switch-wrap {
       display: flex;
@@ -871,15 +975,69 @@
               </div>
             </div>
 
-            <!-- Eye Expression Presets -->
-            <div class="preset-chip-group">
-              <button class="chip-btn active" onclick="setEyeExpression('curious')">Curious</button>
-              <button class="chip-btn" onclick="setEyeExpression('happy')">Happy</button>
-              <button class="chip-btn" onclick="setEyeExpression('squint')">Squint</button>
-              <button class="chip-btn" onclick="setEyeExpression('wink')">Wink</button>
-              <button class="chip-btn" onclick="setEyeExpression('sad')">Sad</button>
-              <button class="chip-btn" onclick="setEyeExpression('sleep')">Sleep</button>
-              <button class="chip-btn" onclick="setEyeExpression('alert')">Alert ⚠</button>
+            <!-- Complete Eye Expression Presets -->
+            <div class="preset-chip-group" id="expressionPresetsGroup">
+              <button class="chip-btn active" data-expr="curious" onclick="setEyeExpression('curious')">Curious</button>
+              <button class="chip-btn" data-expr="happy" onclick="setEyeExpression('happy')">Happy</button>
+              <button class="chip-btn" data-expr="excited" onclick="setEyeExpression('excited')">Excited ✨</button>
+              <button class="chip-btn" data-expr="love" onclick="setEyeExpression('love')">Love 💖</button>
+              <button class="chip-btn" data-expr="wink" onclick="setEyeExpression('wink')">Wink 😉</button>
+              <button class="chip-btn" data-expr="squint" onclick="setEyeExpression('squint')">Squint</button>
+              <button class="chip-btn" data-expr="alert" onclick="setEyeExpression('alert')">Alert 🚨</button>
+              <button class="chip-btn" data-expr="analyzing" onclick="setEyeExpression('analyzing')">Analyzing ⚡</button>
+              <button class="chip-btn" data-expr="confused" onclick="setEyeExpression('confused')">Confused ❓</button>
+              <button class="chip-btn" data-expr="skeptical" onclick="setEyeExpression('skeptical')">Skeptical 🤨</button>
+              <button class="chip-btn" data-expr="sad" onclick="setEyeExpression('sad')">Sad 😢</button>
+              <button class="chip-btn" data-expr="sleep" onclick="setEyeExpression('sleep')">Sleep 💤</button>
+              <button class="chip-btn" data-expr="angry" onclick="setEyeExpression('angry')">Angry 💢</button>
+              <button class="chip-btn" data-expr="offline" onclick="setEyeExpression('offline')">Offline 🛑</button>
+            </div>
+
+            <!-- Blink & Gaze Controls -->
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.72rem; color: var(--text-muted);">
+              <span>INTERACTIVE GAZE & BLINK</span>
+              <div style="display: flex; gap: 6px;">
+                <button class="chip-btn" style="padding: 2px 8px;" onclick="triggerBlink()">Blink</button>
+                <button class="chip-btn" style="padding: 2px 8px;" onclick="triggerDoubleBlink()">Double</button>
+                <button class="chip-btn" style="padding: 2px 8px;" onclick="triggerWink()">Wink</button>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.7rem;">
+                  <input type="checkbox" id="autoBlinkToggle" checked> Auto
+                </label>
+              </div>
+            </div>
+
+            <!-- Gaze 2D Trackpad -->
+            <div class="gaze-pad" id="gazePad" title="Drag or hover here to direct Alpha's gaze and neck in real-time">
+              <div class="gaze-crosshair-h"></div>
+              <div class="gaze-crosshair-v"></div>
+              <div class="gaze-reticle" id="gazeReticle"></div>
+              <span style="font-size: 0.65rem; color: #475569; pointer-events: none; z-index: 1;">DRAG TO STEER GAZE & SERVOS</span>
+            </div>
+          </div>
+
+          <!-- Wall-E Sound Effects Soundboard Card -->
+          <div class="panel" style="padding: 12px 16px;">
+            <div class="eyes-header" style="margin-bottom: 6px;">
+              <span>🔊 WALL-E SOUND SYNTHESIZER & EFFECTS</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="checkbox" id="hardwareAudioToggle"> 📻 PC/Hardware Audio
+                </label>
+              </div>
+            </div>
+            <div class="soundboard-grid">
+              <button class="sound-btn" onclick="playWallESound('startup')">🎵 Startup</button>
+              <button class="sound-btn" onclick="playWallESound('happy')">😊 Happy</button>
+              <button class="sound-btn" onclick="playWallESound('curious')">❓ Curious</button>
+              <button class="sound-btn" onclick="playWallESound('excited')">⚡ Excited</button>
+              <button class="sound-btn" onclick="playWallESound('alert')">🚨 Alert</button>
+              <button class="sound-btn" onclick="playWallESound('love')">💖 Love</button>
+              <button class="sound-btn" onclick="playWallESound('sad')">😢 Sad</button>
+              <button class="sound-btn" onclick="playWallESound('bump')">💥 Bump</button>
+              <button class="sound-btn" onclick="playWallESound('wink')">😉 Wink</button>
+              <button class="sound-btn" onclick="playWallESound('confused')">🌀 Confused</button>
+              <button class="sound-btn" onclick="playWallESound('angry')">💢 Angry</button>
+              <button class="sound-btn" onclick="playWallESound('shutdown')">💤 Power Down</button>
             </div>
           </div>
 
@@ -992,6 +1150,17 @@
                   <input type="checkbox" id="ttsEnabledToggle" checked> 🔊 Voice
                 </label>
               </div>
+            </div>
+
+            <!-- Real-time Audio Spectrum Visualizer -->
+            <canvas id="audioVisualizerCanvas" height="30" width="320" style="width: 100%; height: 30px; border-radius: 4px; background: #080c14; margin-bottom: 8px; border: 1px solid #1e293b; display: block;"></canvas>
+
+            <!-- Speech Modulation Controls -->
+            <div style="display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.68rem; color: var(--text-muted); align-items: center;">
+              <span style="white-space: nowrap;">Wall-E Pitch:</span>
+              <input type="range" id="voicePitchSlider" min="0.8" max="1.8" step="0.05" value="1.35" style="flex: 1; accent-color: var(--accent-blue);" title="Robotic Pitch (1.35x = Wall-E friendly)">
+              <span style="white-space: nowrap;">Speed:</span>
+              <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 65px; accent-color: var(--accent-blue);" title="Speaking Rate">
             </div>
 
             <div class="chat-card" style="height: 250px;">
@@ -1447,9 +1616,11 @@
 
     // Petting reaction
     function simulateHeadPet() {
-      setEyeExpression('happy');
+      playWallESound('love');
+      setEyeExpression('love');
       document.getElementById('tiltSlider').value = 25;
       updateServos();
+      showArenaToast('Alpha loved that head pet! 💕', '#ec4899');
       setTimeout(() => {
         document.getElementById('panSlider').value = 20;
         updateServos();
@@ -1504,6 +1675,7 @@
           autoState = 'CLIFF_REVERSE';
           autoTimer = 40; // reverse for ~0.65s (40 frames)
           autoTurnDir = rover.cliffL ? 1 : -1; // spin away from detected edge
+          playWallESound('alert');
           setEyeExpression('alert');
           setBrainBadge('CLIFF ESCAPE ⚠', '#7f1d1d', '#fca5a5');
           setMotorAction('reverse');
@@ -1636,11 +1808,17 @@
       if (rover.cliffL || rover.cliffR) {
         cliffStatusBadge.className = 'status-pill status-danger';
         cliffStatusBadge.textContent = 'CLIFF DROP DETECTED! (HALT)';
+        if (!rover._cliffAlertFired) {
+          rover._cliffAlertFired = true;
+          playWallESound('alert');
+          setEyeExpression('alert', true);
+        }
         // Non-autonomous safeguard: stop immediately if human drives off table
         if (!rover.autoMode && rover.speed > 0) {
           setMotorAction('stop');
         }
       } else {
+        rover._cliffAlertFired = false;
         cliffStatusBadge.className = 'status-pill status-ok';
         cliffStatusBadge.textContent = 'Cliff Sensors: OK';
       }
@@ -1689,6 +1867,7 @@
           if (rover.speed > 0) {
             rover.x -= Math.sin(rad) * 3;
             rover.y += Math.cos(rad) * 3;
+            playWallESound('bump');
             if (rover.autoMode && autoState !== 'OBSTACLE_AVOID') {
               autoState = 'OBSTACLE_AVOID';
               autoTimer = 35;
@@ -1746,7 +1925,7 @@
     }
     requestAnimationFrame(gameLoop);
 
-    // --- DUAL GC9A01 DISPLAY EXPRESSIONS ---
+    // --- DUAL GC9A01 DISPLAY EXPRESSIONS & SOUND SYSTEM ---
     const leftPupil = document.getElementById('leftPupil');
     const rightPupil = document.getElementById('rightPupil');
     const leftEyelidTop = document.getElementById('leftEyelidTop');
@@ -1755,30 +1934,276 @@
     const rightEyelidBottom = document.getElementById('rightEyelidBottom');
     const expressionLabel = document.getElementById('currentExpressionLabel');
 
-    function setEyeExpression(expr) {
-      document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
-      expressionLabel.textContent = expr.toUpperCase();
+    // Web Audio API Procedural Synthesizer for Wall-E Sound Effects
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
 
-      // Reset eyelids
+    function playWallESound(name) {
+      startAudioVisualizerAnimation(1500);
+
+      // Trigger PC/Hardware audio backend if option is checked
+      const hwToggle = document.getElementById('hardwareAudioToggle');
+      if (hwToggle && hwToggle.checked) {
+        fetch('/api/sound', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sound: name })
+        }).catch(e => console.warn(e));
+      }
+
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.3, now);
+        masterGain.connect(ctx.destination);
+
+        const s = String(name).toLowerCase().trim();
+
+        if (s === 'startup' || s === 'boot') {
+          // Ascending triad chords: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
+          const freqs = [523.25, 659.25, 783.99, 1046.50];
+          freqs.forEach((f, idx) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, now + idx * 0.16);
+            g.gain.setValueAtTime(0, now + idx * 0.16);
+            g.gain.linearRampToValueAtTime(0.35, now + idx * 0.16 + 0.04);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.7);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start(now + idx * 0.16);
+            osc.stop(now + idx * 0.16 + 0.75);
+          });
+        } else if (s === 'shutdown' || s === 'powerdown' || s === 'sleep') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(780, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.8);
+          g.gain.setValueAtTime(0.3, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.85);
+        } else if (s === 'happy' || s === 'joy') {
+          // Cheerful two-tone rising chirp
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(750, now);
+          osc.frequency.exponentialRampToValueAtTime(1350, now + 0.14);
+          osc.frequency.setValueAtTime(1100, now + 0.15);
+          osc.frequency.exponentialRampToValueAtTime(1700, now + 0.32);
+          g.gain.setValueAtTime(0, now);
+          g.gain.linearRampToValueAtTime(0.4, now + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (s === 'curious' || s === 'question') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(450, now);
+          osc.frequency.exponentialRampToValueAtTime(1100, now + 0.38);
+          g.gain.setValueAtTime(0, now);
+          g.gain.linearRampToValueAtTime(0.38, now + 0.05);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.42);
+        } else if (s === 'alert' || s === 'danger' || s === 'cliff') {
+          // Urgent dual warning siren
+          [0, 0.14, 0.28].forEach(tOffset => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1400, now + tOffset);
+            osc.frequency.setValueAtTime(1050, now + tOffset + 0.06);
+            g.gain.setValueAtTime(0.25, now + tOffset);
+            g.gain.exponentialRampToValueAtTime(0.001, now + tOffset + 0.12);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start(now + tOffset);
+            osc.stop(now + tOffset + 0.13);
+          });
+        } else if (s === 'excited') {
+          const freqs = [659, 830, 987, 1318];
+          freqs.forEach((f, idx) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now + idx * 0.08);
+            g.gain.setValueAtTime(0.35, now + idx * 0.08);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.18);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.2);
+          });
+        } else if (s === 'love' || s === 'purr') {
+          [349.23, 523.25].forEach(f => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now);
+            g.gain.setValueAtTime(0.28, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+            osc.connect(g);
+            g.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.58);
+          });
+        } else if (s === 'sad') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(580, now);
+          osc.frequency.exponentialRampToValueAtTime(260, now + 0.6);
+          g.gain.setValueAtTime(0.3, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.62);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.65);
+        } else if (s === 'bump') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(90, now + 0.25);
+          g.gain.setValueAtTime(0.4, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        } else if (s === 'wink') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1750, now);
+          osc.frequency.exponentialRampToValueAtTime(2200, now + 0.15);
+          g.gain.setValueAtTime(0.3, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else if (s === 'confused') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(360, now);
+          osc.frequency.linearRampToValueAtTime(520, now + 0.18);
+          osc.frequency.linearRampToValueAtTime(290, now + 0.36);
+          g.gain.setValueAtTime(0.3, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (s === 'angry') {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          g.gain.setValueAtTime(0.35, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else {
+          // Default soft blip
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          g.gain.setValueAtTime(0.3, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.13);
+        }
+      } catch(e) {
+        // Fallback: Stream WAV from Python server
+        const audio = new Audio(`/api/audio/${name}.wav`);
+        audio.play().catch(err => {});
+      }
+    }
+
+    // --- COMPLETE EYE EXPRESSION ENGINE ---
+    function setEyeExpression(expr, syncBackend = true) {
+      const e = String(expr).toLowerCase().trim();
+      document.querySelectorAll('#expressionPresetsGroup .chip-btn').forEach(b => {
+        if (b.dataset.expr === e) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      expressionLabel.textContent = e.toUpperCase();
+
+      // Reset eyelids & transforms
       leftEyelidTop.style.height = '0%';
       rightEyelidTop.style.height = '0%';
       leftEyelidBottom.style.height = '0%';
       rightEyelidBottom.style.height = '0%';
+      leftEyelidTop.style.transform = 'none';
+      rightEyelidTop.style.transform = 'none';
+      leftEyelidBottom.style.transform = 'none';
+      rightEyelidBottom.style.transform = 'none';
+
+      // Set pupil themes
+      leftPupil.className = 'pupil emo-' + e;
+      rightPupil.className = 'pupil emo-' + e;
       leftPupil.style.transform = 'translate(-50%, -50%) scale(1)';
       rightPupil.style.transform = 'translate(-50%, -50%) scale(1)';
 
-      switch(expr) {
+      switch(e) {
         case 'happy':
-          leftEyelidBottom.style.height = '40%';
-          rightEyelidBottom.style.height = '40%';
-          leftPupil.style.transform = 'translate(-50%, -60%) scale(1.1)';
-          rightPupil.style.transform = 'translate(-50%, -60%) scale(1.1)';
+          leftEyelidBottom.style.height = '38%';
+          rightEyelidBottom.style.height = '38%';
+          leftPupil.style.transform = 'translate(-50%, -60%) scale(1.15)';
+          rightPupil.style.transform = 'translate(-50%, -60%) scale(1.15)';
+          break;
+        case 'excited':
+          leftEyelidBottom.style.height = '20%';
+          rightEyelidBottom.style.height = '20%';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(1.28)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(1.28)';
+          break;
+        case 'love':
+          leftEyelidBottom.style.height = '32%';
+          rightEyelidBottom.style.height = '32%';
+          leftPupil.style.transform = 'translate(-50%, -55%) scale(1.2)';
+          rightPupil.style.transform = 'translate(-50%, -55%) scale(1.2)';
+          break;
+        case 'curious':
+          leftEyelidTop.style.height = '25%';
+          leftEyelidTop.style.transform = 'rotate(12deg)';
+          rightEyelidTop.style.height = '14%';
+          rightEyelidTop.style.transform = 'rotate(-4deg)';
+          leftPupil.style.transform = 'translate(-38%, -50%) scale(1.05)';
+          rightPupil.style.transform = 'translate(-38%, -50%) scale(1.05)';
           break;
         case 'squint':
-          leftEyelidTop.style.height = '35%';
-          rightEyelidTop.style.height = '35%';
-          leftEyelidBottom.style.height = '35%';
-          rightEyelidBottom.style.height = '35%';
+          leftEyelidTop.style.height = '36%';
+          rightEyelidTop.style.height = '36%';
+          leftEyelidBottom.style.height = '34%';
+          rightEyelidBottom.style.height = '34%';
           break;
         case 'wink':
           leftEyelidTop.style.height = '50%';
@@ -1786,35 +2211,255 @@
           rightPupil.style.transform = 'translate(-40%, -50%) scale(1.2)';
           break;
         case 'sad':
-          leftEyelidTop.style.height = '45%';
-          rightEyelidTop.style.height = '45%';
-          leftPupil.style.transform = 'translate(-50%, -30%) scale(0.9)';
-          rightPupil.style.transform = 'translate(-50%, -30%) scale(0.9)';
+          leftEyelidTop.style.height = '48%';
+          rightEyelidTop.style.height = '48%';
+          leftEyelidTop.style.transform = 'rotate(-10deg)';
+          rightEyelidTop.style.transform = 'rotate(10deg)';
+          leftPupil.style.transform = 'translate(-50%, -35%) scale(0.92)';
+          rightPupil.style.transform = 'translate(-50%, -35%) scale(0.92)';
           break;
         case 'sleep':
+        case 'sleepy':
           leftEyelidTop.style.height = '50%';
           leftEyelidBottom.style.height = '50%';
           rightEyelidTop.style.height = '50%';
           rightEyelidBottom.style.height = '50%';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(0.85)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(0.85)';
           break;
         case 'alert':
-          leftPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
-          rightPupil.style.transform = 'translate(-50%, -50%) scale(1.35)';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(1.42)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(1.42)';
           break;
         case 'analyzing':
           leftEyelidTop.style.height = '20%';
           rightEyelidTop.style.height = '20%';
           leftEyelidBottom.style.height = '20%';
           rightEyelidBottom.style.height = '20%';
-          leftPupil.style.transform = 'translate(-60%, -50%) scale(1.05)';
-          rightPupil.style.transform = 'translate(-40%, -50%) scale(1.05)';
+          leftPupil.style.transform = 'translate(-55%, -50%) scale(1.08)';
+          rightPupil.style.transform = 'translate(-42%, -50%) scale(1.08)';
           break;
-        case 'curious':
+        case 'angry':
+          leftEyelidTop.style.height = '44%';
+          rightEyelidTop.style.height = '44%';
+          leftEyelidTop.style.transform = 'rotate(22deg)';
+          rightEyelidTop.style.transform = 'rotate(-22deg)';
+          leftPupil.style.transform = 'translate(-50%, -46%) scale(1.05)';
+          rightPupil.style.transform = 'translate(-50%, -46%) scale(1.05)';
+          break;
+        case 'confused':
+          leftEyelidTop.style.height = '20%';
+          leftEyelidTop.style.transform = 'rotate(16deg)';
+          rightEyelidTop.style.height = '40%';
+          rightEyelidTop.style.transform = 'rotate(-14deg)';
+          leftPupil.style.transform = 'translate(-45%, -55%) scale(1.22)';
+          rightPupil.style.transform = 'translate(-45%, -45%) scale(0.9)';
+          break;
+        case 'skeptical':
+          rightEyelidTop.style.height = '45%';
+          rightEyelidBottom.style.height = '22%';
+          leftEyelidTop.style.height = '15%';
+          leftEyelidTop.style.transform = 'rotate(10deg)';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(1.05)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(0.95)';
+          break;
+        case 'offline':
+          leftEyelidTop.style.height = '55%';
+          rightEyelidTop.style.height = '55%';
+          leftEyelidBottom.style.height = '25%';
+          rightEyelidBottom.style.height = '25%';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(0.85)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(0.85)';
+          break;
+        case 'idle':
         default:
-          leftPupil.style.transform = 'translate(-40%, -50%) scale(1)';
-          rightPupil.style.transform = 'translate(-40%, -50%) scale(1)';
+          leftPupil.style.transform = 'translate(-50%, -50%) scale(1)';
+          rightPupil.style.transform = 'translate(-50%, -50%) scale(1)';
           break;
       }
+
+      if (syncBackend) {
+        fetch('/api/expression', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emotion: e, gesture: true })
+        }).catch(err => {});
+      }
+    }
+
+    // Interactive Blink Transitions
+    function triggerBlink(duration = 180) {
+      leftEyelidTop.style.height = '50%';
+      leftEyelidBottom.style.height = '50%';
+      rightEyelidTop.style.height = '50%';
+      rightEyelidBottom.style.height = '50%';
+      setTimeout(() => {
+        setEyeExpression(expressionLabel.textContent.toLowerCase(), false);
+      }, duration);
+    }
+
+    function triggerDoubleBlink() {
+      triggerBlink(110);
+      setTimeout(() => triggerBlink(110), 200);
+    }
+
+    function triggerWink(duration = 380) {
+      leftEyelidTop.style.height = '50%';
+      leftEyelidBottom.style.height = '50%';
+      playWallESound('wink');
+      setTimeout(() => {
+        setEyeExpression(expressionLabel.textContent.toLowerCase(), false);
+      }, duration);
+    }
+
+    // Auto-Blink timer
+    let autoBlinkTimer = null;
+    function scheduleNextAutoBlink() {
+      const delay = 3500 + Math.random() * 3200;
+      autoBlinkTimer = setTimeout(() => {
+        const toggle = document.getElementById('autoBlinkToggle');
+        if (toggle && toggle.checked && expressionLabel.textContent.toLowerCase() !== 'sleep') {
+          triggerBlink(160);
+        }
+        scheduleNextAutoBlink();
+      }, delay);
+    }
+    scheduleNextAutoBlink();
+
+    // --- INTERACTIVE GAZE 2D TRACKPAD ---
+    const gazePad = document.getElementById('gazePad');
+    const gazeReticle = document.getElementById('gazeReticle');
+    let isGazeDragging = false;
+    let lastGazeSync = 0;
+
+    function updateGazeFromPad(clientX, clientY) {
+      if (!gazePad || !gazeReticle) return;
+      const rect = gazePad.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const relY = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+      gazeReticle.style.left = relX + 'px';
+      gazeReticle.style.top = relY + 'px';
+
+      // Normalized coordinates: -1.0 to +1.0
+      const normX = ((relX - rect.width / 2) / (rect.width / 2));
+      const normY = ((relY - rect.height / 2) / (rect.height / 2));
+
+      // Move Dual Pupils
+      const pxX = Math.round(normX * 16);
+      const pxY = Math.round(normY * 12);
+      leftPupil.style.transform = `translate(calc(-50% + ${pxX}px), calc(-50% + ${pxY}px)) scale(1.05)`;
+      rightPupil.style.transform = `translate(calc(-50% + ${pxX}px), calc(-50% + ${pxY}px)) scale(1.05)`;
+
+      // Map to Head Servos Pan (-45 to +45) and Tilt (-20 to +25)
+      const targetPan = Math.round(normX * 45);
+      const targetTilt = Math.round(-normY * 25);
+      rover.panAngle = targetPan;
+      rover.tiltAngle = targetTilt;
+      const panSlider = document.getElementById('panSlider');
+      const tiltSlider = document.getElementById('tiltSlider');
+      if (panSlider) panSlider.value = targetPan;
+      if (tiltSlider) tiltSlider.value = targetTilt;
+      updateServos();
+
+      // Debounced sync to Python robot backend
+      const now = Date.now();
+      if (now - lastGazeSync > 140) {
+        lastGazeSync = now;
+        fetch('/api/expression', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gaze_x: normX, gaze_y: normY, gesture: false })
+        }).catch(e => {});
+      }
+    }
+
+    if (gazePad) {
+      gazePad.addEventListener('mousedown', (e) => {
+        isGazeDragging = true;
+        updateGazeFromPad(e.clientX, e.clientY);
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (isGazeDragging) updateGazeFromPad(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', () => { isGazeDragging = false; });
+
+      // Touch events for mobile/tablet screens
+      gazePad.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) updateGazeFromPad(e.touches[0].clientX, e.touches[0].clientY);
+      });
+      gazePad.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) updateGazeFromPad(e.touches[0].clientX, e.touches[0].clientY);
+      });
+    }
+
+    // --- REAL-TIME AUDIO EQUALIZER VISUALIZER ---
+    let isVisualizerActive = false;
+    let visualizerTimer = null;
+    function startAudioVisualizerAnimation(durationMs = 2500) {
+      isVisualizerActive = true;
+      clearTimeout(visualizerTimer);
+      visualizerTimer = setTimeout(() => {
+        isVisualizerActive = false;
+      }, durationMs);
+    }
+
+    function drawAudioVisualizer() {
+      const canvas = document.getElementById('audioVisualizerCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const numBars = 28;
+        const barWidth = Math.floor(w / numBars) - 2;
+        const t = Date.now() * 0.008;
+
+        for (let i = 0; i < numBars; i++) {
+          let barHeight = 2;
+          if (isVisualizerActive) {
+            const wave = Math.sin(t * 1.5 + i * 0.45) * 0.45 + Math.cos(t * 2.2 + i * 0.25) * 0.35 + 0.45;
+            barHeight = Math.max(3, wave * (h - 4));
+          }
+          const x = i * (barWidth + 2);
+          const y = h - barHeight;
+
+          const grad = ctx.createLinearGradient(0, y, 0, h);
+          grad.addColorStop(0, '#38bdf8');
+          grad.addColorStop(1, '#0284c7');
+          ctx.fillStyle = grad;
+          ctx.fillRect(x, y, barWidth, barHeight);
+        }
+      }
+      requestAnimationFrame(drawAudioVisualizer);
+    }
+    requestAnimationFrame(drawAudioVisualizer);
+
+    // Talking Eye Pupil Pulse
+    let talkingInterval = null;
+    function startTalkingPulse() {
+      stopTalkingPulse();
+      startAudioVisualizerAnimation(60000);
+      let phase = 0;
+      talkingInterval = setInterval(() => {
+        phase = (phase + 1) % 4;
+        if (phase === 0) {
+          leftPupil.style.transform = leftPupil.style.transform.replace(/scale\([^)]+\)/, '') + ' scale(1.15)';
+          rightPupil.style.transform = rightPupil.style.transform.replace(/scale\([^)]+\)/, '') + ' scale(1.15)';
+        } else if (phase === 2) {
+          leftPupil.style.transform = leftPupil.style.transform.replace(/scale\([^)]+\)/, '') + ' scale(0.96)';
+          rightPupil.style.transform = rightPupil.style.transform.replace(/scale\([^)]+\)/, '') + ' scale(0.96)';
+        }
+      }, 140);
+    }
+
+    function stopTalkingPulse() {
+      if (talkingInterval) {
+        clearInterval(talkingInterval);
+        talkingInterval = null;
+      }
+      isVisualizerActive = false;
     }
 
     // --- ARENA TOAST NOTIFICATION & PROXIMITY SENSING ---
@@ -2107,39 +2752,80 @@
       input.value = "";
 
       addChatMessage("user", text);
-      setEyeExpression('analyzing');
+      setEyeExpression('analyzing', true);
+      playWallESound('blip');
 
       try {
+        const hwToggle = document.getElementById('hardwareAudioToggle');
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          body: JSON.stringify({ message: text, speak_hardware: hwToggle && hwToggle.checked })
         });
         const data = await res.json();
         if (data.reply) {
           const tag = data.brain_type ? `[${data.brain_type}]` : '';
           addChatMessage("alpha", data.reply, tag);
+
+          const soundCue = data.sound_cue || 'happy';
+          playWallESound(soundCue);
+
+          const emo = data.emotion ? data.emotion.toLowerCase() : 'happy';
+          setEyeExpression(emo, false);
+
           speakText(data.reply);
-          if (data.emotion) setEyeExpression(data.emotion.toLowerCase());
-          else setEyeExpression('happy');
           fetchMemoryData();
         }
       } catch (err) {
         addChatMessage("alpha", "Bzzzzt! Comm error with my brain cortex.");
-        setEyeExpression('sad');
+        setEyeExpression('sad', true);
+        playWallESound('sad');
       }
     }
 
-    function speakText(text) {
+    function speakText(text, onComplete) {
       const ttsToggle = document.getElementById('ttsEnabledToggle');
-      if (!ttsToggle || !ttsToggle.checked) return;
-      if (!window.speechSynthesis) return;
+      const hwToggle = document.getElementById('hardwareAudioToggle');
+
+      // Trigger PC/Hardware TTS if selected
+      if (hwToggle && hwToggle.checked) {
+        fetch('/api/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, emotion: expressionLabel.textContent.toLowerCase() })
+        }).catch(e => console.warn(e));
+      }
+
+      if (!ttsToggle || !ttsToggle.checked) {
+        if (onComplete) onComplete();
+        return;
+      }
+      if (!window.speechSynthesis) {
+        if (onComplete) onComplete();
+        return;
+      }
 
       window.speechSynthesis.cancel();
       const clean = text.replace(/[*_#]/g, '').trim();
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.pitch = 1.35; // Wall-E friendly pitch
-      utterance.rate = 1.05;
+
+      const pitchSlider = document.getElementById('voicePitchSlider');
+      const rateSlider = document.getElementById('voiceRateSlider');
+      utterance.pitch = pitchSlider ? parseFloat(pitchSlider.value) : 1.35;
+      utterance.rate = rateSlider ? parseFloat(rateSlider.value) : 1.05;
+
+      startTalkingPulse();
+      startAudioVisualizerAnimation(clean.length * 85);
+
+      utterance.onend = () => {
+        stopTalkingPulse();
+        if (onComplete) onComplete();
+      };
+      utterance.onerror = () => {
+        stopTalkingPulse();
+        if (onComplete) onComplete();
+      };
+
       window.speechSynthesis.speak(utterance);
     }
 

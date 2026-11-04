@@ -71,6 +71,7 @@ This document contains the complete hardware component list, technical specifica
 | :--- | :--- | :--- | :---: | :--- |
 | **6.1** | **Acrylic Sheets** | 2mm or 3mm thickness, A4 size (Clear, Smoked Black, or Yellow) | 2–3 sheets | Easy to score and cut with an acrylic knife or laser cut. |
 | **6.2** | **Standoff Kit** | M3 Brass/Nylon Standoffs & Screws Assortment (10mm, 15mm, 20mm M-F & F-F) | 1 box | Used for structural corners and stacking the dual-deck trays. |
-| **6.3** | **Board Hardware** | M2.5 Screws, Nuts, and 5mm Spacers | 1 pack | Standard mounting hardware for Raspberry Pi and sensor breakouts. |
-| **6.4** | **Connecting Wires** | 20cm Female-to-Female & Male-to-Female Dupont Jumper Wires (28 AWG) | 1 ribbon | For clean solderless connections between modules. |
-| **6.5** | **CSI Ribbon Cable** | 15-pin to 15-pin (or 22-pin for Zero), 20cm–30cm flexible flat cable | 1 | Connects camera in head to the Pi body. |
+| **6.3** | **Internal L-Angle Brackets** | **90° M3 Corner Braces / L-Brackets** (15mm × 15mm or 20mm × 20mm, M3 holes) | **8–12 pcs** | Fastened inside the body corners. Connects Front, Rear, Left, and Right vertical acrylic walls to the Bottom Base Plate and Top Lid with a clean, modular finish. |
+| **6.4** | **Board Hardware** | M2.5 & M2 Screws, Nuts, and 5mm Spacers | 1 pack | Standard mounting hardware for Raspberry Pi, Camera Module V2, and sensor breakouts. |
+| **6.5** | **Connecting Wires** | 20cm Female-to-Female & Male-to-Female Dupont Jumper Wires (28 AWG) | 1 ribbon | For clean solderless connections between modules. |
+| **6.6** | **CSI Ribbon Cable** | 15-pin to 15-pin (or 22-pin for Zero), 20cm–30cm flexible flat cable | 1 | Connects camera in head to the Pi body. |

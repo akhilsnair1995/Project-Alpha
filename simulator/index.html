@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Alpha - Wall-E Robot Digital Twin & Wiring Simulator</title>
+  <!-- MediaPipe Real-Time Vision & Face Tracking Cortex -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
   <style>
     :root {
       --bg: #0f141c;
@@ -813,6 +816,9 @@
     .arena-toast {
       position: absolute;
       top: 14px;
+      max-width: 85%;
+      text-align: center;
+      white-space: normal;
       left: 50%;
       transform: translateX(-50%);
       background: #0f172a;
@@ -934,13 +940,13 @@
             <div style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px;">
               ACTIVE GPIO BUS TRAFFIC & PIN VOLTAGES
             </div>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 0.72rem; font-family: monospace;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.72rem; font-family: monospace;">
               <div>IN1 (GPIO 6): <b id="pinG6">LOW</b></div>
               <div>IN2 (GPIO 12): <b id="pinG12">LOW</b></div>
               <div>IN3 (GPIO 13): <b id="pinG13">LOW</b></div>
               <div>IN4 (GPIO 16): <b id="pinG16">LOW</b></div>
-              <div>Pan PWM (G25): <b id="pinG25">1500µs</b></div>
-              <div>Tilt PWM (G5): <b id="pinG5">1500µs</b></div>
+              <div>Pan PWM (G25): <b id="pinG25">1500 µs</b></div>
+              <div>Tilt PWM (G5): <b id="pinG5">1500 µs</b></div>
             </div>
           </div>
         </div>
@@ -989,7 +995,7 @@
               <button class="chip-btn" data-expr="skeptical" onclick="setEyeExpression('skeptical')">Skeptical 🤨</button>
               <button class="chip-btn" data-expr="sad" onclick="setEyeExpression('sad')">Sad 😢</button>
               <button class="chip-btn" data-expr="sleep" onclick="setEyeExpression('sleep')">Sleep 💤</button>
-              <button class="chip-btn" data-expr="angry" onclick="setEyeExpression('angry')">Angry 💢</button>
+              <button class="chip-btn" data-expr="angry" onclick="setEyeExpression('angry')">Angry 😡</button>
               <button class="chip-btn" data-expr="offline" onclick="setEyeExpression('offline')">Offline 🛑</button>
             </div>
 
@@ -1026,7 +1032,8 @@
               </div>
             </div>
             <div class="soundboard-grid">
-              <button class="sound-btn" onclick="playWallESound('startup')">🎵 Startup</button>
+              <button class="sound-btn" style="grid-column: span 4; background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(3, 105, 161, 0.32)); border-color: #38bdf8; color: #38bdf8; font-weight: bold; padding: 7px 4px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="playWallESound('alpha_voice')">&#x1F5E3;&#xFE0F; Alpha Voice ("Hello, I'm Alpha. I am your pet.")</button>
+              <button class="sound-btn" onclick="playWallESound('startup')">🚀 Startup</button>
               <button class="sound-btn" onclick="playWallESound('happy')">😊 Happy</button>
               <button class="sound-btn" onclick="playWallESound('curious')">❓ Curious</button>
               <button class="sound-btn" onclick="playWallESound('excited')">⚡ Excited</button>
@@ -1036,8 +1043,8 @@
               <button class="sound-btn" onclick="playWallESound('bump')">💥 Bump</button>
               <button class="sound-btn" onclick="playWallESound('wink')">😉 Wink</button>
               <button class="sound-btn" onclick="playWallESound('confused')">🌀 Confused</button>
-              <button class="sound-btn" onclick="playWallESound('angry')">💢 Angry</button>
-              <button class="sound-btn" onclick="playWallESound('shutdown')">💤 Power Down</button>
+              <button class="sound-btn" onclick="playWallESound('angry')">😡 Angry</button>
+              <button class="sound-btn" onclick="playWallESound('shutdown')">🔌 Power Down</button>
             </div>
           </div>
 
@@ -1106,22 +1113,46 @@
           <div class="panel">
             <div class="panel-title">
               <span>LAPTOP WEBCAM (ALPHA EYE)</span>
-              <span id="camStatusBadge" class="status-pill" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Camera Idle</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span id="camStatusBadge" class="status-pill" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Camera Idle</span>
+                <span id="camEmotionBadge" class="status-pill" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Alpha: Idle</span>
+              </div>
             </div>
 
             <div class="cam-feed-container">
-              <video id="webcamVideo" autoplay playsinline muted></video>
+              <img id="pythonCamStream" src="" alt="Live Stream" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+              <video id="webcamVideo" autoplay playsinline muted style="display: none;"></video>
               <canvas id="webcamCanvas" width="320" height="240"></canvas>
               <div class="cam-hud-overlay">
                 <span id="camGazeLabel">GAZE: IDLE</span>
-                <span id="camFpsLabel">30 FPS</span>
+                <span id="camFpsLabel">0 FPS</span>
               </div>
               <div id="camLaserScan" class="laser-scanner" style="display: none;"></div>
             </div>
 
+            <!-- Companion Behavior Settings Row -->
+            <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); background: #0c1118; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--card-border);">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" id="autoBehaviorToggle" checked> &#x1F916; Reactions
+              </label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 0.68rem; color: var(--text-muted);">Source:</span>
+                <select id="camSourceSelect" onchange="onCamSourceChange()" style="background: #111827; border: 1px solid var(--card-border); color: #38bdf8; padding: 2px 4px; border-radius: 4px; font-size: 0.68rem;">
+                  <option value="python">Direct Laptop Cam (OpenCV)</option>
+                  <option value="browser">In-Browser Webcam (WebRTC)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Organic Neural Cortex Instinct Stream -->
+            <div id="camThoughtPill" style="margin-top: 6px; padding: 5px 8px; font-size: 0.72rem; border-radius: 6px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+              <span style="opacity: 0.9; font-weight: 600;">🧠 Cortex:</span>
+              <span id="camThoughtText" style="color: #cbd5e1; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Consciousness active. Observing desk...</span>
+            </div>
+
             <div style="margin-top: 10px; display: flex; gap: 8px;">
               <button class="ctrl-btn" id="btnToggleCam" style="flex: 1; background: #0369a1; border-color: #0284c7;" onclick="toggleLaptopCamera()">
-                🎥 Start Laptop Camera
+                &#x1F3A5; Start Laptop Camera
               </button>
               <select id="inspectRoomSelect" style="background: #111827; border: 1px solid var(--card-border); color: #fff; padding: 0 8px; border-radius: 6px; font-size: 0.75rem;">
                 <option value="Work Desk">Work Desk</option>
@@ -1131,9 +1162,15 @@
               </select>
             </div>
 
-            <div style="margin-top: 8px;">
-              <button class="ctrl-btn" id="btnInspectFrame" style="width: 100%; background: #065f46; border-color: #059669; color: #6ee7b7;" onclick="inspectCurrentFrame()">
-                🔍 Show & Tell (Gemini Vision)
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+              <button class="ctrl-btn" id="btnLookAtMe" style="flex: 1.2; background: #6b21a8; border-color: #9333ea; color: #f3e8ff; font-weight: bold;" onclick="triggerLiveMultimodalObservation()">
+                &#x1F440; Look At Me (Gemini Vision)
+              </button>
+              <button class="ctrl-btn" id="btnInspectFrame" style="flex: 1; background: #065f46; border-color: #059669; color: #6ee7b7;" onclick="inspectCurrentFrame()">
+                &#x1F50D; Show & Tell (Gemini)
+              </button>
+              <button class="ctrl-btn" id="btnSnapMemory" style="background: #334155; border-color: #475569; color: #cbd5e1;" onclick="snapFaceMemory()" title="Record companion face observation to SQLite">
+                &#x1F4F8; Remember
               </button>
             </div>
             
@@ -1145,22 +1182,37 @@
           <div class="panel" style="display: flex; flex-direction: column; flex: 1;">
             <div class="panel-title">
               <span>ALPHA SPEECH & VOICE CORTEX</span>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                  <input type="checkbox" id="ttsEnabledToggle" checked> 🔊 Voice
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;" title="Toggle Alpha spoken voice">
+                  <input type="checkbox" id="ttsEnabledToggle" checked> 🗣️ Voice
+                </label>
+                <label style="font-size: 0.7rem; color: #4ade80; display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500;" title="Alpha automatically opens mic to listen when he finishes speaking or asks questions">
+                  <input type="checkbox" id="autoListenToggle" checked onchange="toggleHandsFreeAutoListen(this.checked)"> 👂 Live Mic Stream
                 </label>
               </div>
             </div>
 
-            <!-- Real-time Audio Spectrum Visualizer -->
-            <canvas id="audioVisualizerCanvas" height="30" width="320" style="width: 100%; height: 30px; border-radius: 4px; background: #080c14; margin-bottom: 8px; border: 1px solid #1e293b; display: block;"></canvas>
+            <!-- Real-time Dual Audio Visualizer (Alpha Speech + Live User Mic) -->
+            <canvas id="audioVisualizerCanvas" height="30" width="320" style="width: 100%; height: 30px; border-radius: 4px; background: #080c14; margin-bottom: 6px; border: 1px solid #1e293b; display: block;" title="Blue = Alpha Speaking | Green = Your Microphone Stream"></canvas>
 
-            <!-- Speech Modulation Controls -->
-            <div style="display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.68rem; color: var(--text-muted); align-items: center;">
-              <span style="white-space: nowrap;">Wall-E Pitch:</span>
-              <input type="range" id="voicePitchSlider" min="0.8" max="1.8" step="0.05" value="1.35" style="flex: 1; accent-color: var(--accent-blue);" title="Robotic Pitch (1.35x = Wall-E friendly)">
+            <!-- Live Status & VU Meter Bar -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px; font-size: 0.68rem; color: var(--text-muted); align-items: center; flex-wrap: wrap;">
+              <span id="micStatusBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;" onclick="requestMicStreamAccess()" title="Click to grant/test microphone streaming">
+                <span id="micStatusDot" style="width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block;"></span>
+                <span id="micStatusText">🎙️ Mic Stream Ready</span>
+              </span>
+              <div style="display: inline-flex; align-items: center; gap: 4px; margin-left: 2px;" title="Live volume level of your streaming microphone">
+                <span style="font-size: 0.6rem; color: var(--text-muted);">MIC:</span>
+                <div style="width: 50px; height: 5px; background: #0f172a; border-radius: 3px; border: 1px solid #1e293b; overflow: hidden; display: inline-block; vertical-align: middle;">
+                  <div id="micVUBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #4ade80); transition: width 0.04s ease;"></div>
+                </div>
+              </div>
+              <span style="flex: 1;"></span>
+              <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Tuned to match AlphaVoice/Voice 1.mp3">
+                <span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;"></span> Voice 1
+              </span>
               <span style="white-space: nowrap;">Speed:</span>
-              <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 65px; accent-color: var(--accent-blue);" title="Speaking Rate">
+              <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 55px; accent-color: var(--accent-blue);" title="Speaking Rate">
             </div>
 
             <div class="chat-card" style="height: 250px;">
@@ -1172,7 +1224,7 @@
               <div class="chat-input-row">
                 <input type="text" class="chat-input" id="chatInputText" placeholder="Talk to Alpha (e.g., 'Where are my keys?')" onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button class="ctrl-btn" style="padding: 6px 12px; background: var(--accent-blue); color: #0f172a;" onclick="sendChatMessage()">Send</button>
-                <button class="ctrl-btn" id="btnVoiceMic" style="padding: 6px 10px;" onclick="toggleVoiceSpeechRecognition()" title="Voice Input">🎙</button>
+                <button class="ctrl-btn" id="btnVoiceMic" style="padding: 6px 10px;" onclick="toggleVoiceSpeechRecognition()" title="Voice Input">🎙️</button>
               </div>
             </div>
           </div>
@@ -1203,6 +1255,23 @@
       </div>
 
       <div class="brain-grid">
+        <!-- 0. Known People & Companions (Multi-Person Identification) -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>👥 KNOWN PEOPLE & COMPANIONS (Persons)</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span id="personCountBadge" class="badge">1 Person</span>
+              <button onclick="promptAddNewPerson()" style="background: rgba(192, 132, 252, 0.2); border: 1px solid #c084fc; color: #c084fc; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; cursor: pointer;">+ Add</button>
+            </div>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Recognized people and visual profiles. Alpha distinguishes Akhil from friends, family, and guests.
+          </div>
+          <div class="memory-list" id="knownPersonsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
         <!-- 1. Learned User Facts -->
         <div class="panel">
           <div class="panel-title">
@@ -1234,7 +1303,7 @@
         <!-- 3. Roaming Scene Observations -->
         <div class="panel">
           <div class="panel-title">
-            <span>👁 VISUAL SCENE OBSERVATIONS (RoamingObservations)</span>
+            <span>👁️ VISUAL SCENE OBSERVATIONS (RoamingObservations)</span>
             <span id="obsCountBadge" class="badge">0 Logs</span>
           </div>
           <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
@@ -1282,7 +1351,7 @@
 
           <div class="module-card" onclick="highlightSchematic('display')">
             <div class="module-header">
-              <span class="module-title">👁 Dual GC9A01 Round LCDs</span>
+              <span class="module-title">👁️ Dual GC9A01 Round LCDs</span>
               <span class="badge" style="background:#155e75; color:#67e8f9;">SPI0 Bus</span>
             </div>
             <div class="module-pins">
@@ -1293,7 +1362,7 @@
 
           <div class="module-card" onclick="highlightSchematic('motors')">
             <div class="module-header">
-              <span class="module-title">⚙ DRV8833 Dual H-Bridge</span>
+              <span class="module-title">⚙️ DRV8833 Dual H-Bridge</span>
               <span class="badge" style="background:#166534; color:#86efac;">PWM Drive</span>
             </div>
             <div class="module-pins">
@@ -1315,7 +1384,7 @@
 
           <div class="module-card" onclick="highlightSchematic('sensors')">
             <div class="module-header">
-              <span class="module-title">🛡 Safety & Ranging Sensors</span>
+              <span class="module-title">🛡️ Safety & Ranging Sensors</span>
               <span class="badge" style="background:#581c87; color:#d8b4fe;">I2C / GPIO</span>
             </div>
             <div class="module-pins">
@@ -1487,7 +1556,7 @@
       { id: 'obstacle1', title: 'Cube', x: 450, y: 140, width: 50, height: 50 },
       { id: 'obstacle2', title: 'Cup', x: 180, y: 360, width: 50, height: 50 },
       { id: 'obstacle3', title: 'Keys', x: 150, y: 120, width: 50, height: 50 },
-      { id: 'obstacle4', title: 'Notebook', x: 420, y: 380, width: 65, height: 50 }
+      { id: 'obstacle4', title: 'Book', x: 420, y: 380, width: 65, height: 50 }
     ];
     const lastSightedTimes = {};
 
@@ -1604,8 +1673,8 @@
       // Convert angles to standard PWM microsecond timings (1000us - 2000us)
       const panUs = Math.round(1500 + (rover.panAngle / 90) * 500);
       const tiltUs = Math.round(1500 + (rover.tiltAngle / 90) * 500);
-      document.getElementById('pinG25').textContent = `${panUs}µs`;
-      document.getElementById('pinG5').textContent = `${tiltUs}µs`;
+      document.getElementById('pinG25').textContent = `${panUs} µs`;
+      document.getElementById('pinG5').textContent = `${tiltUs} µs`;
 
       // Update head SVG rotation
       const headGroup = document.getElementById('roverHeadGroup');
@@ -1967,6 +2036,24 @@
         masterGain.connect(ctx.destination);
 
         const s = String(name).toLowerCase().trim();
+
+        if (s === 'alpha_voice' || s === 'voice' || s === 'voice1' || s === 'voice_1' || s === 'intro' || s === 'pet') {
+          startAudioVisualizerAnimation(3400);
+          startTalkingPulse();
+          const audio = new Audio('/api/audio/voice1.mp3');
+          audio.onended = () => stopTalkingPulse();
+          audio.onerror = (e) => {
+            console.warn("Audio play error, falling back:", e);
+            stopTalkingPulse();
+          };
+          audio.play().catch(e => {
+            console.warn("Audio play blocked by browser:", e);
+            stopTalkingPulse();
+          });
+          setTimeout(() => stopTalkingPulse(), 3500);
+          setEyeExpression('happy', false);
+          return;
+        }
 
         if (s === 'startup' || s === 'boot') {
           // Ascending triad chords: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
@@ -2416,18 +2503,42 @@
         const barWidth = Math.floor(w / numBars) - 2;
         const t = Date.now() * 0.008;
 
+        const isAlphaVoiceActive = isVisualizerActive || isAlphaSpeaking;
         for (let i = 0; i < numBars; i++) {
           let barHeight = 2;
-          if (isVisualizerActive) {
+          let isUserMicBar = false;
+
+          if (isAlphaVoiceActive) {
+            // Alpha Voice: Cyan/Blue dynamic spectrum
             const wave = Math.sin(t * 1.5 + i * 0.45) * 0.45 + Math.cos(t * 2.2 + i * 0.25) * 0.35 + 0.45;
             barHeight = Math.max(3, wave * (h - 4));
+          } else if (isListeningActive && micDataArray && isUserTalkingActive) {
+            // User Microphone: Emerald Green spectrum from live Web Audio stream!
+            isUserMicBar = true;
+            const dataIdx = Math.floor((i / numBars) * (micDataArray.length * 0.65));
+            const val = micDataArray[dataIdx] || 0;
+            barHeight = Math.max(3, (val / 255.0) * (h - 3));
+          } else if (isListeningActive) {
+            // Listening idle pulse
+            const ripple = (Math.sin(t * 0.8 + i * 0.3) + 1.0) * 0.5;
+            barHeight = 2 + ripple * 4;
+            isUserMicBar = true;
           }
+
           const x = i * (barWidth + 2);
           const y = h - barHeight;
 
           const grad = ctx.createLinearGradient(0, y, 0, h);
-          grad.addColorStop(0, '#38bdf8');
-          grad.addColorStop(1, '#0284c7');
+          if (isUserMicBar) {
+            grad.addColorStop(0, '#4ade80');
+            grad.addColorStop(1, '#16a34a');
+          } else if (isAlphaVoiceActive) {
+            grad.addColorStop(0, '#38bdf8');
+            grad.addColorStop(1, '#0284c7');
+          } else {
+            grad.addColorStop(0, '#334155');
+            grad.addColorStop(1, '#1e293b');
+          }
           ctx.fillStyle = grad;
           ctx.fillRect(x, y, barWidth, barHeight);
         }
@@ -2498,19 +2609,114 @@
       }
     }
 
-    // --- LAPTOP CAMERA VIEWPORT & REAL-TIME FACE TRACKING ---
+    // --- LAPTOP CAMERA VIEWPORT & REAL-TIME EMOTION CORTEX ---
     let webcamStream = null;
     let isWebcamRunning = false;
     let camAnimationFrame = null;
     const webcamVideo = document.getElementById('webcamVideo');
     const webcamCanvas = document.getElementById('webcamCanvas');
     const webcamCtx = webcamCanvas ? webcamCanvas.getContext('2d') : null;
-    let trackedFace = { x: 160, y: 120, w: 80, h: 90, detected: false };
+
+    // High-stability face state
+    let trackedFace = {
+      x: 160, y: 120, w: 80, h: 90,
+      detected: false,
+      confidence: 0,
+      isSmiling: false,
+      distCm: 45,
+      distCategory: 'optimal',
+      landmarks: null,
+      velX: 0, velY: 0
+    };
+
+    // Behavior State Machine timers & states
+    let companionState = 'idle';
+    let trackingStartTime = 0;
+    let lastSeenTime = 0;
+    let lastEventSyncTime = 0;
+    let lastBondingTime = 0;
+    let lastSmileReactTime = 0;
+    let lastProximityTime = 0;
+    let lastGreetingSpeechTime = 0;
+    let lastCompanionSpeechTime = 0;
+    let lastReceivedSpeechMsg = null;
+    let lastExitVelX = 0;
+
+    // Detectors
+    let mpFaceDetector = null;
+    let nativeFaceDetector = null;
+    let isMediaPipeReady = false;
+    let lastMpResults = null;
+
+    function initFaceDetectors() {
+      if (typeof FaceDetection !== 'undefined' && !mpFaceDetector) {
+        try {
+          mpFaceDetector = new FaceDetection({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+          });
+          mpFaceDetector.setOptions({
+            model: 'short',
+            minDetectionConfidence: 0.5
+          });
+          mpFaceDetector.onResults((results) => {
+            lastMpResults = results;
+          });
+          isMediaPipeReady = true;
+          console.log("[Alpha Vision] MediaPipe Face Detection initialized.");
+        } catch (err) {
+          console.warn("[Alpha Vision] MediaPipe init fallback:", err);
+          isMediaPipeReady = false;
+        }
+      }
+      if ('FaceDetector' in window && !nativeFaceDetector) {
+        try {
+          nativeFaceDetector = new FaceDetector({ maxDetectedFaces: 1, fastMode: true });
+          console.log("[Alpha Vision] Native Shape Detection FaceDetector ready.");
+        } catch (e) {}
+      }
+    }
+
+    let visionStatePollInterval = null;
+    let lastPlayedVisionSound = null;
+    let pythonCamActive = false;
+    let lastBackendSyncTime = 0;
+
+    async function onCamSourceChange() {
+      if (isWebcamRunning || pythonCamActive) {
+        await toggleLaptopCamera();
+        setTimeout(async () => {
+          await toggleLaptopCamera();
+        }, 250);
+      }
+    }
 
     async function toggleLaptopCamera() {
       const btn = document.getElementById('btnToggleCam');
       const badge = document.getElementById('camStatusBadge');
-      if (isWebcamRunning) {
+      const emoBadge = document.getElementById('camEmotionBadge');
+      const gazeLabel = document.getElementById('camGazeLabel');
+      const sourceSelect = document.getElementById('camSourceSelect');
+      const source = sourceSelect ? sourceSelect.value : 'python';
+      const pythonImg = document.getElementById('pythonCamStream');
+
+      if (isWebcamRunning || pythonCamActive) {
+        // Stop active camera
+        if (pythonCamActive) {
+          pythonCamActive = false;
+          if (pythonImg) {
+            pythonImg.src = "";
+            pythonImg.style.display = "none";
+          }
+          if (visionStatePollInterval) {
+            clearInterval(visionStatePollInterval);
+            visionStatePollInterval = null;
+          }
+          fetch('/api/camera_toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'stop' })
+          }).catch(e => {});
+        }
         if (webcamStream) {
           webcamStream.getTracks().forEach(t => t.stop());
           webcamStream = null;
@@ -2520,93 +2726,551 @@
           camAnimationFrame = null;
         }
         isWebcamRunning = false;
-        btn.textContent = "🎥 Start Laptop Camera";
+
+        btn.innerHTML = "&#x1F3A5; Start Laptop Camera";
         btn.style.background = "#0369a1";
         badge.textContent = "Camera Idle";
         badge.className = "status-pill";
         badge.style.background = "rgba(148, 163, 184, 0.15)";
         badge.style.color = "#94a3b8";
-        document.getElementById('camGazeLabel').textContent = "GAZE: IDLE";
+        if (emoBadge) {
+          emoBadge.textContent = "Alpha: Idle";
+          emoBadge.style.color = "#94a3b8";
+        }
+        if (gazeLabel) gazeLabel.textContent = "GAZE: IDLE";
         if (webcamCtx) webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
         return;
       }
 
-      try {
-        webcamStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" }
-        });
-        webcamVideo.srcObject = webcamStream;
-        await webcamVideo.play();
-        isWebcamRunning = true;
-        btn.textContent = "🛑 Stop Camera";
-        btn.style.background = "#991b1b";
-        badge.textContent = "Alpha Eye: Active";
-        badge.className = "status-pill status-ok";
-        startCameraProcessingLoop();
-      } catch (err) {
-        alert("Could not access laptop webcam: " + err.message + "\nPlease verify camera permissions in browser.");
+      // Start Camera
+      if (source === 'python') {
+        try {
+          await fetch('/api/camera_toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'start' })
+          });
+
+          if (pythonImg) {
+            pythonImg.src = "/api/camera_stream?t=" + Date.now();
+            pythonImg.style.display = "block";
+          }
+          if (webcamVideo) webcamVideo.style.display = "none";
+          if (webcamCanvas) webcamCanvas.style.display = "none";
+
+          pythonCamActive = true;
+          btn.innerHTML = "&#x1F6D1; Stop Camera";
+          btn.style.background = "#991b1b";
+          badge.textContent = "Alpha Eye: Active";
+          badge.className = "status-pill status-ok";
+
+          if (visionStatePollInterval) clearInterval(visionStatePollInterval);
+          visionStatePollInterval = setInterval(pollVisionState, 45);
+        } catch (err) {
+          alert("Could not connect to Python camera stream: " + err.message);
+        }
+      } else {
+        // In-Browser WebRTC mode
+        try {
+          if (pythonImg) pythonImg.style.display = "none";
+          if (webcamVideo) webcamVideo.style.display = "none";
+          if (webcamCanvas) webcamCanvas.style.display = "block";
+
+          initFaceDetectors();
+          webcamStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+          });
+          webcamVideo.srcObject = webcamStream;
+          await webcamVideo.play();
+          isWebcamRunning = true;
+          btn.innerHTML = "&#x1F6D1; Stop Camera";
+          btn.style.background = "#991b1b";
+          badge.textContent = "Alpha Eye: Active";
+          badge.className = "status-pill status-ok";
+          startCameraProcessingLoop();
+        } catch (err) {
+          alert("Could not access browser webcam: " + err.message + "\nTip: Select 'Direct Laptop Cam (OpenCV)' mode to use Python's built-in camera engine directly!");
+        }
       }
     }
 
-    function startCameraProcessingLoop() {
+    async function pollVisionState() {
+      if (!pythonCamActive) return;
+      try {
+        const res = await fetch('/api/vision_state');
+        if (!res.ok) return;
+        const state = await res.json();
+        updateUIWithVisionState(state);
+      } catch (e) {}
+    }
+
+    let organicStimulusInProgress = false;
+
+    async function triggerOrganicStimulus(eventType, details = {}) {
+      if (organicStimulusInProgress) return;
+      const now = performance.now();
+      organicStimulusInProgress = true;
+      lastCompanionSpeechTime = now;
+
+      const thoughtPill = document.getElementById('camThoughtPill');
+      const thoughtText = document.getElementById('camThoughtText');
+      if (thoughtPill) thoughtPill.style.display = 'flex';
+      if (thoughtText) {
+        thoughtText.textContent = 'Alpha is thinking organically...';
+        thoughtText.style.color = '#38bdf8';
+      }
+
+      try {
+        const payload = {
+          event: eventType,
+          distance: (typeof distCat !== 'undefined' ? distCat : 'optimal'),
+          sustained_sec: (typeof sustainedSec !== 'undefined' ? sustainedSec : 0),
+          is_smiling: (typeof isSmile !== 'undefined' ? !!isSmile : false),
+          pan: rover.panAngle,
+          tilt: rover.tiltAngle,
+          ...details
+        };
+
+        let snapDataUrl = "";
+        if (isWebcamRunning && webcamVideo && webcamVideo.readyState >= 2) {
+          const off = document.createElement('canvas');
+          off.width = 320;
+          off.height = 240;
+          const oCtx = off.getContext('2d');
+          if (oCtx) {
+            oCtx.drawImage(webcamVideo, 0, 0, 320, 240);
+            snapDataUrl = off.toDataURL('image/jpeg', 0.75);
+          }
+        }
+        if (snapDataUrl) {
+          payload.image_base64 = snapDataUrl;
+        }
+
+        const endpoint = snapDataUrl || pythonCamActive ? '/api/live_visual_reaction' : '/api/organic_stimulus';
+        const resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.observed_visual && thoughtText) {
+            thoughtText.textContent = `👀 Sees: ${data.observed_visual} | 💭 "${data.inner_thought}"`;
+            thoughtText.style.color = '#38bdf8';
+          } else if (data.inner_thought && thoughtText) {
+            thoughtText.textContent = `"${data.inner_thought}"`;
+            thoughtText.style.color = '#cbd5e1';
+          }
+
+          if (data.speech) {
+            let displayMsg = "";
+            if (data.observed_visual) {
+              displayMsg += `👀 *[Observes: ${data.observed_visual}]*\n`;
+            }
+            if (data.inner_thought) {
+              displayMsg += `💭 *[Thought: ${data.inner_thought}]*\n`;
+            }
+            displayMsg += `"${data.speech}"`;
+            addChatMessage("alpha", displayMsg);
+
+            const ttsToggle = document.getElementById('ttsEnabledToggle');
+            if (ttsToggle && ttsToggle.checked) {
+              speakText(data.speech);
+            }
+          }
+
+          if (data.emotion) {
+            setEyeExpression(data.emotion, false);
+          }
+          if (data.sound) {
+            playWallESound(data.sound);
+          }
+          if (data.gesture === 'excited_wiggle') {
+            animateExcitedWiggle();
+          }
+        }
+      } catch (err) {
+        console.warn("[OrganicStimulus] Cortex query failed:", err);
+      } finally {
+        organicStimulusInProgress = false;
+      }
+    }
+
+    function updateUIWithVisionState(state) {
+      const statusPill = document.getElementById('camStatusBadge');
+      const emotionBadge = document.getElementById('camEmotionBadge');
+      const gazeLabel = document.getElementById('camGazeLabel');
+      const fpsEl = document.getElementById('camFpsLabel');
+      if (fpsEl && state.fps) fpsEl.textContent = `${state.fps} FPS`;
+
+      if (state.found) {
+        // Move Rover Head & Servos
+        rover.panAngle = Math.round(state.pan);
+        rover.tiltAngle = Math.round(state.tilt);
+        const panSlider = document.getElementById('panSlider');
+        const tiltSlider = document.getElementById('tiltSlider');
+        if (panSlider) panSlider.value = rover.panAngle;
+        if (tiltSlider) tiltSlider.value = rover.tiltAngle;
+        updateServos();
+
+        // Dual Eye Gaze Tracking
+        const eyePxX = Math.round(state.offset_x * 15);
+        const eyePxY = Math.round(state.offset_y * 11);
+        leftPupil.style.transform = `translate(calc(-50% + ${eyePxX}px), calc(-50% + ${eyePxY}px)) scale(1.05)`;
+        rightPupil.style.transform = `translate(calc(-50% + ${eyePxX}px), calc(-50% + ${eyePxY}px)) scale(1.05)`;
+
+        // 2D Reticle on trackpad
+        if (gazeReticle && gazePad) {
+          const rect = gazePad.getBoundingClientRect();
+          gazeReticle.style.left = ((state.offset_x + 1.0) / 2.0 * rect.width) + 'px';
+          gazeReticle.style.top = ((state.offset_y + 1.0) / 2.0 * rect.height) + 'px';
+        }
+
+        // Expression
+        setEyeExpression(state.emotion, false);
+
+        if (emotionBadge) {
+          const emojiMap = { love: '❤️', excited: '⚡', curious: '❓', surprised: '⚠️', happy: '😊', sad: '😢', confused: '🌀' };
+          const emIcon = emojiMap[state.emotion] || '🤖';
+          emotionBadge.textContent = `Alpha: [${state.emotion.toUpperCase()}] ${state.state} ${emIcon}`;
+          emotionBadge.style.color = state.emotion === 'love' ? '#f43f5e' : state.emotion === 'excited' ? '#4ade80' : state.emotion === 'surprised' ? '#fbbf24' : '#38bdf8';
+        }
+
+        if (statusPill) {
+          const personLabel = (state.num_faces && state.num_faces > 1)
+            ? `${state.num_faces} PEOPLE DETECTED`
+            : (state.identified_name ? `${state.identified_name.toUpperCase()} [${state.distance_category.toUpperCase()}]` : `PERSON [${state.distance_category.toUpperCase()}]`);
+          statusPill.textContent = `Alpha Eye: Locked On [${personLabel}]`;
+          statusPill.className = "status-pill status-ok";
+        }
+
+        if (gazeLabel) {
+          gazeLabel.textContent = `TRACKING: PAN ${state.pan}°, TILT ${state.tilt}° [${state.distance_category.toUpperCase()}]`;
+        }
+
+        // Winks / Blinks
+        if (state.trigger_wink) triggerWink(350);
+        else if (state.trigger_blink) triggerBlink(150);
+
+        // Companion Toast Feedback
+        if (state.gesture === 'excited_wiggle' && companionState !== 'smiling') {
+          animateExcitedWiggle();
+          showArenaToast("😊 Akhil smiled at Alpha! Delighted!", "#4ade80");
+        } else if (state.state === 'bonding' && companionState !== 'bonding') {
+          showArenaToast("❤️ Sustained eye contact! Alpha feels affectionate.", "#f43f5e");
+        } else if (state.state === 'startled' && companionState !== 'startled') {
+          showArenaToast("⚠️ User leaning in close! Alpha startled.", "#fbbf24");
+        } else if (state.state === 'greeting' && companionState !== 'greeting') {
+          showArenaToast("👀 Alpha spotted Akhil! Greeting...", "#38bdf8");
+        }
+
+        if (state.sound && state.sound !== lastPlayedVisionSound) {
+          playWallESound(state.sound);
+          lastPlayedVisionSound = state.sound;
+          setTimeout(() => { lastPlayedVisionSound = null; }, 2000);
+        }
+
+        companionState = state.state;
+      } else {
+        // Face absent
+        if (state.state === 'searching') {
+          setEyeExpression('confused', false);
+          if (gazeLabel) gazeLabel.textContent = "SEARCHING FOR USER...";
+          if (emotionBadge) {
+            emotionBadge.textContent = "Alpha: [CONFUSED] Searching 🌀";
+            emotionBadge.style.color = "#c084fc";
+          }
+          if (companionState !== 'searching') {
+            showArenaToast("🌀 User left view! Alpha searching...", "#c084fc");
+            if (state.sound && state.sound !== lastPlayedVisionSound) {
+              playWallESound(state.sound);
+              lastPlayedVisionSound = state.sound;
+              setTimeout(() => { lastPlayedVisionSound = null; }, 2000);
+            }
+          }
+        } else if (state.state === 'disappointed') {
+          setEyeExpression('sad', false);
+          if (gazeLabel) gazeLabel.textContent = "USER ABSENT. WAITING...";
+          if (emotionBadge) {
+            emotionBadge.textContent = "Alpha: [SAD] Waiting 😢";
+            emotionBadge.style.color = "#94a3b8";
+          }
+        } else {
+          setEyeExpression('idle', false);
+          if (gazeLabel) gazeLabel.textContent = "GAZE: IDLE";
+          if (emotionBadge) {
+            emotionBadge.textContent = "Alpha: Idle";
+            emotionBadge.style.color = "#94a3b8";
+          }
+        }
+        leftPupil.style.transform = `translate(-50%, -50%) scale(1)`;
+        rightPupil.style.transform = `translate(-50%, -50%) scale(1)`;
+        companionState = state.state;
+      }
+
+      const thoughtPill = document.getElementById('camThoughtPill');
+      const thoughtText = document.getElementById('camThoughtText');
+      if (state.observed_visual && thoughtText) {
+        if (thoughtPill) thoughtPill.style.display = 'flex';
+        thoughtText.textContent = `👀 Sees: ${state.observed_visual} | 💭 "${state.inner_thought}"`;
+        thoughtText.style.color = '#38bdf8';
+      } else if (state.inner_thought && thoughtText) {
+        if (thoughtPill) thoughtPill.style.display = 'flex';
+        thoughtText.textContent = `"${state.inner_thought}"`;
+        thoughtText.style.color = '#cbd5e1';
+      }
+
+      if (state.speech_message && state.speech_message !== lastReceivedSpeechMsg) {
+        lastReceivedSpeechMsg = state.speech_message;
+        let displayMsg = "";
+        if (state.observed_visual) {
+          displayMsg += `👀 *[Observes: ${state.observed_visual}]*\n`;
+        }
+        if (state.inner_thought) {
+          displayMsg += `💭 *[Thought: ${state.inner_thought}]*\n`;
+        }
+        displayMsg += `"${state.speech_message}"`;
+        addChatMessage("alpha", displayMsg);
+        speakText(state.speech_message);
+        setTimeout(() => { lastReceivedSpeechMsg = null; }, 14000);
+      }
+    }
+
+    let lastFrameTimestamp = performance.now();
+    let fpsCounter = 0;
+    let lastFpsUpdate = performance.now();
+
+    async function startCameraProcessingLoop() {
       if (!isWebcamRunning || !webcamCtx) return;
+
+      const now = performance.now();
+      const dt = Math.max(0.001, (now - lastFrameTimestamp) / 1000);
+      lastFrameTimestamp = now;
+
+      fpsCounter++;
+      if (now - lastFpsUpdate > 1000) {
+        const fpsEl = document.getElementById('camFpsLabel');
+        if (fpsEl) fpsEl.textContent = `${fpsCounter} FPS`;
+        fpsCounter = 0;
+        lastFpsUpdate = now;
+      }
 
       const w = webcamCanvas.width;
       const h = webcamCanvas.height;
+      const mirror = document.getElementById('mirrorCamToggle') ? document.getElementById('mirrorCamToggle').checked : true;
 
-      // Draw mirrored video to canvas
+      // Draw video frame to canvas
+      webcamCtx.save();
+      if (mirror) {
+        webcamCtx.translate(w, 0);
+        webcamCtx.scale(-1, 1);
+      }
       webcamCtx.drawImage(webcamVideo, 0, 0, w, h);
+      webcamCtx.restore();
 
-      // Fast Facial / User Centroid Detection
-      const sampleW = 40;
-      const sampleH = 30;
-      const stepX = Math.floor(w / sampleW);
-      const stepY = Math.floor(h / sampleH);
-      
-      let sumX = 0, sumY = 0, count = 0;
+      // Trigger MediaPipe processing asynchronously if ready
+      if (isMediaPipeReady && mpFaceDetector && webcamVideo.readyState >= 2) {
+        try {
+          mpFaceDetector.send({ image: webcamVideo });
+        } catch (e) {}
+      }
+
+      let detectedBox = null;
+      let landmarks = null;
+      let conf = 0;
+      let isSmile = false;
+
+      // Tier 1: Check MediaPipe Results
+      if (lastMpResults && lastMpResults.detections && lastMpResults.detections.length > 0) {
+        const d = lastMpResults.detections[0];
+        const bb = d.boundingBox;
+        conf = Math.round((d.score && d.score[0] ? d.score[0] : 0.95) * 100);
+
+        let rawBx = bb.xCenter * w - (bb.width * w) / 2;
+        let rawBy = bb.yCenter * h - (bb.height * h) / 2;
+        let rawBw = bb.width * w;
+        let rawBh = bb.height * h;
+
+        if (mirror) {
+          rawBx = w - rawBx - rawBw;
+        }
+
+        detectedBox = { x: rawBx, y: rawBy, w: rawBw, h: rawBh };
+
+        // Key landmarks: 0: R.Eye, 1: L.Eye, 2: Nose, 3: Mouth
+        if (d.landmarks && d.landmarks.length >= 4) {
+          const re = d.landmarks[0];
+          const le = d.landmarks[1];
+          const nose = d.landmarks[2];
+          const mouth = d.landmarks[3];
+
+          const reX = mirror ? (1 - re.x) * w : re.x * w;
+          const leX = mirror ? (1 - le.x) * w : le.x * w;
+          const noseX = mirror ? (1 - nose.x) * w : nose.x * w;
+          const mouthX = mirror ? (1 - mouth.x) * w : mouth.x * w;
+
+          landmarks = {
+            rightEye: { x: reX, y: re.y * h },
+            leftEye: { x: leX, y: le.y * h },
+            nose: { x: noseX, y: nose.y * h },
+            mouth: { x: mouthX, y: mouth.y * h }
+          };
+
+          const eyeDist = Math.hypot(landmarks.leftEye.x - landmarks.rightEye.x, landmarks.leftEye.y - landmarks.rightEye.y);
+          const mouthNoseDist = Math.abs(landmarks.mouth.y - landmarks.nose.y);
+          if (eyeDist > 15) {
+            isSmile = (mouthNoseDist / eyeDist < 0.38) || (eyeDist > 40 && mouthNoseDist < 18);
+          }
+        }
+      }
+
+      // Tier 1.5: Native FaceDetector API (Built-in to Chromium / Edge)
+      if (!detectedBox && nativeFaceDetector) {
+        try {
+          const nfaces = nativeFaceDetector.detect ? await nativeFaceDetector.detect(webcamVideo) : null;
+          if (nfaces && nfaces.length > 0) {
+            const nf = nfaces[0].boundingBox;
+            let nbx = nf.x;
+            if (mirror) nbx = w - nf.x - nf.width;
+            detectedBox = { x: nbx, y: nf.y, w: nf.width, h: nf.height };
+            conf = 90;
+          }
+        } catch (e) {}
+      }
+
+      // Tier 2: Fallback YCbCr Lighting-Normalized Skin Ellipse & Contrast
+      if (!detectedBox) {
+        detectedBox = runFallbackSkinTracker(w, h, mirror);
+        if (detectedBox) conf = 75;
+      }
+
+      // Sync frame to backend OpenCV cortex if browser mode
+      const nowSync = performance.now();
+      if (nowSync - lastBackendSyncTime > 150) {
+        lastBackendSyncTime = nowSync;
+        const syncCanvas = document.createElement('canvas');
+        syncCanvas.width = 320;
+        syncCanvas.height = 240;
+        const sCtx = syncCanvas.getContext('2d');
+        if (sCtx) {
+          sCtx.drawImage(webcamVideo, 0, 0, 320, 240);
+          const dataUrl = syncCanvas.toDataURL('image/jpeg', 0.65);
+          fetch('/api/process_frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_base64: dataUrl })
+          }).then(r => r.json()).then(st => {
+            if (st && st.found) {
+              updateUIWithVisionState(st);
+            }
+          }).catch(e => {});
+        }
+      }
+
+      // Process Face Tracking & Behavior State Machine
+      processTrackingAndBehavior(detectedBox, landmarks, conf, isSmile, w, h, dt, mirror);
+
+      camAnimationFrame = requestAnimationFrame(startCameraProcessingLoop);
+    }
+
+    function runFallbackSkinTracker(w, h, mirror) {
+      const step = 6;
+      const sw = Math.floor(w / step);
+      const sh = Math.floor(h / step);
+      let count = 0, sumX = 0, sumY = 0;
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+
       try {
-        const imgData = webcamCtx.getImageData(0, 0, w, h).data;
-        for (let sy = 0; sy < sampleH; sy++) {
-          for (let sx = 0; sx < sampleW; sx++) {
-            const px = sx * stepX;
-            const py = sy * stepY;
+        const img = webcamCtx.getImageData(0, 0, w, h).data;
+        for (let sy = 0; sy < sh; sy++) {
+          const py = sy * step;
+          for (let sx = 0; sx < sw; sx++) {
+            const px = sx * step;
             const idx = (py * w + px) * 4;
-            const r = imgData[idx];
-            const g = imgData[idx + 1];
-            const b = imgData[idx + 2];
+            const r = img[idx];
+            const g = img[idx + 1];
+            const b = img[idx + 2];
 
-            // Skin tone & facial luminance heuristic in RGB:
-            if (r > 80 && g > 40 && b > 20 && r > g && g >= b && (r - g) > 12 && (r - b) > 15) {
+            // YCbCr skin tone detection (invariant to lighting)
+            const Y = 0.299 * r + 0.587 * g + 0.114 * b;
+            const Cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+            const Cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+            if (Y > 35 && Cb >= 75 && Cb <= 130 && Cr >= 132 && Cr <= 175) {
               sumX += px;
               sumY += py;
               count++;
+              if (px < minX) minX = px;
+              if (px > maxX) maxX = px;
+              if (py < minY) minY = py;
+              if (py > maxY) maxY = py;
             }
           }
         }
       } catch (e) {
-        // Fallback if security restrictions apply
+        return null;
       }
 
-      if (count > 25) {
-        const rawTargetX = sumX / count;
-        const rawTargetY = sumY / count;
-        
-        // Low-pass filter smoothing
-        trackedFace.x += (rawTargetX - trackedFace.x) * 0.25;
-        trackedFace.y += (rawTargetY - trackedFace.y) * 0.25;
+      if (count > 45) {
+        const rawCx = sumX / count;
+        const rawCy = sumY / count;
+        const bw = Math.max(50, Math.min(180, (maxX - minX) * 0.9));
+        const bh = Math.max(60, Math.min(210, (maxY - minY) * 1.1));
+        return {
+          x: rawCx - bw / 2,
+          y: rawCy - bh / 2,
+          w: bw,
+          h: bh
+        };
+      }
+      return null;
+    }
+
+    function processTrackingAndBehavior(box, landmarks, confidence, isSmile, w, h, dt, mirror) {
+      const now = performance.now();
+      const autoBehavior = document.getElementById('autoBehaviorToggle') ? document.getElementById('autoBehaviorToggle').checked : true;
+      const statusPill = document.getElementById('camStatusBadge');
+      const emotionBadge = document.getElementById('camEmotionBadge');
+      const gazeLabel = document.getElementById('camGazeLabel');
+
+      if (box) {
+        const rawCx = box.x + box.w / 2;
+        const rawCy = box.y + box.h / 2;
+
+        // Exponential Moving Average (EMA) smoothing for silky tracking
+        const alpha = 0.32;
+        trackedFace.x += (rawCx - trackedFace.x) * alpha;
+        trackedFace.y += (rawCy - trackedFace.y) * alpha;
+        trackedFace.w += (box.w - trackedFace.w) * alpha;
+        trackedFace.h += (box.h - trackedFace.h) * alpha;
         trackedFace.detected = true;
+        trackedFace.confidence = confidence;
+        trackedFace.isSmiling = isSmile;
+        trackedFace.landmarks = landmarks;
 
-        // Normalized relative offset [-1 to +1] from center
-        const normDx = -((trackedFace.x - (w / 2)) / (w / 2));
-        const normDy = (trackedFace.y - (h / 2)) / (h / 2);
+        trackedFace.velX = (rawCx - trackedFace.x) / dt;
+        lastExitVelX = trackedFace.velX;
 
-        // Map to head Pan (-45° to +45°) and Tilt (-20° to +25°)
+        // Distance & Proximity estimate
+        const distCm = Math.round(3500 / Math.max(30, trackedFace.w));
+        trackedFace.distCm = distCm;
+        const faceAreaRatio = (trackedFace.w * trackedFace.h) / (w * h);
+        let distCat = 'optimal';
+        if (faceAreaRatio > 0.30 || distCm < 28) distCat = 'close';
+        else if (faceAreaRatio < 0.05 || distCm > 85) distCat = 'far';
+        trackedFace.distCategory = distCat;
+
+        // Normalized relative offset [-1.0 to +1.0] from center
+        const normDx = ((trackedFace.x - (w / 2)) / (w / 2));
+        const normDy = ((trackedFace.y - (h / 2)) / (h / 2));
+
+        // Target Pan (-45Â° to +45Â°) & Tilt (-20Â° to +25Â°)
         const targetPan = Math.round(normDx * 45);
         const targetTilt = Math.round(-normDy * 25);
 
-        // Smoothly ease robot neck pan & tilt
-        rover.panAngle += Math.round((targetPan - rover.panAngle) * 0.2);
-        rover.tiltAngle += Math.round((targetTilt - rover.tiltAngle) * 0.2);
+        rover.panAngle += Math.round((targetPan - rover.panAngle) * 0.22);
+        rover.tiltAngle += Math.round((targetTilt - rover.tiltAngle) * 0.22);
 
         const panSlider = document.getElementById('panSlider');
         const tiltSlider = document.getElementById('tiltSlider');
@@ -2614,62 +3278,438 @@
         if (tiltSlider) tiltSlider.value = rover.tiltAngle;
         updateServos();
 
-        // Gaze tracking in Dual GC9A01 pupil elements
-        const eyeOffsetPxX = Math.round(normDx * 14);
-        const eyeOffsetPxY = Math.round(normDy * 10);
-        leftPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
-        rightPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
+        // Dual GC9A01 pupil gaze tracking
+        const eyePxX = Math.round(normDx * 15);
+        const eyePxY = Math.round(normDy * 11);
+        leftPupil.style.transform = `translate(calc(-50% + ${eyePxX}px), calc(-50% + ${eyePxY}px)) scale(1.05)`;
+        rightPupil.style.transform = `translate(calc(-50% + ${eyePxX}px), calc(-50% + ${eyePxY}px)) scale(1.05)`;
 
-        document.getElementById('camGazeLabel').textContent = `TRACKING: PAN ${rover.panAngle}°, TILT ${rover.tiltAngle}°`;
+        // Sync Gaze Reticle on 2D trackpad
+        if (gazeReticle && gazePad) {
+          const rect = gazePad.getBoundingClientRect();
+          const padX = (normDx + 1.0) / 2.0 * rect.width;
+          const padY = (normDy + 1.0) / 2.0 * rect.height;
+          gazeReticle.style.left = padX + 'px';
+          gazeReticle.style.top = padY + 'px';
+        }
 
-        // Render Green Futuristic HUD Reticle around detected face
-        const boxW = 75;
-        const boxH = 85;
-        const bx = trackedFace.x - boxW / 2;
-        const by = trackedFace.y - boxH / 2;
+        if (gazeLabel) gazeLabel.textContent = `TRACKING: PAN ${rover.panAngle}Â°, TILT ${rover.tiltAngle}Â° [${distCat.toUpperCase()}]`;
+        if (statusPill) {
+          statusPill.textContent = "Alpha Eye: Locked On";
+          statusPill.className = "status-pill status-ok";
+        }
 
-        webcamCtx.strokeStyle = "#4ade80";
-        webcamCtx.lineWidth = 2;
-        
-        // Draw HUD Corner brackets
-        const cLen = 12;
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx, by + cLen); webcamCtx.lineTo(bx, by); webcamCtx.lineTo(bx + cLen, by);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx + boxW - cLen, by); webcamCtx.lineTo(bx + boxW, by); webcamCtx.lineTo(bx + boxW, by + cLen);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx, by + boxH - cLen); webcamCtx.lineTo(bx, by + boxH); webcamCtx.lineTo(bx + cLen, by + boxH);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx + boxW - cLen, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH - cLen);
-        webcamCtx.stroke();
+        // =====================================================================
+        // COMPANION BEHAVIOR STATE MACHINE
+        // =====================================================================
+        if (autoBehavior) {
+          // Event A: First Discovery / Greeting
+          if (companionState === 'idle' || companionState === 'searching' || companionState === 'disappointed') {
+            companionState = 'greeting';
+            trackingStartTime = now;
+            setEyeExpression('curious', false);
+            if (emotionBadge) {
+              emotionBadge.textContent = "Alpha: [CURIOUS] Greeting";
+              emotionBadge.style.color = "#38bdf8";
+            }
+            playWallESound('curious');
+            showArenaToast("👀 Alpha spotted Akhil! Greeting...", "#38bdf8");
+            syncVisionEventToBackend("face_sighted", "curious", "curious_tilt", "curious", normDx, normDy, rover.panAngle, rover.tiltAngle);
 
-        // Target center crosshair
-        webcamCtx.strokeStyle = "rgba(74, 222, 128, 0.6)";
-        webcamCtx.lineWidth = 1;
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(trackedFace.x - 6, trackedFace.y); webcamCtx.lineTo(trackedFace.x + 6, trackedFace.y);
-        webcamCtx.moveTo(trackedFace.x, trackedFace.y - 6); webcamCtx.lineTo(trackedFace.x, trackedFace.y + 6);
-        webcamCtx.stroke();
+            if (now - lastGreetingSpeechTime > 45000) {
+              lastGreetingSpeechTime = now;
+              triggerOrganicStimulus("face_sighted", { pan: rover.panAngle, tilt: rover.tiltAngle, distance: distCat });
+            }
+          } else {
+            const sustainedSec = (now - trackingStartTime) / 1000;
+            const ttsToggle = document.getElementById('ttsEnabledToggle');
 
-        // Label above box
-        webcamCtx.fillStyle = "#4ade80";
-        webcamCtx.font = "bold 9px monospace";
-        webcamCtx.fillText("USER: AKHIL", bx, by - 4);
+            // Event B: Proximity Startle (User leaning in close)
+            if (distCat === 'close' && (now - lastProximityTime > 4500)) {
+              companionState = 'startled';
+              lastProximityTime = now;
+              setEyeExpression('surprised', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: [SURPRISED] Close! ⚡";
+                emotionBadge.style.color = "#fbbf24";
+              }
+              playWallESound('alert');
+              showArenaToast("⚠️ User leaning in! Alpha startled.", "#fbbf24");
+              rover.tiltAngle = Math.min(25, rover.tiltAngle + 12);
+
+              if (now - lastCompanionSpeechTime > 10000) {
+                triggerOrganicStimulus("proximity_close", { distance: distCat });
+              }
+
+              // Return to tracking after 3.0s
+              setTimeout(() => {
+                if (companionState === 'startled') {
+                  companionState = 'tracking';
+                  setEyeExpression('happy', false);
+                }
+              }, 3000);
+
+              syncVisionEventToBackend("proximity_close", "surprised", "alert_recoil", "alert", normDx, normDy, rover.panAngle, rover.tiltAngle);
+            }
+            // Event C: User Smiling at Alpha!
+            else if (isSmile && (now - lastSmileReactTime > 5000)) {
+              companionState = 'smiling';
+              lastSmileReactTime = now;
+              setEyeExpression('excited', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: [EXCITED] Smile 😊";
+                emotionBadge.style.color = "#4ade80";
+              }
+              playWallESound('excited');
+              showArenaToast("😊 Akhil smiled at Alpha! Delighted!", "#4ade80");
+              animateExcitedWiggle();
+
+              if (now - lastCompanionSpeechTime > 12000) {
+                triggerOrganicStimulus("user_smile", { distance: distCat, is_smiling: true });
+              }
+
+              // Return to tracking after 3.5s
+              setTimeout(() => {
+                if (companionState === 'smiling') {
+                  companionState = 'tracking';
+                  setEyeExpression('happy', false);
+                }
+              }, 3500);
+
+              syncVisionEventToBackend("user_smile", "excited", "excited_wiggle", "excited", normDx, normDy, rover.panAngle, rover.tiltAngle);
+            }
+            // Event D: Sustained Eye Contact (> 3.2s) -> Deep Loving Bond!
+            else if (sustainedSec > 3.2 && (now - lastBondingTime > 14000) && companionState !== 'bonding') {
+              companionState = 'bonding';
+              lastBondingTime = now;
+              setEyeExpression('love', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: [LOVE] Bonded ❤️";
+                emotionBadge.style.color = "#f43f5e";
+              }
+              playWallESound('love');
+              showArenaToast("❤️ Sustained eye contact! Alpha feels affectionate.", "#f43f5e");
+              setTimeout(() => {
+                triggerWink(350);
+              }, 1200);
+
+              if (now - lastCompanionSpeechTime > 14000) {
+                triggerOrganicStimulus("sustained_contact", { sustained_sec: sustainedSec, distance: distCat });
+              }
+
+              // Return to friendly tracking after 4.0s so Alpha doesn't get locked in LOVE forever
+              setTimeout(() => {
+                if (companionState === 'bonding') {
+                  companionState = 'tracking';
+                  setEyeExpression('happy', false);
+                  if (emotionBadge) {
+                    emotionBadge.textContent = "Alpha: [HAPPY] Companion Active 😊";
+                    emotionBadge.style.color = "#38bdf8";
+                  }
+                }
+              }, 4000);
+
+              syncVisionEventToBackend("sustained_contact", "love", "head_pet_reaction", "love", normDx, normDy, rover.panAngle, rover.tiltAngle);
+            }
+            // Event E: Regular Friendly Tracking & Autonomous Stream of Consciousness
+            else if (companionState !== 'bonding' && companionState !== 'smiling' && companionState !== 'startled') {
+              companionState = 'tracking';
+              if (expressionLabel && expressionLabel.textContent.toLowerCase() !== 'happy') {
+                setEyeExpression('happy', false);
+              }
+              if (emotionBadge) {
+                emotionBadge.textContent = `Alpha: [HAPPY] Eye Contact (${sustainedSec.toFixed(1)}s)`;
+                emotionBadge.style.color = "#38bdf8";
+              }
+
+              // Periodic spontaneous organism thoughts & banter while in view
+              if (now - lastCompanionSpeechTime > 26000 && sustainedSec > 8) {
+                triggerOrganicStimulus("companion_idle", { sustained_sec: sustainedSec, distance: distCat });
+              }
+            }
+          }
+        }
+
+        lastSeenTime = now;
+
+        // Render Futuristic Wall-E HUD
+        renderSciFiHUD(box, landmarks, confidence, isSmile, distCm, distCat);
 
       } else {
+        // Face NOT detected this frame
         trackedFace.detected = false;
-        document.getElementById('camGazeLabel').textContent = "SEARCHING USER...";
+        const lostSec = (now - lastSeenTime) / 1000;
+        const ttsToggle = document.getElementById('ttsEnabledToggle');
+
+        if (autoBehavior && lastSeenTime > 0) {
+          // Phase 1 (0 to 3s): SEARCHING with confused head wobble!
+          if (lostSec < 3.2) {
+            if (companionState !== 'searching') {
+              companionState = 'searching';
+              setEyeExpression('confused', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: [CONFUSED] Searching 🌀";
+                emotionBadge.style.color = "#c084fc";
+              }
+              playWallESound('confused');
+              showArenaToast("🌀 User left view! Alpha searching...", "#c084fc");
+
+              if (now - lastCompanionSpeechTime > 20000) {
+                triggerOrganicStimulus("face_lost", { lost_sec: lostSec });
+              }
+
+              syncVisionEventToBackend("face_lost", "confused", "confused_wobble", "confused", 0, 0, rover.panAngle, rover.tiltAngle);
+            }
+            const sweep = (lastExitVelX >= 0 ? 1 : -1) * 0.45;
+            leftPupil.style.transform = `translate(calc(-50% + ${sweep * 14}px), -50%) scale(1.0)`;
+            rightPupil.style.transform = `translate(calc(-50% + ${sweep * 14}px), -50%) scale(1.0)`;
+            if (gazeLabel) gazeLabel.textContent = `SEARCHING FOR AKHIL...`;
+          }
+          // Phase 2 (3.2 to 6s): DISAPPOINTED with gentle droop
+          else if (lostSec < 6.5) {
+            if (companionState !== 'disappointed') {
+              companionState = 'disappointed';
+              setEyeExpression('sad', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: [SAD] Waiting...";
+                emotionBadge.style.color = "#94a3b8";
+              }
+            }
+            if (gazeLabel) gazeLabel.textContent = `USER ABSENT. WAITING...`;
+          }
+          // Phase 3 (> 6.5s): Return to IDLE
+          else {
+            if (companionState !== 'idle') {
+              companionState = 'idle';
+              setEyeExpression('idle', false);
+              if (emotionBadge) {
+                emotionBadge.textContent = "Alpha: Idle";
+                emotionBadge.style.color = "#94a3b8";
+              }
+            }
+            leftPupil.style.transform = `translate(-50%, -50%) scale(1)`;
+            rightPupil.style.transform = `translate(-50%, -50%) scale(1)`;
+            if (gazeLabel) gazeLabel.textContent = `GAZE: IDLE`;
+          }
+        } else {
+          if (gazeLabel) gazeLabel.textContent = `SEARCHING USER...`;
+        }
+      }
+    }
+
+    function renderSciFiHUD(box, landmarks, confidence, isSmile, distCm, distCat) {
+      const bx = trackedFace.x - trackedFace.w / 2;
+      const by = trackedFace.y - trackedFace.h / 2;
+      const bw = trackedFace.w;
+      const bh = trackedFace.h;
+
+      let hudColor = "#38bdf8"; // Wall-E cyan
+      if (companionState === 'love') hudColor = "#f43f5e";
+      else if (companionState === 'smiling') hudColor = "#4ade80";
+      else if (companionState === 'startled') hudColor = "#fbbf24";
+      else if (companionState === 'confused') hudColor = "#c084fc";
+
+      webcamCtx.strokeStyle = hudColor;
+      webcamCtx.lineWidth = 2;
+
+      // Corner Brackets
+      const cLen = Math.min(18, bw * 0.25);
+      webcamCtx.beginPath();
+      webcamCtx.moveTo(bx, by + cLen); webcamCtx.lineTo(bx, by); webcamCtx.lineTo(bx + cLen, by);
+      webcamCtx.moveTo(bx + bw - cLen, by); webcamCtx.lineTo(bx + bw, by); webcamCtx.lineTo(bx + bw, by + cLen);
+      webcamCtx.moveTo(bx, by + bh - cLen); webcamCtx.lineTo(bx, by + bh); webcamCtx.lineTo(bx + cLen, by + bh);
+      webcamCtx.moveTo(bx + bw - cLen, by + bh); webcamCtx.lineTo(bx + bw, by + bh); webcamCtx.lineTo(bx + bw, by + bh - cLen);
+      webcamCtx.stroke();
+
+      // Center crosshair
+      webcamCtx.strokeStyle = hudColor;
+      webcamCtx.lineWidth = 1;
+      webcamCtx.beginPath();
+      webcamCtx.moveTo(trackedFace.x - 6, trackedFace.y); webcamCtx.lineTo(trackedFace.x + 6, trackedFace.y);
+      webcamCtx.moveTo(trackedFace.x, trackedFace.y - 6); webcamCtx.lineTo(trackedFace.x, trackedFace.y + 6);
+      webcamCtx.stroke();
+
+      // Facial Landmarks
+      if (landmarks) {
+        webcamCtx.fillStyle = hudColor;
+        webcamCtx.beginPath(); webcamCtx.arc(landmarks.rightEye.x, landmarks.rightEye.y, 2, 0, Math.PI * 2); webcamCtx.fill();
+        webcamCtx.beginPath(); webcamCtx.arc(landmarks.leftEye.x, landmarks.leftEye.y, 2, 0, Math.PI * 2); webcamCtx.fill();
+        webcamCtx.beginPath(); webcamCtx.arc(landmarks.nose.x, landmarks.nose.y, 2, 0, Math.PI * 2); webcamCtx.fill();
+        webcamCtx.beginPath(); webcamCtx.arc(landmarks.mouth.x, landmarks.mouth.y, 2, 0, Math.PI * 2); webcamCtx.fill();
       }
 
-      camAnimationFrame = requestAnimationFrame(startCameraProcessingLoop);
+      // HUD Text
+      webcamCtx.fillStyle = hudColor;
+      webcamCtx.font = "bold 9px monospace";
+      const smileTag = isSmile ? " [ðŸ˜Š SMILE]" : "";
+      webcamCtx.fillText(`USER: AKHIL (${confidence}%)${smileTag}`, bx, by - 6);
+      webcamCtx.font = "8px monospace";
+      webcamCtx.fillStyle = "rgba(226, 232, 240, 0.85)";
+      webcamCtx.fillText(`DIST: ~${distCm}cm [${distCat.toUpperCase()}]`, bx, by + bh + 11);
+    }
+
+    async function syncVisionEventToBackend(event, emo, gesture, sound, gazeX, gazeY, pan, tilt) {
+      const now = performance.now();
+      if (now - lastEventSyncTime < 280) return;
+      lastEventSyncTime = now;
+
+      try {
+        await fetch('/api/vision_event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: event,
+            emotion: emo,
+            gesture: gesture,
+            sound: sound,
+            gaze_x: gazeX,
+            gaze_y: gazeY,
+            pan: pan,
+            tilt: tilt
+          })
+        });
+      } catch (err) {}
+    }
+
+    function animateExcitedWiggle() {
+      const origPan = rover.panAngle;
+      const origTilt = rover.tiltAngle;
+      const offsets = [-8, 8, -8, 8, 0];
+      offsets.forEach((off, i) => {
+        setTimeout(() => {
+          rover.panAngle = origPan + off;
+          rover.tiltAngle = Math.min(25, origTilt + (i % 2 === 0 ? 6 : -4));
+          updateServos();
+        }, i * 90);
+      });
+    }
+
+    async function snapFaceMemory() {
+      if (!isWebcamRunning && !pythonCamActive) {
+        alert("Please start the laptop camera first!");
+        return;
+      }
+      showArenaToast("📸 Recording Akhil face observation to SQLite...", "#38bdf8");
+      playWallESound("happy");
+      setEyeExpression("happy", false);
+
+      try {
+        await fetch('/api/vision_event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: "sustained_contact",
+            emotion: "happy",
+            sound: "happy",
+            gesture: "nod"
+          })
+        });
+        showArenaToast("✅ Face memory logged to episodic knowledge graph!", "#4ade80");
+        fetchMemoryData();
+      } catch (err) {
+        showArenaToast("Logged face observation.", "#38bdf8");
+      }
+    }
+
+
+    // --- LIVE MULTIMODAL OBSERVATION (GEMINI VISION) ---
+    async function triggerLiveMultimodalObservation() {
+      if (!isWebcamRunning && !pythonCamActive) {
+        alert("Please start the laptop camera first!");
+        return;
+      }
+
+      const resultBox = document.getElementById('visionResultBox');
+      const laserScan = document.getElementById('camLaserScan');
+      const thoughtPill = document.getElementById('camThoughtPill');
+      const thoughtText = document.getElementById('camThoughtText');
+
+      if (thoughtPill) thoughtPill.style.display = 'flex';
+      if (thoughtText) {
+        thoughtText.textContent = "Alpha is observing you directly through Gemini Vision cortex...";
+        thoughtText.style.color = "#38bdf8";
+      }
+      if (laserScan) laserScan.style.display = "block";
+      setEyeExpression('analyzing');
+
+      let dataUrl = "";
+      if (isWebcamRunning && webcamVideo && webcamVideo.readyState >= 2) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 480;
+        offscreen.height = 360;
+        const offCtx = offscreen.getContext('2d');
+        if (offCtx) {
+          offCtx.drawImage(webcamVideo, 0, 0, 480, 360);
+          dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+        }
+      }
+
+      try {
+        const res = await fetch('/api/live_visual_reaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_base64: dataUrl,
+            event: 'user_requested_live_look'
+          })
+        });
+        const data = await res.json();
+        if (laserScan) laserScan.style.display = "none";
+
+        if (data.status === 'success') {
+          if (data.emotion) setEyeExpression(data.emotion);
+          if (data.sound) playWallESound(data.sound);
+          if (data.gesture === 'excited_wiggle') animateExcitedWiggle();
+
+          if (data.observed_visual && thoughtText) {
+            thoughtText.textContent = `👀 Sees: ${data.observed_visual}`;
+            thoughtText.style.color = '#38bdf8';
+          }
+
+          let displayMsg = "";
+          if (data.observed_visual) {
+            displayMsg += `👀 *[Observes: ${data.observed_visual}]*\n`;
+          }
+          if (data.inner_thought) {
+            displayMsg += `💭 *[Thought: ${data.inner_thought}]*\n`;
+          }
+          displayMsg += `"${data.speech || 'Beep boop!'}"`;
+          addChatMessage("alpha", displayMsg);
+
+          if (resultBox) {
+            let tags = "";
+            if (data.identified_persons && data.identified_persons.length > 0) {
+              tags += `<div style="margin-top:4px; font-size:0.7rem;">👥 <b>People:</b> ${data.identified_persons.map(p => `<span style="color:#38bdf8; font-weight:bold;">${escapeHtml(p.name)}</span>`).join(', ')}</div>`;
+            }
+            if (data.detected_objects && data.detected_objects.length > 0) {
+              tags += `<div style="margin-top:2px; font-size:0.7rem;">📦 <b>Objects:</b> ${data.detected_objects.map(o => `<span style="color:#fde047;">${escapeHtml(o.name)}</span>${o.owner ? ` (👤 ${escapeHtml(o.owner)})` : ''}`).join(', ')}</div>`;
+            }
+            resultBox.style.display = "block";
+            resultBox.innerHTML = `<span style="color:#c084fc; font-weight:bold;">[Gemini Live Vision] Observed:</span> ${escapeHtml(data.observed_visual)}${tags}<br><span style="color:#cbd5e1;">"${escapeHtml(data.speech)}"</span>`;
+          }
+          fetchMemoryData();
+
+          const ttsToggle = document.getElementById('ttsEnabledToggle');
+          if (ttsToggle && ttsToggle.checked && data.speech) {
+            speakText(data.speech);
+          }
+        } else {
+          if (resultBox) {
+            resultBox.style.display = "block";
+            resultBox.innerHTML = `<span style="color:#f87171;">Vision observation error:</span> ${escapeHtml(data.error || 'Failed')}`;
+          }
+          setEyeExpression('curious');
+        }
+      } catch (err) {
+        if (laserScan) laserScan.style.display = "none";
+        setEyeExpression('confused');
+        console.error("Live visual reaction failed:", err);
+      }
     }
 
     // --- SHOW & TELL (GEMINI VISION INSPECTION) ---
     async function inspectCurrentFrame() {
-      if (!isWebcamRunning) {
+      if (!isWebcamRunning && !pythonCamActive) {
         alert("Please start the laptop camera first!");
         return;
       }
@@ -2685,13 +3725,16 @@
 
       setEyeExpression('analyzing');
 
-      // Capture clean snapshot from webcamVideo
-      const offscreen = document.createElement('canvas');
-      offscreen.width = 320;
-      offscreen.height = 240;
-      const offCtx = offscreen.getContext('2d');
-      offCtx.drawImage(webcamVideo, 0, 0, 320, 240);
-      const dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+      let dataUrl = "";
+      if (isWebcamRunning && webcamVideo && webcamVideo.readyState >= 2) {
+        // Capture clean snapshot from webcamVideo
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 320;
+        offscreen.height = 240;
+        const offCtx = offscreen.getContext('2d');
+        offCtx.drawImage(webcamVideo, 0, 0, 320, 240);
+        dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+      }
 
       try {
         const res = await fetch('/api/inspect_frame', {
@@ -2783,72 +3826,397 @@
       }
     }
 
+    // =========================================================================
+    // DUPLEX CONVERSATIONAL AUDIO CORTEX: LIVE MIC STREAMING & AUTO-LISTENING
+    // =========================================================================
+    let activeSpeechAudio = null;
+    let isAlphaSpeaking = false;
+    let isHandsFreeListening = true;
+    let isListeningActive = false;
+    let isUserTalkingActive = false;
+    let activeRecognizer = null;
+    let micMediaStream = null;
+    let micAudioContext = null;
+    let micAnalyserNode = null;
+    let micDataArray = null;
+    let micVolumeCheckInterval = null;
+    let speechSilenceTimeout = null;
+    let rawMediaRecorder = null;
+    let rawAudioChunks = [];
+
+    function updateMicBadge(state, customText) {
+      const badge = document.getElementById('micStatusBadge');
+      const dot = document.getElementById('micStatusDot');
+      const text = document.getElementById('micStatusText');
+      const micBtn = document.getElementById('btnVoiceMic');
+      if (!badge || !dot || !text) return;
+
+      if (state === 'speaking_alpha') {
+        badge.style.background = "rgba(56, 189, 248, 0.15)";
+        badge.style.color = "#38bdf8";
+        badge.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+        dot.style.background = "#38bdf8";
+        text.textContent = customText || "🗣️ Alpha Speaking...";
+        if (micBtn) micBtn.style.background = "";
+      } else if (state === 'listening') {
+        badge.style.background = "rgba(74, 222, 128, 0.2)";
+        badge.style.color = "#4ade80";
+        badge.style.border = "1px solid rgba(74, 222, 128, 0.4)";
+        dot.style.background = "#4ade80";
+        text.textContent = customText || "👂 Alpha is listening... Speak now!";
+        if (micBtn) micBtn.style.background = "#15803d";
+      } else if (state === 'hearing_user') {
+        badge.style.background = "rgba(250, 204, 21, 0.2)";
+        badge.style.color = "#facc15";
+        badge.style.border = "1px solid rgba(250, 204, 21, 0.4)";
+        dot.style.background = "#facc15";
+        text.textContent = customText || "🎙️ Hearing your voice...";
+        if (micBtn) micBtn.style.background = "#ca8a04";
+      } else {
+        badge.style.background = "rgba(148, 163, 184, 0.15)";
+        badge.style.color = "#94a3b8";
+        badge.style.border = "1px solid rgba(148, 163, 184, 0.3)";
+        dot.style.background = "#94a3b8";
+        text.textContent = customText || "🎙️ Mic Stream Ready";
+        if (micBtn) micBtn.style.background = "";
+      }
+    }
+
+    async function requestMicStreamAccess() {
+      if (micMediaStream && micAudioContext) return true;
+      try {
+        micMediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        micAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = micAudioContext.createMediaStreamSource(micMediaStream);
+        micAnalyserNode = micAudioContext.createAnalyser();
+        micAnalyserNode.fftSize = 64;
+        source.connect(micAnalyserNode);
+
+        micDataArray = new Uint8Array(micAnalyserNode.frequencyBinCount);
+        startMicVUMeterLoop();
+        updateMicBadge('ready', '🎙️ Live Mic Stream Active');
+        return true;
+      } catch (err) {
+        console.warn("[MicStream] getUserMedia permission prompt or error:", err);
+        updateMicBadge('ready', '⚠️ Click to Grant Mic Access');
+        return false;
+      }
+    }
+
+    function startMicVUMeterLoop() {
+      if (micVolumeCheckInterval) clearInterval(micVolumeCheckInterval);
+      const vuBar = document.getElementById('micVUBar');
+
+      micVolumeCheckInterval = setInterval(() => {
+        if (!micAnalyserNode || !micDataArray) return;
+        micAnalyserNode.getByteFrequencyData(micDataArray);
+
+        let sum = 0;
+        for (let i = 0; i < micDataArray.length; i++) {
+          sum += micDataArray[i];
+        }
+        const avg = sum / micDataArray.length; // 0 to 255
+        const pct = Math.min(100, Math.round((avg / 90) * 100));
+
+        if (vuBar) {
+          vuBar.style.width = `${pct}%`;
+        }
+
+        // Voice Activity Detection (VAD)
+        if (avg > 18 && !isAlphaSpeaking) {
+          isUserTalkingActive = true;
+        } else if (avg <= 8) {
+          isUserTalkingActive = false;
+        }
+      }, 50);
+    }
+
+    function toggleHandsFreeAutoListen(enabled) {
+      isHandsFreeListening = !!enabled;
+      if (isHandsFreeListening && !isAlphaSpeaking) {
+        startListeningTurn();
+      } else if (!isHandsFreeListening) {
+        stopListeningTurn();
+      }
+    }
+
+    function startListeningTurn() {
+      if (isAlphaSpeaking) return;
+      isListeningActive = true;
+      updateMicBadge('listening');
+
+      // Request live mic stream for visualizer & volume meter
+      requestMicStreamAccess();
+
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRec) {
+        if (activeRecognizer) {
+          try { activeRecognizer.abort(); } catch(e) {}
+        }
+
+        const recog = new SpeechRec();
+        recog.lang = "en-US";
+        recog.continuous = true;
+        recog.interimResults = true;
+        recog.maxAlternatives = 1;
+        activeRecognizer = recog;
+
+        let accumulatedTranscript = "";
+
+        recog.onstart = () => {
+          updateMicBadge('listening');
+        };
+
+        recog.onresult = (e) => {
+          if (isAlphaSpeaking) return;
+          let interim = "";
+          let final = "";
+
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const transcript = e.results[i][0].transcript;
+            if (e.results[i].isFinal) {
+              final += transcript + " ";
+            } else {
+              interim += transcript;
+            }
+          }
+
+          const currentSpeech = (final + interim).trim();
+          if (currentSpeech) {
+            updateMicBadge('hearing_user', `🎙️ "${currentSpeech.slice(-32)}"`);
+            const chatInput = document.getElementById('chatInputText');
+            if (chatInput) chatInput.value = currentSpeech;
+
+            clearTimeout(speechSilenceTimeout);
+            // Auto-send when user finishes a complete thought or pauses for 1.2s
+            speechSilenceTimeout = setTimeout(() => {
+              if (chatInput && chatInput.value.trim() && !isAlphaSpeaking) {
+                stopListeningTurn();
+                sendChatMessage();
+              }
+            }, 1250);
+          }
+        };
+
+        recog.onerror = (e) => {
+          if (e.error !== 'no-speech' && e.error !== 'aborted') {
+            console.warn("[SpeechRecognition] Notice:", e.error);
+          }
+        };
+
+        recog.onend = () => {
+          if (isListeningActive && isHandsFreeListening && !isAlphaSpeaking) {
+            // Keep ears open seamlessly
+            try { recog.start(); } catch(e) {}
+          }
+        };
+
+        try {
+          recog.start();
+        } catch(e) {
+          console.warn("[SpeechRec] start notice:", e);
+        }
+      } else {
+        // Fallback for non-WebSpeech browsers: Record audio chunks via MediaRecorder & /api/transcribe_mic
+        startMediaRecorderFallback();
+      }
+    }
+
+    function stopListeningTurn() {
+      isListeningActive = false;
+      isUserTalkingActive = false;
+      clearTimeout(speechSilenceTimeout);
+
+      if (activeRecognizer) {
+        try { activeRecognizer.stop(); } catch(e) {}
+        activeRecognizer = null;
+      }
+      stopMediaRecorderFallback();
+      updateMicBadge('ready');
+    }
+
+    function startMediaRecorderFallback() {
+      if (!micMediaStream) return;
+      try {
+        rawAudioChunks = [];
+        rawMediaRecorder = new MediaRecorder(micMediaStream);
+        rawMediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) rawAudioChunks.push(e.data);
+        };
+        rawMediaRecorder.onstop = async () => {
+          if (rawAudioChunks.length === 0 || isAlphaSpeaking) return;
+          const blob = new Blob(rawAudioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const b64 = reader.result;
+            try {
+              const res = await fetch('/api/transcribe_mic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audio_base64: b64, auto_chat: false })
+              });
+              const data = await res.json();
+              if (data.transcript && data.transcript.trim()) {
+                const chatInput = document.getElementById('chatInputText');
+                if (chatInput) chatInput.value = data.transcript.trim();
+                sendChatMessage();
+              }
+            } catch(err) {
+              console.warn("[TranscribeFallback] API notice:", err);
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+        rawMediaRecorder.start(250);
+      } catch(e) {
+        console.warn("[MediaRecorderFallback] err:", e);
+      }
+    }
+
+    function stopMediaRecorderFallback() {
+      if (rawMediaRecorder && rawMediaRecorder.state !== 'inactive') {
+        try { rawMediaRecorder.stop(); } catch(e) {}
+      }
+    }
+
+    function toggleVoiceSpeechRecognition() {
+      // Barge-in: if Alpha is speaking, cut off Alpha immediately and listen to Akhil!
+      if (isAlphaSpeaking) {
+        interruptAlphaSpeech();
+      }
+
+      if (isListeningActive) {
+        stopListeningTurn();
+      } else {
+        requestMicStreamAccess().then(() => {
+          startListeningTurn();
+        });
+      }
+    }
+
+    function interruptAlphaSpeech() {
+      if (activeSpeechAudio) {
+        try { activeSpeechAudio.pause(); } catch(e) {}
+        activeSpeechAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      stopTalkingPulse();
+      isAlphaSpeaking = false;
+    }
+
     function speakText(text, onComplete) {
+      if (!text) {
+        if (onComplete) onComplete();
+        return;
+      }
+
+      // Barge-in check: stop any prior speech
+      interruptAlphaSpeech();
+      isAlphaSpeaking = true;
+      updateMicBadge('speaking_alpha');
+
+      // Mute listening while Alpha speaks to prevent self-hearing feedback
+      if (activeRecognizer) {
+        try { activeRecognizer.abort(); } catch(e) {}
+      }
+      stopMediaRecorderFallback();
+
+      const onSpeechDone = () => {
+        stopTalkingPulse();
+        isAlphaSpeaking = false;
+        activeSpeechAudio = null;
+
+        if (onComplete) onComplete();
+
+        // AUTOMATIC TURN-TAKING: Alpha finished speaking/asking! Reopen ears immediately!
+        const autoToggle = document.getElementById('autoListenToggle');
+        if (autoToggle && autoToggle.checked) {
+          setTimeout(() => {
+            if (!isAlphaSpeaking) {
+              startListeningTurn();
+            }
+          }, 350);
+        } else {
+          updateMicBadge('ready');
+        }
+      };
+
+      // 1. Check if text is Alpha's iconic introduction - play authentic recorded MP3 clip
+      const lower = text.toLowerCase();
+      if ((lower.includes("alpha") && (lower.includes("pet") || lower.includes("your pet"))) ||
+          lower.includes("hello, i'm alpha") || lower.includes("hello i'm alpha")) {
+        playWallESound('alpha_voice');
+        setTimeout(onSpeechDone, 3300);
+        return;
+      }
+
       const ttsToggle = document.getElementById('ttsEnabledToggle');
       const hwToggle = document.getElementById('hardwareAudioToggle');
+      const clean = text.replace(/[*_#]/g, '').trim();
+      const currentEmo = (expressionLabel ? expressionLabel.textContent : 'happy').toLowerCase().trim();
 
-      // Trigger PC/Hardware TTS if selected
+      // Trigger PC / Physical Hardware Speaker TTS if selected
       if (hwToggle && hwToggle.checked) {
         fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, emotion: expressionLabel.textContent.toLowerCase() })
+          body: JSON.stringify({ text: clean, emotion: currentEmo })
         }).catch(e => console.warn(e));
       }
 
       if (!ttsToggle || !ttsToggle.checked) {
-        if (onComplete) onComplete();
-        return;
-      }
-      if (!window.speechSynthesis) {
-        if (onComplete) onComplete();
+        onSpeechDone();
         return;
       }
 
-      window.speechSynthesis.cancel();
-      const clean = text.replace(/[*_#]/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(clean);
+      // 2. Primary: Stream High-Fidelity Neural Speech (/api/tts) matching Voice 1.mp3
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(clean)}&emotion=${encodeURIComponent(currentEmo)}`;
+      const audio = new Audio(ttsUrl);
+      activeSpeechAudio = audio;
 
-      const pitchSlider = document.getElementById('voicePitchSlider');
-      const rateSlider = document.getElementById('voiceRateSlider');
-      utterance.pitch = pitchSlider ? parseFloat(pitchSlider.value) : 1.35;
-      utterance.rate = rateSlider ? parseFloat(rateSlider.value) : 1.05;
-
-      startTalkingPulse();
-      startAudioVisualizerAnimation(clean.length * 85);
-
-      utterance.onend = () => {
-        stopTalkingPulse();
-        if (onComplete) onComplete();
+      let fallbackTriggered = false;
+      const runFallbackTTS = () => {
+        if (fallbackTriggered) return;
+        fallbackTriggered = true;
+        console.warn("[TTS] Using Web Speech fallback");
+        if (window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(clean);
+          const rateSlider = document.getElementById('voiceRateSlider');
+          utterance.pitch = 1.35;
+          utterance.rate = rateSlider ? parseFloat(rateSlider.value) : 1.05;
+          startTalkingPulse();
+          startAudioVisualizerAnimation(clean.length * 85);
+          utterance.onend = () => onSpeechDone();
+          utterance.onerror = () => onSpeechDone();
+          window.speechSynthesis.speak(utterance);
+        } else {
+          onSpeechDone();
+        }
       };
-      utterance.onerror = () => {
-        stopTalkingPulse();
-        if (onComplete) onComplete();
+
+      audio.onplay = () => {
+        startTalkingPulse();
+        startAudioVisualizerAnimation(clean.length * 85);
+      };
+      audio.onended = () => {
+        onSpeechDone();
+      };
+      audio.onerror = (e) => {
+        runFallbackTTS();
       };
 
-      window.speechSynthesis.speak(utterance);
-    }
-
-    function toggleVoiceSpeechRecognition() {
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRec) {
-        alert("Speech recognition is not supported in this browser. Please type your message.");
-        return;
-      }
-      const recog = new SpeechRec();
-      recog.lang = "en-US";
-      recog.continuous = false;
-      const micBtn = document.getElementById('btnVoiceMic');
-      micBtn.style.background = "#ef4444";
-
-      recog.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        document.getElementById('chatInputText').value = transcript;
-        sendChatMessage();
-      };
-      recog.onend = () => { micBtn.style.background = ""; };
-      recog.onerror = () => { micBtn.style.background = ""; };
-      recog.start();
+      audio.play().catch(e => {
+        console.warn("[TTS] Autoplay notice:", e);
+        runFallbackTTS();
+      });
     }
 
     async function toggleBrainMode() {
@@ -2902,24 +4270,52 @@
           }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No facts learned yet. Talk to Alpha to teach him!</div>';
         }
 
-        // 2. DiscoveredObjects
+        // 0. Known Persons
+        const personsList = document.getElementById('knownPersonsList');
+        if (personsList && data.persons) {
+          const pBadge = document.getElementById('personCountBadge');
+          if (pBadge) pBadge.textContent = `${data.persons.length} People`;
+          personsList.innerHTML = data.persons.map(p => {
+            const relColor = p.relationship === 'owner' ? '#38bdf8' : p.relationship === 'family' ? '#4ade80' : '#c084fc';
+            return `
+              <div class="memory-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <b style="color: #fff; font-size: 0.85rem;">👤 ${escapeHtml(p.name)}</b>
+                  <span style="background: rgba(255,255,255,0.08); color: ${relColor}; border: 1px solid ${relColor}40; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: bold;">${escapeHtml((p.relationship || 'Friend').toUpperCase())}</span>
+                </div>
+                <div style="color: #cbd5e1; font-size: 0.75rem; margin: 3px 0;">${escapeHtml(p.visual_description || 'No visual description yet.')}</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                  <span>${p.notes ? escapeHtml(p.notes) : ''}</span>
+                  <span>Last seen: ${p.last_seen || ''}</span>
+                </div>
+              </div>
+            `;
+          }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No people registered yet.</div>';
+        }
+
+        // 2. DiscoveredObjects with Owner Association
         const objsList = document.getElementById('discoveredObjectsList');
         if (objsList && data.objects) {
           document.getElementById('objectCountBadge').textContent = `${data.objects.length} Objects`;
-          objsList.innerHTML = data.objects.map(o => `
-            <div class="memory-item">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="color: #fff; font-size: 0.85rem;">${escapeHtml(o.name)}</b>
-                <span class="${o.is_moved ? 'tag-moved' : 'tag-stationary'}">${o.is_moved ? '📍 MOVED!' : 'Present'}</span>
+          objsList.innerHTML = data.objects.map(o => {
+            const ownerBadge = o.owner_name
+              ? `<span style="background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4); border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: bold;">👤 ${escapeHtml(o.owner_name)}</span>`
+              : `<span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem;">Unassigned</span>`;
+            return `
+              <div class="memory-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <b style="color: #fff; font-size: 0.85rem;">📦 ${escapeHtml(o.name)}</b>
+                  ${ownerBadge}
+                </div>
+                <div style="color: var(--accent-blue); font-size: 0.75rem; margin: 3px 0;">Room: <b>${escapeHtml(o.room_name || 'Work Desk')}</b></div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(o.description || '')}</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Last seen: ${o.last_seen || ''}</span>
+                  <button onclick="promptAssignOwner('${escapeHtml(o.name)}')" style="background: transparent; border: 1px solid #334155; color: #38bdf8; font-size: 0.65rem; border-radius: 4px; padding: 1px 6px; cursor: pointer;">Assign Owner</button>
+                </div>
               </div>
-              <div style="color: var(--accent-blue); font-size: 0.75rem; margin: 3px 0;">Room: <b>${escapeHtml(o.room_name || 'Work Desk')}</b></div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(o.description || '')}</div>
-              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
-                <span>Sightings: ${o.sighting_count}</span>
-                <span>Last seen: ${o.last_seen || ''}</span>
-              </div>
-            </div>
-          `).join('') || '<div style="color: var(--text-muted); padding: 8px;">No objects sighted yet. Drive near obstacles or inspect with camera!</div>';
+            `;
+          }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No objects sighted yet. Drive near obstacles or inspect with camera!</div>';
         }
 
         // 3. Observations
@@ -2953,6 +4349,44 @@
 
       } catch (err) {
         console.warn("Could not fetch memory:", err);
+      }
+    }
+
+    async function promptAssignOwner(objectName) {
+      const owner = prompt(`Assign owner for '${objectName}':\n(e.g. Akhil, Sarah, John)`, "Akhil");
+      if (!owner) return;
+      try {
+        const resp = await fetch('/api/assign_object_owner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ object_name: objectName, owner_name: owner })
+        });
+        if (resp.ok) {
+          showArenaToast(`Assigned ${objectName} to ${owner}!`, "#4ade80");
+          fetchMemoryData();
+        }
+      } catch (e) {
+        console.warn("Assign owner failed:", e);
+      }
+    }
+
+    async function promptAddNewPerson() {
+      const name = prompt("Enter Person's Name (e.g. Sarah, John):");
+      if (!name) return;
+      const rel = prompt("Relationship (friend, family, colleague, guest):", "friend") || "friend";
+      const desc = prompt("Visual cues (e.g. Wears red hoodie, tall):", "") || "";
+      try {
+        const resp = await fetch('/api/persons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, relationship: rel, visual_description: desc })
+        });
+        if (resp.ok) {
+          showArenaToast(`Registered ${name} (${rel})!`, "#c084fc");
+          fetchMemoryData();
+        }
+      } catch (e) {
+        console.warn("Add person failed:", e);
       }
     }
 

@@ -10,13 +10,14 @@ import argparse
 from pathlib import Path
 from PIL import Image
 
-from core.config import DATA_DIR, SNAPSHOTS_DIR
+from core.config import DATA_DIR, SNAPSHOTS_DIR, ALPHA_VOICE_PATH
 from core.database import AlphaDatabase
 from core.eye_animator import DualEyeController, Emotion
 from core.motion_controller import MotionController
 from core.vision_pipeline import VisionPipeline
 from core.gemini_brain import GeminiBrain
 from core.voice_engine import VoiceEngine, WallESoundSynthesizer
+from core.behavior_engine import AlphaBehaviorEngine, BehaviorAction
 
 class AlphaRobot:
     """The unified physical and cognitive robot instance."""
@@ -32,6 +33,7 @@ class AlphaRobot:
         self.vision = VisionPipeline()
         self.voice = VoiceEngine(voice_enabled=voice_enabled)
         self.brain = GeminiBrain(db=self.db)
+        self.behavior = AlphaBehaviorEngine(brain=self.brain)
 
         # Wire up speech synchronization with eyes
         self.voice.on_speech_start = lambda: self.eyes.talking_pulse(cycles=1)
@@ -39,8 +41,11 @@ class AlphaRobot:
         # Seed initial facts if fresh database
         self._seed_initial_profile()
 
-        # Play startup greeting chime & nod
-        self.voice.play_sound("startup")
+        # Play startup greeting: Alpha's authentic voice clip ("Hello, I'm Alpha. I am your pet.")!
+        if ALPHA_VOICE_PATH.exists():
+            self.voice.play_alpha_voice(async_play=True)
+        else:
+            self.voice.play_sound("startup")
         self.eyes.set_emotion(Emotion.HAPPY)
         self.motion.nod(repeats=1)
 
@@ -147,53 +152,60 @@ class AlphaRobot:
 
         print("[Alpha] All 16 eye previews exported successfully!\n")
 
-    def run_autonomous_loop(self) -> None:
-        """The main autonomous sensory & roaming loop."""
+    def run_autonomous_loop(self, show_window: bool = True) -> None:
+        """The main autonomous sensory & roaming loop driven by the behavior engine."""
         print("\n[Alpha] Starting Autonomous Roaming & Face Tracking Loop...")
-        print("Press Ctrl+C to stop.\n")
+        print("Camera Feed & Emotional Behavior Cortex Active.")
+        if show_window:
+            print("[Alpha Vision] Live Camera HUD Window Active. Press 'q' or 'Esc' to exit.\n")
+        else:
+            print("Press Ctrl+C to stop.\n")
 
         self.eyes.set_emotion(Emotion.IDLE)
-        last_blink = time.time()
-        was_tracking_face = False
 
         try:
             while True:
-                # 1. Natural periodic eye blink (every 3 to 6 seconds)
-                if time.time() - last_blink > 4.5:
-                    self.eyes.blink()
-                    last_blink = time.time()
+                # 1. Vision Perception: High-stability Face Tracking
+                frame = self.vision.capture_frame()
+                face_res = self.vision.track_face_detailed(frame)
 
-                # 2. Vision Perception: Face Tracking
-                face_found, fx, fy = self.vision.detect_face()
-                if face_found:
-                    if not was_tracking_face:
-                        self.voice.play_sound("curious")
-                        was_tracking_face = True
-                    self.eyes.set_emotion(Emotion.HAPPY)
-                    # Gaze directly at the user's face
-                    self.eyes.set_gaze(fx, fy)
-                    # Turn neck servos to keep face centered
-                    target_pan = fx * 45.0
-                    target_tilt = -fy * 25.0
-                    self.motion.set_head_pose(target_pan, target_tilt)
-                else:
-                    if was_tracking_face:
-                        was_tracking_face = False
-                    self.eyes.set_emotion(Emotion.IDLE)
-                    self.eyes.set_gaze(0.0, 0.0)
+                # 2. Compute Emotional Response & Companion Actions
+                action = self.behavior.process_vision(face_res, frame=frame, allow_speech=self.voice.voice_enabled)
+                self.behavior.apply_action(self, action)
 
-                # 3. Desk Cliff Edge Check
+                # 3. Desk Cliff Edge Safety Check
                 if self.motion.check_cliff_sensors():
                     self.eyes.set_emotion(Emotion.ALERT)
                     self.voice.play_sound("alert")
                     self.motion.alert_recoil()
                     self.motion.stop()
+                    self.db.log_observation("Table cliff edge detected. Emergency stop engaged.")
 
-                time.sleep(0.05)
+                # 4. Optional Live Window HUD preview in simulation mode
+                if show_window and frame is not None:
+                    try:
+                        import cv2
+                        hud = self.vision.draw_hud(frame, face_res, action.state, action.emotion)
+                        cv2.imshow("Project Alpha - Laptop Camera Vision Cortex", hud)
+                        key = cv2.waitKey(1) & 0xFF
+                        if key in (27, ord('q')):
+                            break
+                        if cv2.getWindowProperty("Project Alpha - Laptop Camera Vision Cortex", cv2.WND_PROP_VISIBLE) < 1:
+                            print("[Alpha] Camera window closed by user.")
+                            break
+                    except Exception:
+                        pass
+
+                time.sleep(0.035)
         except KeyboardInterrupt:
             print("\n[Alpha] Autonomous loop stopped by user.")
             self.voice.play_sound("shutdown", async_play=False)
         finally:
+            try:
+                import cv2
+                cv2.destroyAllWindows()
+            except Exception:
+                pass
             self.motion.cleanup()
             self.vision.release()
 
@@ -202,6 +214,7 @@ def main():
     parser.add_argument("--cli", action="store_true", help="Launch interactive CLI conversation session")
     parser.add_argument("--voice", action="store_true", help="Enable spoken voice output during CLI chat")
     parser.add_argument("--preview-eyes", action="store_true", help="Export sample PNG renders of eye expressions")
+    parser.add_argument("--no-view", dest="view", action="store_false", default=True, help="Disable OpenCV camera HUD window")
     args = parser.parse_args()
 
     robot = AlphaRobot(voice_enabled=args.voice or not args.cli)
@@ -211,7 +224,7 @@ def main():
     elif args.cli:
         robot.run_cli_chat(voice_output=args.voice)
     else:
-        robot.run_autonomous_loop()
+        robot.run_autonomous_loop(show_window=args.view)
 
 if __name__ == "__main__":
     main()

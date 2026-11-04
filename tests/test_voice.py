@@ -77,5 +77,33 @@ class TestVoiceAndSoundEngine(unittest.TestCase):
         for emo in Emotion:
             self.motion.express_emotion(emo)
 
+    def test_alpha_voice_asset_and_playback(self):
+        """Verifies Alpha's authentic voice clip exists and can be retrieved."""
+        from core.config import ALPHA_VOICE_PATH
+        self.assertTrue(ALPHA_VOICE_PATH.exists())
+        voice_bytes = self.voice.get_alpha_voice_bytes()
+        self.assertGreater(len(voice_bytes), 1000)
+        self.assertTrue(voice_bytes.startswith(b"ID3"))
+
+    def test_neural_speech_synthesis_and_caching(self):
+        """Verifies neural TTS generates MP3 bytes and caches them for fast retrieval."""
+        test_phrase = "Testing neural companion voice for Alpha."
+        audio_bytes = self.voice.get_neural_speech_bytes(test_phrase, emotion=Emotion.HAPPY)
+        self.assertIsInstance(audio_bytes, bytes)
+        self.assertGreater(len(audio_bytes), 2000)
+        # Verify file exists in disk cache
+        cached_file = self.voice.get_neural_speech_file(test_phrase, emotion=Emotion.HAPPY)
+        self.assertIsNotNone(cached_file)
+        self.assertTrue(cached_file.exists())
+        # Subsequent retrieval must be fast and identical
+        cached_bytes = self.voice.get_neural_speech_bytes(test_phrase, emotion=Emotion.HAPPY)
+        self.assertEqual(audio_bytes, cached_bytes)
+
+    def test_intro_phrase_maps_to_voice_1(self):
+        """Verifies that Alpha's iconic intro phrases cleanly map to Voice 1 asset."""
+        f1 = self.voice.get_neural_speech_file("Hello, I'm Alpha. I am your pet.")
+        from core.config import ALPHA_VOICE_PATH
+        self.assertEqual(f1, ALPHA_VOICE_PATH)
+
 if __name__ == "__main__":
     unittest.main()

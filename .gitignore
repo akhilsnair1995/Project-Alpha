@@ -8,6 +8,10 @@ __pycache__/
 data/alpha_memory.db
 .env
 
+# Generated audio cache & camera snapshots
+data/tts_cache/
+data/snapshots/
+
 # OS files
 .DS_Store
 Thumbs.db

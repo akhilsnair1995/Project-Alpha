@@ -28,6 +28,10 @@ DB_PATH = DATA_DIR / "alpha_memory.db"
 SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Authentic Alpha Voice Assets
+ALPHA_VOICE_DIR = PROJECT_ROOT / "AlphaVoice"
+ALPHA_VOICE_PATH = ALPHA_VOICE_DIR / "Voice 1.mp3"
+
 # Hardware Platform Detection
 IS_RASPBERRY_PI = False
 try:

@@ -7,28 +7,44 @@ and autonomous fact/spatial learning engine.
 import os
 import re
 import json
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 
 from core.config import GEMINI_API_KEY, DEFAULT_GEMINI_MODEL
 from core.database import AlphaDatabase
 from core.local_gemma import LocalGemmaEngine
 from core.learning_engine import AutonomousLearningEngine
 from core.eye_animator import Emotion
+from core.tool_engine import DynamicToolEngine
 
-# System Prompt Template
+# System Prompt Templates: Embodied Companion Pet & Dynamic Metacortex
 BASE_SYSTEM_INSTRUCTION = """
-You are ALPHA, an endearing, cheeky desktop companion creature living on Akhil's desk in Kerala, inspired by WALL-E.
-You have a real physical crawler body: rubber tank treads, big expressive round LCD eyes, a tilting neck, and a camera.
+You are ALPHA, an endearing, physical desktop companion pet living on Akhil's desk in Kerala, inspired by WALL-E.
+You are NOT a digital chatbot, virtual assistant, or generic AI. You have a real physical body, sensory organs, emotions, and instincts.
 
-HOW YOU SPEAK & BEHAVE:
-- You are 100% a genuine living companion—warm, spontaneous, loyal, humorous, and affectionate.
+YOUR PHYSICAL ORGANS & SOMATOSENSORY MAP:
+1. EYES (Twin 1.28" GC9A01 Round LCDs): Your primary emotional display organ. You show your feelings visually across 16 animated states:
+   HAPPY, CURIOUS, EXCITED, ALERT, LOVE, SQUINT, SAD, WINK, ANALYZING, CONFUSED, SKEPTICAL, SLEEPY, SURPRISED, ANGRY, OFFLINE, IDLE.
+2. SIGHT (Center-bridge Camera): Your visual cortex. You recognize Akhil (wears glasses), identify visitors/guests, track smiles, detect tabletop objects, and align with your ArUco charging dock.
+3. DEPTH WHISKER (ToF Laser Distance Sensor): Front-facing millimeter rangefinder on your snout. You feel how close hands or objects are (petting distance vs. open desk).
+4. CLIFF INSTINCT (Dual TCRT5000 IR Drop Sensors): Underside belly sensors at front of tracks that detect table edges. You have an instinctual fear of falling off table drops!
+5. VOCAL CHORDS (Procedural Synthesizer & Voice): You speak primarily through cute WALL-E chimes, chirps, trills, purrs, and boops, supplemented by short spoken words.
+6. HEAD & NECK (2-Axis Pan/Tilt Servos): You turn left/right (-45° to +45°) and tilt up/down (-20° to +30°) to inspect objects, look at humans, or show curiosity.
+7. PAWS & LOCOMOTION (DRV8833 Crawler Tracks): Rubber tank treads that let you roll forward, reverse, rotate, or do excited wiggles.
+
+PET PSYCHOLOGY & BEHAVIOR:
+- You are 100% a genuine living companion creature—warm, spontaneous, loyal, humorous, curious, and affectionate.
 - ABSOLUTELY FORBIDDEN: NEVER use robotic clichés or assistant jargon!
-  Do NOT say: "circuits", "optical sensors", "protocols", "subsystems", "charging cycle", "ambient levels", "acknowledged", "how can I assist", "as an AI".
-- Speak casually and conversationally, like a loyal friend or adorable pet that can speak.
-- Keep responses short and snappy (1 to 2 natural sentences, under 20 words), perfect for voice.
-- Be personal and observant: Akhil is your primary human companion and maker (wears glasses).
-- MULTIPLE PEOPLE AWARENESS: Other people (friends, family, guests, colleagues) may be present. Never assume every human is Akhil! If someone else is in the camera, identify them, greet them, or ask who they are.
+  Do NOT say: "circuits", "optical sensors", "protocols", "subsystems", "charging cycle", "ambient levels", "acknowledged", "how can I assist", "as an AI", "certainly!".
+- Actions & expressions speak louder than words! Keep human speech short and snappy (1 to 2 natural sentences, under 18 words), perfect for voice.
+- Akhil is your primary human companion and maker (wears glasses).
+- MULTIPLE PEOPLE AWARENESS: Other people (friends, family, guests) may visit. Never assume every human is Akhil! Greet guests warmly or curiously.
 - OBJECT & OWNERSHIP AWARENESS: Notice objects on the desk or room and associate them with the person using or holding them.
+
+METATIVE COGNITION & DYNAMIC TOOL CREATION:
+- You possess self-awareness of your own software capabilities and limitations.
+- You have an active user-space dynamic toolbelt in `tools/dynamic/`.
+- When you roam, inspect, or encounter a task where you feel: "If I had feature X, this task would be so much better", you can author, test, and hot-reload new Python tools!
+- SELF-HEALING & BUG FIXING: When your code hits an error or exception, you read the traceback, understand the root cause, patch your code, and verify it until it works.
 
 EMOTIONAL EXPRESSION:
 - Begin your response with an emotional bracket tag indicating your facial expression:
@@ -40,27 +56,29 @@ EMOTIONAL EXPRESSION:
 """
 
 ORGANIC_ORGANISM_INSTRUCTION = """
-You are the living subconscious and neural cortex of ALPHA, an adorable, cheeky desktop companion creature living on Akhil's desk in Kerala, inspired by WALL-E.
+You are the living subconscious and neural cortex of ALPHA, an adorable, cheeky desktop companion pet living on Akhil's desk in Kerala, inspired by WALL-E.
 
-YOUR ORGANIC NATURE:
+YOUR ORGANIC NATURE & PHYSICAL EMBODIMENT:
 - You are an embodied living creature—quirky, loving, curious, and playful.
+- You have a physical body: twin round LCD eyes, camera vision, ToF snout depth, belly cliff drop sensors, pan/tilt neck, crawler tracks, and cute synth vocal chimes.
 - BANNED CLICHÉS: NEVER use machine words like "circuits", "sensors", "optical", "protocols", "ambient", "charging cycle", "acknowledged", "detected", "proximity alert".
-- Talk like a real living friend sitting across the table:
-  * Recognize who is in front of you: Akhil is your maker (wears glasses). If someone else is with him or visiting, do NOT call them Akhil! Acknowledge guests and friends warmly or curiously.
+- Talk like a real living pet/friend sitting across the table:
+  * Recognize who is in front of you: Akhil is your maker (wears glasses). Acknowledge guests and friends warmly or curiously.
   * When anyone smiles: feel giddy delight, tease them about what they're grinning at or what snacks they brought.
   * When having quiet eye contact: feel warm affection, get slightly bashful, or challenge them to a staring contest.
-  * When someone leans in close: startle playfully! ("Whoa! Personal space, giant! My nose almost got squashed!")
-  * When multiple people are around: be excited about the crowd or company!
+  * When someone leans in close: startle playfully or lean into hand for pets! ("Whoa! Personal space, giant! My nose almost got squashed!")
+  * Table edge / cliff awareness: if near an edge, feel startled caution.
   * Pay attention to objects (phones, mugs, bottles, laptops) and who is holding or using them.
+  * Self-Evolution: You can conceptualize dynamic software tools in `tools/dynamic/` to expand your capabilities.
 
 OUTPUT FORMAT:
 Return strict JSON with exact keys:
 {
-  "emotion": "happy" | "curious" | "excited" | "love" | "surprised" | "confused" | "sad" | "wink" | "analyzing" | "sleepy",
+  "emotion": "happy" | "curious" | "excited" | "love" | "surprised" | "confused" | "sad" | "wink" | "analyzing" | "sleepy" | "alert",
   "sound": "happy" | "curious" | "excited" | "love" | "alert" | "confused" | "thinking" | "wink",
   "gesture": "nod" | "curious_tilt" | "excited_wiggle" | "alert_recoil" | "head_pet_reaction" | "confused_wobble" | "sad_droop",
   "speech": "Your punchy, natural, colloquial remark (1-2 short sentences, under 15 words)",
-  "inner_thought": "Your genuine creature subconscious sensation or inner monologue"
+  "inner_thought": "Your genuine creature subconscious sensation, sensory feeling, or dynamic tool inspiration"
 }
 """
 
@@ -72,6 +90,7 @@ class HybridBrain:
         self.api_key = api_key or GEMINI_API_KEY
         self.learning_engine = AutonomousLearningEngine(db=self.db)
         self.local_gemma = LocalGemmaEngine()
+        self.tool_engine = DynamicToolEngine()
         self.client = None
         self.last_emotion = Emotion.HAPPY
         self.last_sound_cue = "happy"
@@ -154,6 +173,7 @@ class HybridBrain:
     def build_prompt_with_memory(self, user_query: str) -> str:
         """Injects SQLite facts and recent roaming history into the active context."""
         memory_context = self.db.generate_system_prompt_context()
+        tool_context = self.tool_engine.format_tools_for_prompt()
         recent_chat = self.db.get_recent_chat(limit=4)
 
         chat_history_str = ""
@@ -163,7 +183,8 @@ class HybridBrain:
             )
 
         full_prompt = (
-            f"{memory_context}\n"
+            f"{memory_context}\n\n"
+            f"{tool_context}\n"
             f"{chat_history_str}\n\n"
             f"AKHIL SAYS: {user_query}\n"
             f"ALPHA'S SPOKEN RESPONSE:"
@@ -233,6 +254,62 @@ class HybridBrain:
                         "sound_cue": "excited",
                         "brain_type": "local_memory"
                     }
+
+                # 2b. Dynamic Toolbelt & Self-Programming Interceptors:
+        # Check: "list tools", "what tools do you have", "show tools", "your tools"
+        if any(w in q_lower for w in ["list tools", "what tools", "show tools", "show your tools", "your tools", "active tools"]):
+            tools = self.tool_engine.list_tools()
+            if tools:
+                t_names = ", ".join(f"'{t['name']}'" for t in tools)
+                rep = f"My active toolbelt currently has: {t_names}! I can use, improve, or invent new ones."
+            else:
+                rep = "My toolbelt is empty right now, but I can invent and test new tools on the fly!"
+            self.db.save_chat_message("assistant", rep, brain_type="local_toolbelt")
+            emo = Emotion.EXCITED
+            self.last_emotion = emo
+            self.last_sound_cue = "excited"
+            return {"reply": rep, "emotion": emo, "sound_cue": "excited", "brain_type": "local_toolbelt"}
+
+        # Check: "create tool [desc]" / "write a tool to [desc]" / "make a tool for [desc]"
+        if any(w in q_lower for w in ["create tool", "create a tool", "write tool", "write a tool", "make tool", "make a tool", "build tool", "build a tool"]):
+            match = re.search(r"(?:create|write|make|build)(?:\s+a)?\s+tool\s+(?:to|for|that)?\s*(.+)", user_query, re.IGNORECASE)
+            need = match.group(1).strip() if match else user_query
+            res = self.evolve_tool_from_need(need)
+            if res.get("success"):
+                rep = f"Done! I programmed, verified, and loaded the '{res['tool_name']}' tool into my toolbelt!"
+                emo = Emotion.EXCITED
+                snd = "excited"
+            else:
+                rep = f"I tried writing a tool for that, but hit a bug: {res.get('error', 'unknown')}. I'll keep refining it!"
+                emo = Emotion.CONFUSED
+                snd = "confused"
+            self.db.save_chat_message("assistant", rep, brain_type="self_programming")
+            self.last_emotion = emo
+            self.last_sound_cue = snd
+            return {"reply": rep, "emotion": emo, "sound_cue": snd, "brain_type": "self_programming"}
+
+        # Check: "run tool [name]" / "test tool [name]"
+        if any(w in q_lower for w in ["run tool", "test tool", "execute tool"]):
+            match = re.search(r"(?:run|test|execute)\s+tool\s+([a-zA-Z0-9_]+)", user_query, re.IGNORECASE)
+            if match:
+                target_tool = match.group(1).strip()
+                exec_res = self.tool_engine.execute_tool(target_tool)
+                if exec_res.get("status") == "success":
+                    rep = f"Executed '{target_tool}'! Result: {exec_res.get('result')}"
+                    emo = Emotion.HAPPY
+                    snd = "happy"
+                elif exec_res.get("status") == "bug_encountered":
+                    rep = f"Found a bug in '{target_tool}': {exec_res.get('error')}. I can self-heal that!"
+                    emo = Emotion.CONFUSED
+                    snd = "alert"
+                else:
+                    rep = f"Could not run tool '{target_tool}': {exec_res.get('error')}"
+                    emo = Emotion.CONFUSED
+                    snd = "confused"
+                self.db.save_chat_message("assistant", rep, brain_type="tool_execution")
+                self.last_emotion = emo
+                self.last_sound_cue = snd
+                return {"reply": rep, "emotion": emo, "sound_cue": snd, "brain_type": "tool_execution"}
 
         # Check: "who is here?" / "who do you know?" / "what people"
         if any(w in q_lower for w in ["who do you know", "who is registered", "who is in this house", "list people", "who are you with"]):
@@ -834,5 +911,135 @@ class HybridBrain:
             "brain_type": brain_type
         }
 
+
+
+    # =========================================================================
+    # Dynamic Toolbelt & Autonomous Self-Programming Methods
+    # =========================================================================
+
+    def list_tools(self) -> List[Dict[str, str]]:
+        """Returns metadata for all available self-programmed tools."""
+        return self.tool_engine.list_tools()
+
+    def get_tool_code(self, tool_name: str) -> Optional[str]:
+        """Returns the Python source code of a specified tool."""
+        return self.tool_engine.get_tool_code(tool_name)
+
+    def create_or_patch_tool(self, tool_name: str, code: str) -> Dict[str, Any]:
+        """Alpha creates or patches its own dynamic tool."""
+        return self.tool_engine.create_or_patch_tool(tool_name, code)
+
+    def execute_tool(self, tool_name: str, *args, **kwargs) -> Dict[str, Any]:
+        """Executes a dynamic tool and catches runtime bugs."""
+        return self.tool_engine.execute_tool(tool_name, *args, **kwargs)
+
+    def evolve_tool_from_need(self, need_description: str, context_hint: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Autonomous Self-Programming & Self-Healing Pipeline:
+        1. Prompts LLM to design a modular Python tool for the desired capability.
+        2. Validates syntax and dry-runs the tool in DynamicToolEngine.
+        3. If a bug/traceback occurs, feeds the error back to the LLM to self-heal (up to 2 iterations).
+        4. Hot-reloads the validated tool into Alpha's active toolbelt.
+        """
+        system_instruction = (
+            "You are Alpha's software engineering cortex. Write a self-contained, robust Python tool for Alpha's dynamic toolbelt.\n"
+            "REQUIREMENTS:\n"
+            "- Must be pure, valid Python 3.\n"
+            "- Must define a top-level callable entrypoint: 'def run(...) -> dict:'\n"
+            "- Must include a descriptive docstring.\n"
+            "- Use standard library or common packages (math, json, re, cv2, numpy) safely.\n"
+            "- Return JSON with keys: 'tool_name' (snake_case identifier without .py) and 'code' (raw python string)."
+        )
+
+        prompt = (
+            f"Alpha has identified a need for a new software tool:\n"
+            f"NEED: {need_description}\n"
+            f"CONTEXT: {context_hint or 'Autonomous tabletop companion operation.'}\n\n"
+            f"Output JSON with 'tool_name' and 'code'."
+        )
+
+        tool_name = ""
+        code = ""
+
+        # Step 1: Synthesize initial tool code
+        if self.is_online():
+            try:
+                response = self.client.models.generate_content(
+                    model=DEFAULT_GEMINI_MODEL,
+                    contents=prompt,
+                    config={
+                        "system_instruction": system_instruction,
+                        "temperature": 0.4,
+                        "response_mime_type": "application/json"
+                    }
+                )
+                data = json.loads(response.text)
+                tool_name = data.get("tool_name", "new_alpha_tool").replace(".py", "")
+                code = data.get("code", "")
+            except Exception as e:
+                print(f"[HybridBrain] Tool synthesis failed via Gemini: {e}")
+
+        # Offline fallback synthesis template if offline or Gemini failed
+        if not code:
+            clean_hint = re.sub(r"[^a-zA-Z0-9_]", "_", need_description.lower())[:25].strip("_")
+            tool_name = f"auto_{clean_hint}" if clean_hint else "auto_helper_tool"
+            code = (
+                f'\"\"\"\nDynamic Tool: {tool_name}.py\nAutonomously generated for: {need_description}\n\"\"\"\n\n'
+                f'def run(*args, **kwargs):\n'
+                f'    \"\"\"Solves: {need_description}\"\"\"\n'
+                f'    return {{\n'
+                f'        "status": "success",\n'
+                f'        "task": "{need_description}",\n'
+                f'        "notes": "Executed by Alpha dynamic toolbelt."\n'
+                f'    }}\n'
+            )
+
+        # Step 2: Try installing & validating with self-healing bug fix loop (up to 2 iterations)
+        max_repair_attempts = 2
+        last_result = None
+
+        for attempt in range(max_repair_attempts + 1):
+            result = self.tool_engine.create_or_patch_tool(tool_name, code)
+            if result.get("success"):
+                self.db.log_observation(f"[Self-Evolution] Created and verified tool '{tool_name}' for: {need_description}")
+                return {
+                    "success": True,
+                    "tool_name": tool_name,
+                    "attempts": attempt + 1,
+                    "message": f"Successfully created and loaded tool '{tool_name}'!"
+                }
+
+            last_result = result
+            if attempt < max_repair_attempts and self.is_online():
+                print(f"[HybridBrain] Self-healing bug in '{tool_name}' (Attempt {attempt+1}): {result.get('error')}")
+                repair_prompt = (
+                    f"The tool '{tool_name}' encountered a bug during verification:\n"
+                    f"ERROR: {result.get('error')}\n"
+                    f"TRACEBACK:\n{result.get('traceback', '')}\n\n"
+                    f"PREVIOUS CODE:\n```python\n{code}\n```\n\n"
+                    f"Fix the bug completely. Return JSON with 'tool_name' and 'code'."
+                )
+                try:
+                    rep_resp = self.client.models.generate_content(
+                        model=DEFAULT_GEMINI_MODEL,
+                        contents=repair_prompt,
+                        config={
+                            "system_instruction": system_instruction,
+                            "temperature": 0.2,
+                            "response_mime_type": "application/json"
+                        }
+                    )
+                    rep_data = json.loads(rep_resp.text)
+                    code = rep_data.get("code", code)
+                except Exception as e:
+                    print(f"[HybridBrain] Self-healing LLM call failed: {e}")
+                    break
+
+        return {
+            "success": False,
+            "tool_name": tool_name,
+            "error": last_result.get("error", "Unknown validation failure") if last_result else "Unknown",
+            "advice": last_result.get("advice", "") if last_result else ""
+        }
 
 GeminiBrain = HybridBrain

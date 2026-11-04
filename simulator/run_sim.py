@@ -47,6 +47,7 @@ def get_robot() -> AlphaRobot:
     global robot
     if robot is None:
         robot = AlphaRobot(voice_enabled=True)
+        robot.vision.db = robot.db
     return robot
 
 class VisionStreamWorker:
@@ -93,8 +94,8 @@ class VisionStreamWorker:
             # 1. Computer Vision: Face, profile & smile perception
             res = self.robot.vision.track_face_detailed(frame)
 
-            # 2. Emotional Companion Behavior Engine
-            action = self.robot.behavior.process_vision(res, frame=frame, allow_speech=self.robot.voice.voice_enabled)
+            # 2. Emotional Companion Behavior Engine (Eyes & Chirps, no unsolicited speech)
+            action = self.robot.behavior.process_vision(res, frame=frame, allow_speech=False)
             self.robot.behavior.apply_action(self.robot, action)
 
             # 3. Draw Cyber HUD
@@ -724,6 +725,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "observed_visual": act.observed_visual if act else None,
             "trigger_wink": act.trigger_wink if act else False,
             "trigger_blink": act.trigger_blink if act else False,
+            "detected_objects": getattr(res, "detected_objects", []) if res else [],
+            "user_emotion": getattr(res, "user_emotion", "neutral") if res else "neutral",
         })
 
     def _handle_camera_toggle(self, data: dict):
@@ -755,7 +758,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         res = r.vision.track_face_detailed(frame)
-        action = r.behavior.process_vision(res, frame=frame, allow_speech=r.voice.voice_enabled)
+        action = r.behavior.process_vision(res, frame=frame, allow_speech=False)
         r.behavior.apply_action(r, action)
 
         self._send_json({
@@ -776,6 +779,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "observed_visual": action.observed_visual,
             "trigger_wink": action.trigger_wink,
             "trigger_blink": action.trigger_blink,
+            "detected_objects": getattr(res, "detected_objects", []),
+            "user_emotion": getattr(res, "user_emotion", "neutral"),
         })
 
     def _handle_inspect_frame(self, data: dict):

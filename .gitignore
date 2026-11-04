@@ -15,3 +15,6 @@ data/snapshots/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Executables & Installers
+*.exe

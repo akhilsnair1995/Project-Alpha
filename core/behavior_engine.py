@@ -312,14 +312,16 @@ class AlphaBehaviorEngine:
                     self.last_gesture_time = now
 
                 n_faces = getattr(face, "num_faces", 1)
+                n_objs = len(getattr(face, "detected_objects", []))
+                obj_tag = f" and {n_objs} objects" if n_objs > 0 else ""
                 if n_faces > 1:
-                    obs_log = f"Spotted {n_faces} people in front of camera."
+                    obs_log = f"Spotted {n_faces} people{obj_tag} in front of camera."
                 elif self.current_identified_person:
-                    obs_log = f"Spotted {self.current_identified_person} in front of camera."
+                    obs_log = f"Spotted {self.current_identified_person}{obj_tag} in front of camera."
                 else:
-                    obs_log = "Spotted person in front of camera."
+                    obs_log = f"Spotted person{obj_tag} in front of camera."
 
-                # Organic stimulus to Gemini
+                # In visual companion mode, Alpha communicates via Wall-E eyes and chirps (speech only if explicitly requested)
                 if allow_speech and (now - self.last_speech_time > 45.0):
                     stim = {
                         "event": "face_sighted",
@@ -327,21 +329,17 @@ class AlphaBehaviorEngine:
                         "pan": target_pan,
                         "tilt": target_tilt
                     }
-                    if self.brain:
-                        if jpeg_bytes:
-                            self._trigger_live_visual_stimulus(jpeg_bytes, stim, debounce_sec=30.0)
-                        else:
-                            self._trigger_organic_stimulus(stim, debounce_sec=45.0)
-                    else:
+                    if not self.brain:
                         speech_msg = self._generate_offline_organism_reaction("face_sighted", stim)["speech"]
                         self.last_speech_time = now
 
             else:
-                # User has been in view continuously
+                # User has been in view continuously -> Analyze human emotions & objects
                 sustained_duration = now - self.tracking_start_time
+                user_emo = getattr(face, "user_emotion", "neutral")
 
-                # Check 1: User leaning in very close (Proximity Startle)
-                if face.distance_category == "close" and (now - self.last_startle_time > 4.0):
+                # Emotion 1: Startled / Close Proximity
+                if (user_emo == "surprised" or face.distance_category == "close") and (now - self.last_startle_time > 4.0):
                     just_startled = self.current_state != BehaviorState.STARTLED
                     self.current_state = BehaviorState.STARTLED
                     emo = Emotion.SURPRISED
@@ -353,24 +351,12 @@ class AlphaBehaviorEngine:
                         gesture_to_run = "alert_recoil"
                         self.last_gesture_time = now
 
-                    if allow_speech and (now - self.last_speech_time > 10.0):
-                        stim = {
-                            "event": "proximity_close",
-                            "distance": "close",
-                            "pan": target_pan,
-                            "tilt": target_tilt
-                        }
-                        if self.brain:
-                            if jpeg_bytes:
-                                self._trigger_live_visual_stimulus(jpeg_bytes, stim, debounce_sec=10.0)
-                            else:
-                                self._trigger_organic_stimulus(stim, debounce_sec=10.0)
-                        else:
-                            speech_msg = self._generate_offline_organism_reaction("proximity_close", stim)["speech"]
-                            self.last_speech_time = now
+                    if allow_speech and (now - self.last_speech_time > 10.0) and not self.brain:
+                        speech_msg = self._generate_offline_organism_reaction("proximity_close", {})["speech"]
+                        self.last_speech_time = now
 
-                # Check 2: User is smiling at Alpha
-                elif face.is_smiling and (now - self.last_smile_time > 5.0):
+                # Emotion 2: Smiling / Happy / Excited
+                elif (user_emo in ("happy", "excited") or face.is_smiling) and (now - self.last_smile_time > 5.0):
                     just_smiled = self.current_state != BehaviorState.SMILING
                     self.current_state = BehaviorState.SMILING
                     emo = Emotion.EXCITED
@@ -384,25 +370,12 @@ class AlphaBehaviorEngine:
 
                     obs_log = f"{self.current_identified_person or 'User'} smiled at Alpha."
 
-                    if allow_speech and (now - self.last_speech_time > 12.0):
-                        stim = {
-                            "event": "user_smile",
-                            "distance": face.distance_category,
-                            "is_smiling": True,
-                            "pan": target_pan,
-                            "tilt": target_tilt
-                        }
-                        if self.brain:
-                            if jpeg_bytes:
-                                self._trigger_live_visual_stimulus(jpeg_bytes, stim, debounce_sec=10.0)
-                            else:
-                                self._trigger_organic_stimulus(stim, debounce_sec=12.0)
-                        else:
-                            speech_msg = self._generate_offline_organism_reaction("user_smile", stim)["speech"]
-                            self.last_speech_time = now
+                    if allow_speech and (now - self.last_speech_time > 12.0) and not self.brain:
+                        speech_msg = self._generate_offline_organism_reaction("user_smile", {})["speech"]
+                        self.last_speech_time = now
 
-                # Check 3: Sustained Eye Contact (> 3.2s) -> Deep Loving Bond
-                elif (sustained_duration > 3.2 and (now - self.last_bonding_time > 12.0)) or (self.current_state == BehaviorState.BONDING and now - self.bonding_start_time < 3.5):
+                # Emotion 3: Sustained Eye Contact (> 3.2s) -> Deep Loving Bond
+                elif user_emo == "love" or (sustained_duration > 3.2 and (now - self.last_bonding_time > 12.0)) or (self.current_state == BehaviorState.BONDING and now - self.bonding_start_time < 3.5):
                     just_bonded = self.current_state != BehaviorState.BONDING
                     self.current_state = BehaviorState.BONDING
                     emo = Emotion.LOVE
@@ -419,49 +392,40 @@ class AlphaBehaviorEngine:
 
                     obs_log = f"Maintained sustained affectionate eye contact with {self.current_identified_person or 'companion'}."
 
-                    if just_bonded and allow_speech and (now - self.last_speech_time > 14.0):
-                        stim = {
-                            "event": "sustained_contact",
-                            "duration": sustained_duration,
-                            "distance": face.distance_category,
-                            "pan": target_pan,
-                            "tilt": target_tilt
-                        }
-                        if self.brain:
-                            if jpeg_bytes:
-                                self._trigger_live_visual_stimulus(jpeg_bytes, stim, debounce_sec=12.0)
-                            else:
-                                self._trigger_organic_stimulus(stim, debounce_sec=14.0)
-                        else:
-                            speech_msg = self._generate_offline_organism_reaction("sustained_contact", stim)["speech"]
-                            self.last_speech_time = now
+                    if just_bonded and allow_speech and (now - self.last_speech_time > 14.0) and not self.brain:
+                        speech_msg = self._generate_offline_organism_reaction("sustained_contact", {})["speech"]
+                        self.last_speech_time = now
+
+                # Emotion 4: Curious Head Tilt
+                elif user_emo == "curious":
+                    just_curious = self.current_state != BehaviorState.GREETING
+                    emo = Emotion.CURIOUS
+                    if just_curious and (now - self.last_sound_time > 20.0):
+                        sound_to_play = "curious"
+                        self.last_sound_time = now
+                        gesture_to_run = "curious_tilt"
+                        self.last_gesture_time = now
+
+                # Emotion 5: Focused / Working at desk (Quiet respectful watch mode)
+                elif user_emo == "focused":
+                    self.current_state = BehaviorState.TRACKING
+                    emo = Emotion.ANALYZING  # Soft squint, focused companion watch
+                    sound_to_play = None
+                    gesture_to_run = None
+
+                # Emotion 6: Sad / Melancholy
+                elif user_emo == "sad":
+                    emo = Emotion.SAD
+                    if now - self.last_sound_time > 20.0:
+                        sound_to_play = "sad"
+                        self.last_sound_time = now
+                        gesture_to_run = "curious_tilt"
+                        self.last_gesture_time = now
 
                 else:
-                    # Normal active tracking
+                    # Normal active friendly tracking
                     self.current_state = BehaviorState.TRACKING
                     emo = Emotion.HAPPY
-
-                    # Periodic companion banter & engagement while in view (Gemini Autonomous Stream)
-                    if allow_speech and (now - self.last_speech_time > 26.0) and sustained_duration > 8.0:
-                        stim = {
-                            "event": "companion_idle",
-                            "duration": sustained_duration,
-                            "distance": face.distance_category,
-                            "pan": target_pan,
-                            "tilt": target_tilt
-                        }
-                        if self.brain:
-                            if jpeg_bytes:
-                                self._trigger_live_visual_stimulus(jpeg_bytes, stim, debounce_sec=20.0)
-                            else:
-                                self._trigger_organic_stimulus(stim, debounce_sec=26.0)
-                        else:
-                            speech_msg = self._generate_offline_organism_reaction("companion_idle", stim)["speech"]
-                            self.last_speech_time = now
-                        if now - self.last_sound_time > 30.0:
-                            sound_to_play = "curious"
-                            self.last_sound_time = now
-                        emo = Emotion.CURIOUS
 
             if pending_emotion:
                 emo = pending_emotion

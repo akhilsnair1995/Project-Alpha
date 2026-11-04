@@ -31,6 +31,7 @@ class AlphaRobot:
         self.eyes = DualEyeController()
         self.motion = MotionController()
         self.vision = VisionPipeline()
+        self.vision.db = self.db
         self.voice = VoiceEngine(voice_enabled=voice_enabled)
         self.brain = GeminiBrain(db=self.db)
         self.behavior = AlphaBehaviorEngine(brain=self.brain)

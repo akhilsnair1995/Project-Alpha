@@ -3508,15 +3508,17 @@
       const bh = trackedFace.h;
 
       let hudColor = "#38bdf8"; // Wall-E cyan
-      if (companionState === 'love') hudColor = "#f43f5e";
-      else if (companionState === 'smiling') hudColor = "#4ade80";
-      else if (companionState === 'startled') hudColor = "#fbbf24";
-      else if (companionState === 'confused') hudColor = "#c084fc";
+      const currentEmo = window._lastUserEmotion || (isSmile ? 'happy' : 'neutral');
+      if (companionState === 'love' || currentEmo === 'love') hudColor = "#f43f5e";
+      else if (companionState === 'smiling' || currentEmo === 'happy' || currentEmo === 'excited') hudColor = "#4ade80";
+      else if (companionState === 'startled' || currentEmo === 'surprised') hudColor = "#fbbf24";
+      else if (companionState === 'confused' || currentEmo === 'curious') hudColor = "#c084fc";
+      else if (currentEmo === 'focused') hudColor = "#a78bfa";
 
       webcamCtx.strokeStyle = hudColor;
       webcamCtx.lineWidth = 2;
 
-      // Corner Brackets
+      // Corner Brackets for Person
       const cLen = Math.min(18, bw * 0.25);
       webcamCtx.beginPath();
       webcamCtx.moveTo(bx, by + cLen); webcamCtx.lineTo(bx, by); webcamCtx.lineTo(bx + cLen, by);
@@ -3542,14 +3544,32 @@
         webcamCtx.beginPath(); webcamCtx.arc(landmarks.mouth.x, landmarks.mouth.y, 2, 0, Math.PI * 2); webcamCtx.fill();
       }
 
-      // HUD Text
+      // Person Tag (dynamic identification and emotion, never hardcoded to Akhil)
       webcamCtx.fillStyle = hudColor;
       webcamCtx.font = "bold 9px monospace";
-      const smileTag = isSmile ? " [ðŸ˜Š SMILE]" : "";
-      webcamCtx.fillText(`USER: AKHIL (${confidence}%)${smileTag}`, bx, by - 6);
+      const personLabel = (trackedFace.identifiedName || "PERSON").toUpperCase();
+      webcamCtx.fillText(`[${personLabel}] (${confidence}%) [MOOD: ${currentEmo.toUpperCase()}]`, bx, by - 6);
       webcamCtx.font = "8px monospace";
       webcamCtx.fillStyle = "rgba(226, 232, 240, 0.85)";
       webcamCtx.fillText(`DIST: ~${distCm}cm [${distCat.toUpperCase()}]`, bx, by + bh + 11);
+
+      // Render Detected Everyday Objects (distinct Amber boxes)
+      const objs = window._lastVisionDetectedObjects || [];
+      if (objs.length > 0) {
+        webcamCtx.strokeStyle = "#f59e0b"; // Solar Amber / Gold
+        webcamCtx.lineWidth = 1.5;
+        objs.forEach(o => {
+          if (!o.bbox) return;
+          const [ox, oy, ow, oh] = o.bbox;
+          webcamCtx.strokeRect(ox, oy, ow, oh);
+          webcamCtx.fillStyle = "rgba(15, 23, 42, 0.85)";
+          webcamCtx.fillRect(ox, Math.max(0, oy - 14), Math.min(180, ow), 14);
+          webcamCtx.fillStyle = "#f59e0b";
+          webcamCtx.font = "bold 8px monospace";
+          const ownerTxt = o.owner_name ? ` [${o.owner_name}]` : "";
+          webcamCtx.fillText(`[OBJ: ${o.label.toUpperCase()}]${ownerTxt}`, ox + 3, Math.max(10, oy - 4));
+        });
+      }
     }
 
     async function syncVisionEventToBackend(event, emo, gesture, sound, gazeX, gazeY, pan, tilt) {

@@ -21,9 +21,109 @@ except ImportError:
 from core.config import IS_RASPBERRY_PI, ARUCO_DOCK_ID
 
 
+COCO_CLASSES = [
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
+    'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+    'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
+    'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+    'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
+    'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
+    'hair drier', 'toothbrush'
+]
+
+
+class YoloObjectDetector:
+    """Lightweight real-time COCO object detector powered by YOLOv5n on OpenCV DNN."""
+
+    def __init__(self, model_path: str = "data/models/yolov5n.onnx"):
+        self.model_path = model_path
+        self.net = None
+        self._init_model()
+
+    def _init_model(self):
+        try:
+            if not os.path.exists(self.model_path):
+                import requests
+                os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+                print(f"[YoloObjectDetector] Downloading YOLOv5n ONNX to {self.model_path}...")
+                r = requests.get('https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx', timeout=30)
+                with open(self.model_path, 'wb') as f:
+                    f.write(r.content)
+            self.net = cv2.dnn.readNetFromONNX(self.model_path)
+            self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+            self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+            print("[YoloObjectDetector] Successfully initialized YOLOv5n on OpenCV DNN.")
+        except Exception as e:
+            print(f"[YoloObjectDetector] Could not initialize YOLOv5n: {e}")
+            self.net = None
+
+    def detect(self, frame: np.ndarray, conf_threshold: float = 0.35, nms_threshold: float = 0.45) -> list:
+        if self.net is None or frame is None:
+            return []
+        h, w = frame.shape[:2]
+        blob = cv2.dnn.blobFromImage(frame, 1/255.0, (640, 640), swapRB=True, crop=False)
+        self.net.setInput(blob)
+        preds = self.net.forward()[0]
+
+        obj_confs = preds[:, 4]
+        valid_mask = obj_confs > conf_threshold
+        valid_preds = preds[valid_mask]
+        if len(valid_preds) == 0:
+            return []
+
+        class_scores = valid_preds[:, 5:]
+        max_class_ids = np.argmax(class_scores, axis=1)
+        max_scores = class_scores[np.arange(len(valid_preds)), max_class_ids]
+        total_scores = valid_preds[:, 4] * max_scores
+
+        final_mask = total_scores > conf_threshold
+        final_preds = valid_preds[final_mask]
+        final_classes = max_class_ids[final_mask]
+        final_confs = total_scores[final_mask]
+
+        if len(final_preds) == 0:
+            return []
+
+        x_scale = w / 640.0
+        y_scale = h / 640.0
+        boxes = []
+        confidences = []
+        class_ids = []
+
+        for p, cid, conf in zip(final_preds, final_classes, final_confs):
+            cx, cy, bw, bh = p[0:4]
+            bx = int((cx - bw / 2.0) * x_scale)
+            by = int((cy - bh / 2.0) * y_scale)
+            bw = int(bw * x_scale)
+            bh = int(bh * y_scale)
+            bx = max(0, min(w - 1, bx))
+            by = max(0, min(h - 1, by))
+            bw = max(1, min(w - bx, bw))
+            bh = max(1, min(h - by, bh))
+            boxes.append([bx, by, bw, bh])
+            confidences.append(float(conf))
+            class_ids.append(int(cid))
+
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+        results = []
+        if len(indices) > 0:
+            for idx in indices.flatten():
+                cid = class_ids[idx]
+                label = COCO_CLASSES[cid] if cid < len(COCO_CLASSES) else f"obj_{cid}"
+                results.append({
+                    "label": label,
+                    "is_person": (label == "person"),
+                    "confidence": round(confidences[idx], 2),
+                    "bbox": tuple(boxes[idx])
+                })
+        return results
+
+
 @dataclass
 class FaceTrackingResult:
-    """Rich sensory perception result from camera face tracking."""
+    """Rich sensory perception result from camera face and object tracking."""
     found: bool = False
     offset_x: float = 0.0          # Normalized -1.0 (Left) to +1.0 (Right)
     offset_y: float = 0.0          # Normalized -1.0 (Up) to +1.0 (Down)
@@ -37,10 +137,14 @@ class FaceTrackingResult:
     num_faces: int = 0             # Total count of detected persons
     all_faces: list = None         # List of (x, y, w, h) for all detected people
     identified_name: Optional[str] = None # Name of identified person (if resolved)
+    detected_objects: list = None  # List of dicts for all detected everyday objects
+    user_emotion: str = "neutral"  # Analyzed human emotion: happy, curious, focused, surprised, sad, love, neutral
 
     def __post_init__(self):
         if self.all_faces is None:
             self.all_faces = []
+        if self.detected_objects is None:
+            self.detected_objects = []
 
 
 class VisionPipeline:
@@ -69,6 +173,11 @@ class VisionPipeline:
         self._last_reconnect_attempt = 0.0
         self.face_cascade_default = None
         self.face_cascade_alt2 = None
+        self.eye_cascade = None
+        self.object_detector = None
+        self.db = None
+        self._frame_count = 0
+        self._cached_objects = []
 
         if HAS_OPENCV:
             self._init_camera()
@@ -77,6 +186,10 @@ class VisionPipeline:
                 self.clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
             except Exception:
                 self.clahe = None
+            try:
+                self.object_detector = YoloObjectDetector()
+            except Exception as e:
+                print(f"[VisionPipeline] YOLO detector init warning: {e}")
         else:
             print("[VisionPipeline] OpenCV (cv2) not installed. Running in mock vision mode.")
 
@@ -154,9 +267,27 @@ class VisionPipeline:
             else:
                 self.smile_cascade = None
 
-            print(f"[VisionPipeline] Loaded detectors: frontal_default={self.face_cascade_default is not None}, frontal_alt2={self.face_cascade_alt2 is not None}, profile={self.profile_cascade is not None}, smile={self.smile_cascade is not None}")
+            eye_path = os.path.join(cascade_dir, "haarcascade_eye.xml")
+            if os.path.exists(eye_path):
+                self.eye_cascade = cv2.CascadeClassifier(eye_path)
+            else:
+                self.eye_cascade = None
+
+            print(f"[VisionPipeline] Loaded detectors: frontal_default={self.face_cascade_default is not None}, frontal_alt2={self.face_cascade_alt2 is not None}, profile={self.profile_cascade is not None}, smile={self.smile_cascade is not None}, eye={self.eye_cascade is not None}")
         except Exception as e:
             print(f"[VisionPipeline] Could not load face cascades: {e}")
+
+    def _resolve_object_owner(self, label: str) -> Optional[str]:
+        """Resolves the assigned owner for an object from SQLite memory."""
+        if not hasattr(self, "db") or self.db is None:
+            return None
+        try:
+            objs = self.db.find_objects(label)
+            if objs and objs[0].get("owner_name"):
+                return objs[0]["owner_name"]
+        except Exception:
+            pass
+        return None
 
     def capture_frame(self) -> Optional[np.ndarray]:
         """Captures a single BGR frame from the camera with auto-reconnect."""
@@ -201,46 +332,60 @@ class VisionPipeline:
         else:
             gray_proc = cv2.equalizeHist(gray)
 
-        # 1. Frontal Face Detection (Default cascade: highly robust under all lighting)
+        # Filter faces by human facial aspect ratio (stops mugs, bottles, keyboards being labeled as people)
+        def _filter_faces(raw_boxes):
+            valid = []
+            for f in raw_boxes:
+                fx, fy, fw, fh = int(f[0]), int(f[1]), int(f[2]), int(f[3])
+                aspect = float(fh) / float(max(1, fw))
+                # Human face bounding box aspect ratio is typically between 0.75 and 1.45
+                if 0.75 <= aspect <= 1.45 and fw >= 35 and fh >= 35:
+                    valid.append((fx, fy, fw, fh))
+            return valid
+
+        # 1. Frontal Face Detection (minNeighbors=5 prevents texture false positives)
         detected_box = None
         confidence = 0.0
         all_detected_faces = []
 
         if self.face_cascade_default is not None:
-            faces = self.face_cascade_default.detectMultiScale(
+            raw_faces = self.face_cascade_default.detectMultiScale(
                 gray_proc,
                 scaleFactor=1.1,
-                minNeighbors=3,
-                minSize=(30, 30)
+                minNeighbors=5,
+                minSize=(35, 35)
             )
-            if len(faces) > 0:
-                all_detected_faces = [tuple(map(int, f)) for f in faces]
-                detected_box = max(faces, key=lambda f: f[2] * f[3])
+            valid = _filter_faces(raw_faces)
+            if len(valid) > 0:
+                all_detected_faces = valid
+                detected_box = max(valid, key=lambda f: f[2] * f[3])
                 confidence = 0.95
 
         # 2. Alt2 Frontal Face Fallback
         if detected_box is None and self.face_cascade_alt2 is not None:
-            faces = self.face_cascade_alt2.detectMultiScale(
+            raw_faces = self.face_cascade_alt2.detectMultiScale(
                 gray_proc,
                 scaleFactor=1.1,
-                minNeighbors=3,
-                minSize=(30, 30)
+                minNeighbors=5,
+                minSize=(35, 35)
             )
-            if len(faces) > 0:
-                all_detected_faces = [tuple(map(int, f)) for f in faces]
-                detected_box = max(faces, key=lambda f: f[2] * f[3])
+            valid = _filter_faces(raw_faces)
+            if len(valid) > 0:
+                all_detected_faces = valid
+                detected_box = max(valid, key=lambda f: f[2] * f[3])
                 confidence = 0.90
 
         # 3. Profile Face Fallback (User looking sideways / turning head)
         if detected_box is None and self.profile_cascade is not None:
-            profiles = self.profile_cascade.detectMultiScale(
+            raw_profiles = self.profile_cascade.detectMultiScale(
                 gray_proc,
                 scaleFactor=1.1,
-                minNeighbors=3,
-                minSize=(30, 30)
+                minNeighbors=5,
+                minSize=(35, 35)
             )
-            if len(profiles) > 0:
-                detected_box = max(profiles, key=lambda f: f[2] * f[3])
+            valid = _filter_faces(raw_profiles)
+            if len(valid) > 0:
+                detected_box = max(valid, key=lambda f: f[2] * f[3])
                 confidence = 0.80
             else:
                 # Check flipped profile (looking the other direction)
@@ -248,11 +393,12 @@ class VisionPipeline:
                 flipped_profiles = self.profile_cascade.detectMultiScale(
                     flipped_gray,
                     scaleFactor=1.1,
-                    minNeighbors=3,
-                    minSize=(30, 30)
+                    minNeighbors=5,
+                    minSize=(35, 35)
                 )
-                if len(flipped_profiles) > 0:
-                    fb = max(flipped_profiles, key=lambda f: f[2] * f[3])
+                valid_flipped = _filter_faces(flipped_profiles)
+                if len(valid_flipped) > 0:
+                    fb = max(valid_flipped, key=lambda f: f[2] * f[3])
                     detected_box = (frame_w - fb[0] - fb[2], fb[1], fb[2], fb[3])
                     confidence = 0.80
 
@@ -299,21 +445,69 @@ class VisionPipeline:
             else:
                 dist_cat = "optimal"
 
-            # Check for smile in lower half of face
+            # Check for smile in lower half of face (minNeighbors=9 for high precision)
             is_smiling = False
-            if self.smile_cascade is not None and h > 60 and w > 60:
+            if self.smile_cascade is not None and h > 55 and w > 55:
                 try:
                     mouth_roi = gray_proc[y + int(h * 0.55):y + h, x + int(w * 0.15):x + int(w * 0.85)]
                     if mouth_roi.size > 0:
                         smiles = self.smile_cascade.detectMultiScale(
                             mouth_roi,
                             scaleFactor=1.2,
-                            minNeighbors=8,
-                            minSize=(20, 12)
+                            minNeighbors=9,
+                            minSize=(22, 14)
                         )
                         is_smiling = len(smiles) > 0
                 except Exception:
                     is_smiling = False
+
+            # Multi-Emotion Analysis across human face
+            user_emotion = "neutral"
+            eye_count = 0
+            tilt_angle = 0.0
+            if self.eye_cascade is not None and h > 50 and w > 50:
+                try:
+                    upper_face = gray_proc[y:y + int(h * 0.55), x:x + w]
+                    if upper_face.size > 0:
+                        eyes = self.eye_cascade.detectMultiScale(upper_face, scaleFactor=1.15, minNeighbors=4, minSize=(16, 16))
+                        eye_count = len(eyes)
+                        if eye_count >= 2:
+                            eyes_sorted = sorted(eyes, key=lambda e: e[0])
+                            e1, e2 = eyes_sorted[0], eyes_sorted[1]
+                            dy = (e2[1] + e2[3]/2.0) - (e1[1] + e1[3]/2.0)
+                            dx = max(1.0, (e2[0] + e2[2]/2.0) - (e1[0] + e1[2]/2.0))
+                            tilt_angle = abs(float(np.degrees(np.arctan2(dy, dx))))
+                except Exception:
+                    pass
+
+            if is_smiling:
+                user_emotion = "excited" if (w > 120 and face_ratio > 0.14) else "happy"
+            elif dist_cat == "close" or abs(vel_x) > 3.0 or abs(vel_y) > 3.0:
+                user_emotion = "surprised"
+            elif tilt_angle > 12.0:
+                user_emotion = "curious"
+            elif eye_count >= 1 and abs(vel_x) < 0.22 and abs(vel_y) < 0.22:
+                user_emotion = "focused"
+            else:
+                user_emotion = "neutral"
+
+            # Run Real-Time Object Detection every 3 frames
+            self._frame_count += 1
+            if self.object_detector and (self._frame_count % 3 == 0 or not self._cached_objects):
+                try:
+                    raw_objs = self.object_detector.detect(frame, conf_threshold=0.35)
+                    filtered_objs = []
+                    for o in raw_objs:
+                        # Exclude 'person' class from everyday objects list
+                        if o.get("is_person") or o.get("label") == "person":
+                            continue
+                        label = o.get("label", "object")
+                        owner = self._resolve_object_owner(label)
+                        o["owner_name"] = owner
+                        filtered_objs.append(o)
+                    self._cached_objects = filtered_objs
+                except Exception:
+                    pass
 
             if not all_detected_faces and detected_box is not None:
                 all_detected_faces = [(int(x), int(y), int(w), int(h))]
@@ -331,7 +525,9 @@ class VisionPipeline:
                 velocity_y=round(float(vel_y), 2),
                 num_faces=len(all_detected_faces),
                 all_faces=all_detected_faces,
-                identified_name=None
+                identified_name=None,
+                detected_objects=list(self._cached_objects),
+                user_emotion=user_emotion
             )
             self.last_valid_result = result
             return result
@@ -474,7 +670,11 @@ class VisionPipeline:
         cv2.line(canvas, (0, 34), (w, 34), hud_color, 1)
 
         people_str = f" | PEOPLE: {result.num_faces}" if result.found and result.num_faces > 0 else ""
-        banner_text = f"ALPHA EYE | STATE: [{state_str}] | EMO: [{emo_str}]{people_str}"
+        obj_count = len(result.detected_objects) if getattr(result, "detected_objects", None) else 0
+        obj_names = ", ".join(o["label"].title() for o in result.detected_objects[:3]) if obj_count > 0 else ""
+        obj_str = f" | OBJECTS: {obj_count} ({obj_names})" if obj_count > 0 else ""
+        user_emo_str = result.user_emotion.upper() if getattr(result, "user_emotion", None) else emo_str
+        banner_text = f"ALPHA EYE | STATE: [{state_str}] | EMO: [{user_emo_str}]{people_str}{obj_str}"
         cv2.putText(canvas, banner_text, (10, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.52, hud_color, 1, cv2.LINE_AA)
 
         pan_deg = int(result.offset_x * 45) if result.found else 0
@@ -534,7 +734,33 @@ class VisionPipeline:
 
             if result.is_smiling:
                 cv2.putText(canvas, "[*] SMILE DETECTED!", (bx, by + bh + 32), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (74, 222, 128), 1, cv2.LINE_AA)
-        else:
+            elif result.user_emotion in ("focused", "curious", "surprised", "love"):
+                cv2.putText(canvas, f"[*] MOOD: {result.user_emotion.upper()}", (bx, by + bh + 32), cv2.FONT_HERSHEY_SIMPLEX, 0.40, hud_color, 1, cv2.LINE_AA)
+
+        # Draw Detected Everyday Objects (distinct Amber brackets & labels)
+        if getattr(result, "detected_objects", None):
+            obj_color = (36, 180, 255) # Solar Amber / Wall-E Gold (BGR)
+            for obj in result.detected_objects:
+                ox, oy, ow, oh = obj["bbox"]
+                label_txt = obj["label"].title()
+                owner_txt = f" [{obj['owner_name']}]" if obj.get("owner_name") else ""
+                full_obj_label = f"[OBJ: {label_txt}]{owner_txt}"
+
+                # Draw bounding box and corner ticks
+                cv2.rectangle(canvas, (ox, oy), (ox + ow, oy + oh), obj_color, 1)
+                o_clen = max(6, min(14, int(ow * 0.2)))
+                cv2.line(canvas, (ox, oy), (ox + o_clen, oy), obj_color, 2)
+                cv2.line(canvas, (ox, oy), (ox, oy + o_clen), obj_color, 2)
+                cv2.line(canvas, (ox + ow, oy), (ox + ow - o_clen, oy), obj_color, 2)
+                cv2.line(canvas, (ox + ow, oy), (ox + ow, oy + o_clen), obj_color, 2)
+                cv2.line(canvas, (ox, oy + oh), (ox + o_clen, oy + oh), obj_color, 2)
+                cv2.line(canvas, (ox, oy + oh), (ox, oy + oh - o_clen), obj_color, 2)
+                cv2.line(canvas, (ox + ow, oy + oh), (ox + ow - o_clen, oy + oh), obj_color, 2)
+                cv2.line(canvas, (ox + ow, oy + oh), (ox + ow, oy + oh - o_clen), obj_color, 2)
+
+                cv2.putText(canvas, full_obj_label, (ox, max(46, oy - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, obj_color, 1, cv2.LINE_AA)
+
+        if not result.found:
             # Idle scanning crosshair in frame center
             mid_x, mid_y = w // 2, h // 2
             cv2.line(canvas, (mid_x - 12, mid_y), (mid_x + 12, mid_y), (100, 120, 140), 1)

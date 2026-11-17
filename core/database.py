@@ -1,7 +1,7 @@
 """
 Project Alpha: Local SQLite Knowledge Graph & Long-Term Memory Engine.
 Provides persistent, private on-device memory for user facts, discovered objects,
-room mapping, and roaming observations.
+room mapping, known people, person-object ownership associations, and roaming observations.
 """
 
 import sqlite3
@@ -28,11 +28,11 @@ class AlphaDatabase:
             conn.close()
 
     def init_database(self) -> None:
-        """Initializes tables for world knowledge, episodic logs, and user memory."""
+        """Initializes tables for world knowledge, episodic logs, user memory, and person profiling."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
-            # 1. User Facts & Preferences (What Alpha learns about Akhil)
+            # 1. User Facts & Preferences (What Alpha learns about Akhil and household)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS UserFacts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +44,21 @@ class AlphaDatabase:
                 )
             """)
 
-            # 2. Known Rooms & Exploration Landmarks
+            # 2. Known People & Companions (Multiple person identification & profiling)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS Persons (
+                    person_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    relationship TEXT DEFAULT 'friend',
+                    visual_description TEXT,
+                    face_encoding TEXT,
+                    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    notes TEXT
+                )
+            """)
+
+            # 3. Known Rooms & Exploration Landmarks
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Rooms (
                     room_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,13 +69,14 @@ class AlphaDatabase:
                 )
             """)
 
-            # 3. Discovered Objects Catalog (Learned while roaming)
+            # 4. Discovered Objects Catalog (Learned while roaming or at desk with ownership)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS DiscoveredObjects (
                     object_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     room_id INTEGER,
                     description TEXT,
+                    owner_name TEXT DEFAULT NULL,
                     thumbnail_path TEXT,
                     confidence REAL DEFAULT 0.8,
                     sighting_count INTEGER DEFAULT 1,
@@ -77,7 +92,8 @@ class AlphaDatabase:
             for col_def in [
                 ("sighting_count", "INTEGER DEFAULT 1"),
                 ("is_moved", "INTEGER DEFAULT 0"),
-                ("previous_room", "TEXT")
+                ("previous_room", "TEXT"),
+                ("owner_name", "TEXT DEFAULT NULL")
             ]:
                 try:
                     cursor.execute(f"ALTER TABLE DiscoveredObjects ADD COLUMN {col_def[0]} {col_def[1]}")
@@ -97,7 +113,7 @@ class AlphaDatabase:
                 )
             """)
 
-            # 5. Conversation History (For continuous conversational rapport)
+            # 6. Conversation History (For continuous conversational rapport)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS ChatHistory (
                     msg_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,7 +162,103 @@ class AlphaDatabase:
                 )
             """)
 
+            # Seed primary companion & owner: Akhil
+            cursor.execute("SELECT COUNT(*) FROM Persons WHERE name = 'Akhil'")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("""
+                    INSERT INTO Persons (name, relationship, visual_description, notes)
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    "Akhil",
+                    "owner",
+                    "Primary human companion & maker. Wears spectacles, sits at desk, builder of Alpha.",
+                    "Creator and primary companion of Project Alpha."
+                ))
+
             conn.commit()
+
+    # =========================================================================
+    # Person Identification & Profiling (Multiple Persons)
+    # =========================================================================
+
+    def get_or_create_person(
+        self,
+        name: str,
+        relationship: str = "friend",
+        visual_description: str = "",
+        notes: str = ""
+    ) -> int:
+        """Resolves or inserts a known person and updates their last seen timestamp."""
+        clean_name = name.strip().title()
+        if not clean_name:
+            clean_name = "Guest"
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT person_id FROM Persons WHERE name = ?", (clean_name,))
+            row = cursor.fetchone()
+            if row:
+                if visual_description or (relationship and relationship != "friend"):
+                    cursor.execute("""
+                        UPDATE Persons SET
+                            last_seen = CURRENT_TIMESTAMP,
+                            visual_description = CASE WHEN ? != '' THEN ? ELSE visual_description END,
+                            relationship = CASE WHEN ? != 'friend' THEN ? ELSE relationship END
+                        WHERE person_id = ?
+                    """, (visual_description, visual_description, relationship, relationship, row["person_id"]))
+                else:
+                    cursor.execute("UPDATE Persons SET last_seen = CURRENT_TIMESTAMP WHERE person_id = ?", (row["person_id"],))
+                conn.commit()
+                return row["person_id"]
+
+            cursor.execute("""
+                INSERT INTO Persons (name, relationship, visual_description, notes, last_seen)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (clean_name, relationship.lower(), visual_description, notes))
+            conn.commit()
+            return cursor.lastrowid
+
+    def update_person_profile(
+        self,
+        name: str,
+        relationship: Optional[str] = None,
+        visual_description: Optional[str] = None,
+        notes: Optional[str] = None
+    ) -> bool:
+        """Updates attributes of a known person."""
+        clean_name = name.strip().title()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT person_id FROM Persons WHERE name = ?", (clean_name,))
+            row = cursor.fetchone()
+            if not row:
+                return False
+            cursor.execute("""
+                UPDATE Persons SET
+                    relationship = COALESCE(?, relationship),
+                    visual_description = COALESCE(?, visual_description),
+                    notes = COALESCE(?, notes),
+                    last_seen = CURRENT_TIMESTAMP
+                WHERE person_id = ?
+            """, (relationship, visual_description, notes, row["person_id"]))
+            conn.commit()
+            return True
+
+    def get_known_persons(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Retrieves list of all registered persons."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Persons ORDER BY last_seen DESC LIMIT ?", (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_person_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """Case-insensitive search for a person."""
+        clean_name = name.strip()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Persons WHERE name LIKE ? LIMIT 1", (f"%{clean_name}%",))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     # =========================================================================
     # User Fact Learning
@@ -183,7 +295,7 @@ class AlphaDatabase:
             return [dict(row) for row in cursor.fetchall()]
 
     # =========================================================================
-    # Room & Object Discovery
+    # Room & Object Discovery with Ownership Tracking
     # =========================================================================
 
     def get_or_create_room(self, name: str, description: str = "") -> int:
@@ -209,18 +321,22 @@ class AlphaDatabase:
         name: str,
         description: str,
         room_name: str = "Work Desk",
+        owner_name: Optional[str] = None,
         thumbnail_path: Optional[str] = None,
         confidence: float = 0.85
     ) -> int:
-        """Records an object identified by vision while roaming (updates location if moved)."""
+        """Records an object identified by vision while roaming or observing desk (tracks location and owner)."""
         room_id = self.get_or_create_room(room_name)
         clean_name = name.strip().title()
+        clean_owner = owner_name.strip().title() if owner_name else None
+
+        if clean_owner and clean_owner.lower() not in ("none", "unassigned", "unknown", "shared"):
+            self.get_or_create_person(clean_owner)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            # Check if this object was already seen anywhere in the house
             cursor.execute(
-                "SELECT object_id, room_id FROM DiscoveredObjects WHERE name = ?",
+                "SELECT object_id, room_id, owner_name FROM DiscoveredObjects WHERE name = ?",
                 (clean_name,)
             )
             existing = cursor.fetchone()
@@ -230,11 +346,13 @@ class AlphaDatabase:
                 prev_room_row = cursor.fetchone()
                 prev_room_name = prev_room_row["name"] if prev_room_row else ""
                 moved = (prev_room_name.lower() != room_name.lower()) if prev_room_name else False
+                final_owner = clean_owner if clean_owner else existing["owner_name"]
 
                 cursor.execute("""
                     UPDATE DiscoveredObjects SET
                         room_id = ?,
                         description = ?,
+                        owner_name = ?,
                         thumbnail_path = COALESCE(?, thumbnail_path),
                         confidence = ?,
                         sighting_count = COALESCE(sighting_count, 1) + 1,
@@ -243,7 +361,7 @@ class AlphaDatabase:
                         last_seen = CURRENT_TIMESTAMP
                     WHERE object_id = ?
                 """, (
-                    room_id, description, thumbnail_path, confidence,
+                    room_id, description, final_owner, thumbnail_path, confidence,
                     1 if moved else 0, 1 if moved else 0, prev_room_name,
                     existing["object_id"]
                 ))
@@ -251,27 +369,88 @@ class AlphaDatabase:
                 return existing["object_id"]
             else:
                 cursor.execute("""
-                    INSERT INTO DiscoveredObjects (name, room_id, description, thumbnail_path, confidence, sighting_count, is_moved)
-                    VALUES (?, ?, ?, ?, ?, 1, 0)
-                """, (clean_name, room_id, description, thumbnail_path, confidence))
+                    INSERT INTO DiscoveredObjects (name, room_id, description, owner_name, thumbnail_path, confidence, sighting_count, is_moved)
+                    VALUES (?, ?, ?, ?, ?, ?, 1, 0)
+                """, (clean_name, room_id, description, clean_owner, thumbnail_path, confidence))
                 conn.commit()
                 return cursor.lastrowid
 
-    def find_objects(self, query: str = "", limit: int = 50) -> List[Dict[str, Any]]:
-        """Answers 'where are my keys / shoes / wallet' by searching memory."""
-        clean_q = f"%{query.strip()}%"
+    def assign_object_owner(self, object_name: str, owner_name: str) -> bool:
+        """Assigns or updates an object's owner (e.g. 'Akhil', 'John'). Inserts object if not yet cataloged."""
+        clean_name = object_name.strip().title()
+        clean_owner = owner_name.strip().title()
+        self.get_or_create_person(clean_owner)
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT object_id FROM DiscoveredObjects WHERE name LIKE ?",
+                (f"%{clean_name}%",)
+            )
+            existing = cursor.fetchone()
+            if existing:
+                cursor.execute("""
+                    UPDATE DiscoveredObjects SET
+                        owner_name = ?,
+                        last_seen = CURRENT_TIMESTAMP
+                    WHERE object_id = ?
+                """, (clean_owner, existing["object_id"]))
+                conn.commit()
+                return True
+
+        # Insert new object if not already cataloged
+        self.record_discovered_object(
+            name=clean_name,
+            description=f"Item belonging to {clean_owner}.",
+            owner_name=clean_owner
+        )
+        return True
+
+    def get_person_objects(self, owner_name: str) -> List[Dict[str, Any]]:
+        """Returns all objects owned by or assigned to a specific person."""
+        clean_owner = f"%{owner_name.strip()}%"
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT o.name, o.description, r.name as room_name, o.last_seen, o.thumbnail_path,
+                SELECT o.name, o.description, r.name as room_name, o.owner_name, o.last_seen, o.thumbnail_path,
                        COALESCE(o.sighting_count, 1) as sighting_count,
                        COALESCE(o.is_moved, 0) as is_moved,
                        o.previous_room
                 FROM DiscoveredObjects o
                 LEFT JOIN Rooms r ON o.room_id = r.room_id
-                WHERE o.name LIKE ? OR o.description LIKE ?
-                ORDER BY o.last_seen DESC LIMIT ?
-            """, (clean_q, clean_q, limit))
+                WHERE o.owner_name LIKE ?
+                ORDER BY o.last_seen DESC
+            """, (clean_owner,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def find_objects(self, query: str = "", owner_name: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Answers 'where are my keys / shoes / wallet' by searching memory with optional owner filter."""
+        clean_q = f"%{query.strip()}%"
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if owner_name:
+                clean_owner = f"%{owner_name.strip()}%"
+                cursor.execute("""
+                    SELECT o.name, o.description, r.name as room_name, o.owner_name, o.last_seen, o.thumbnail_path,
+                           COALESCE(o.sighting_count, 1) as sighting_count,
+                           COALESCE(o.is_moved, 0) as is_moved,
+                           o.previous_room
+                    FROM DiscoveredObjects o
+                    LEFT JOIN Rooms r ON o.room_id = r.room_id
+                    WHERE (o.name LIKE ? OR o.description LIKE ?) AND o.owner_name LIKE ?
+                    ORDER BY o.last_seen DESC LIMIT ?
+                """, (clean_q, clean_q, clean_owner, limit))
+            else:
+                cursor.execute("""
+                    SELECT o.name, o.description, r.name as room_name, o.owner_name, o.last_seen, o.thumbnail_path,
+                           COALESCE(o.sighting_count, 1) as sighting_count,
+                           COALESCE(o.is_moved, 0) as is_moved,
+                           o.previous_room
+                    FROM DiscoveredObjects o
+                    LEFT JOIN Rooms r ON o.room_id = r.room_id
+                    WHERE o.name LIKE ? OR o.description LIKE ?
+                    ORDER BY o.last_seen DESC LIMIT ?
+                """, (clean_q, clean_q, limit))
             return [dict(row) for row in cursor.fetchall()]
 
     # =========================================================================
@@ -330,7 +509,6 @@ class AlphaDatabase:
                 (limit,)
             )
             rows = cursor.fetchall()
-            # Return in chronological order
             return [dict(r) for r in reversed(rows)]
 
     def generate_system_prompt_context(self) -> str:
@@ -338,13 +516,28 @@ class AlphaDatabase:
         Synthesizes the local knowledge graph into an active context string
         to inject into Gemini or Gemma's system prompt.
         """
-        facts = self.get_user_facts(limit=10)
+        persons = self.get_known_persons(limit=6)
+        objects = self.find_objects("", limit=8)
+        facts = self.get_user_facts(limit=8)
         observations = self.get_recent_observations(limit=4)
 
         context_lines = ["\n[LOCAL MEMORY & HOUSEHOLD AWARENESS]"]
 
+        if persons:
+            context_lines.append("Known People in Household:")
+            for p in persons:
+                rel = f" ({p['relationship'].capitalize()})" if p.get("relationship") else ""
+                desc = f": {p['visual_description']}" if p.get("visual_description") else ""
+                context_lines.append(f" - {p['name']}{rel}{desc}")
+
+        if objects:
+            context_lines.append("\nTracked Objects & Assigned Owners:")
+            for obj in objects:
+                owner = f" [Owner: {obj['owner_name']}]" if obj.get("owner_name") else " [Unassigned]"
+                context_lines.append(f" - {obj['name']}{owner} in {obj.get('room_name', 'Unknown')}: {obj.get('description', '')}")
+
         if facts:
-            context_lines.append("Known Facts About User & Home:")
+            context_lines.append("\nKnown Facts About User & Home:")
             for f in facts:
                 context_lines.append(f" - [{f['category'].capitalize()}] {f['fact']}")
 

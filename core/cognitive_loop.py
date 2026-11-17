@@ -99,9 +99,10 @@ class GeminiCognitiveLoop:
 
     # Valid actions the loop knows how to execute
     VALID_ACTIONS = frozenset({
-        "SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER",
+        "SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER", "SCAN",
         "APPROACH", "INSPECT", "IDLE", "GREET",
         "EXPLORE_RELOCATE", "COMPANION_REST", "HOLD",
+        "LOOK_AT", "ROAM", "NAVIGATE_TO"
     })
 
     def __init__(
@@ -114,6 +115,7 @@ class GeminiCognitiveLoop:
         self.cycle_interval: float = cycle_interval
 
         # Gemini API
+        self.model: str = DEFAULT_GEMINI_MODEL
         self._api_key: str = api_key or GEMINI_API_KEY
         self._client = None
         self._init_client()
@@ -202,6 +204,68 @@ class GeminiCognitiveLoop:
             elapsed = time.time() - cycle_start
             sleep_time = max(0.1, self.cycle_interval - elapsed)
             self._stop_event.wait(timeout=sleep_time)
+
+    def process_user_turn(self, user_message: str) -> Dict[str, Any]:
+        """
+        PRIORITY SYNCHRONOUS COGNITIVE CYCLE (Unified Brain):
+        Called immediately when Akhil speaks to Alpha via chat or live microphone.
+        The EXACT SAME Gemini reasoning loop evaluates what Akhil said in the context of
+        Alpha's physical coordinates, visible objects, and discovered memory, deciding
+        both the conversational reply AND the immediate physical motion/gaze/emotion.
+        """
+        self.notify_user_speech(user_message)
+
+        # Halt any ongoing roaming/movement so Alpha gives full attention to Akhil
+        body = self.engine.body
+        body.speed = 0.0
+        body.turn_speed = 0.0
+        body.target_coord_goal = None
+
+        snapshot = self._build_world_snapshot()
+        prompt = (
+            f"## PRIORITY EVENT: AKHIL IS SPEAKING DIRECTLY TO YOU RIGHT NOW!\n"
+            f"Akhil said: \"{user_message}\"\n\n"
+            f"## YOUR CURRENT SENSORY & WORLD SNAPSHOT:\n"
+            f"```json\n{json.dumps(snapshot, indent=2)}\n```\n\n"
+            f"INSTRUCTIONS FOR UNIFIED BRAIN REASONING:\n"
+            f"1. Formulate your spoken response to Akhil in the 'speech' field (1 to 2 natural, endearing sentences with Wall-E mechanical vocalizations like *Whirrr-chirp!*, *Bwip-boop!*).\n"
+            f"2. If he asked about an object (e.g. 'Where are my keys?'):\n"
+            f"   - Check your 'discovered_objects' list. If found, glance at it ('LOOK_AT' or 'APPROACH') and tell him where it is!\n"
+            f"   - If not yet discovered in your memory, honestly state you haven't discovered it on the desk yet and choose action 'ROAM' or 'EXPLORE_RELOCATE' to search for it!\n"
+            f"3. If he commands you to explore or roam: action = 'ROAM' or 'EXPLORE_RELOCATE'.\n"
+            f"4. If he commands you to stop/halt/stay: action = 'HOLD'.\n"
+            f"5. If he greets or compliments you: action = 'GREET' (face North toward him with head tilted up).\n"
+            f"6. Select your 'emotion', 'sound_cue', and your genuine first-person 'inner_thought'.\n"
+            f"Respond with ONLY valid JSON adhering to the schema."
+        )
+
+        directive = self._call_gemini(prompt)
+        if not directive:
+            # Fallback if API fails
+            directive = {
+                "action": "GREET",
+                "target": "Akhil",
+                "pan_target": 0.0,
+                "tilt_target": 14.0,
+                "speech": "*Whirrr-chirp!* I hear you, Akhil! My unified brain is locked in on you!",
+                "inner_thought": f"Listening attentively to Akhil: '{user_message}'",
+                "emotion": "happy",
+                "sound_cue": "happy"
+            }
+
+        # Apply directive immediately to physical kinematics, eyes, and thought
+        self._apply_directive(directive)
+        self.last_decision = directive
+
+        return {
+            "reply": directive.get("speech") or "*Whirrr!*",
+            "emotion": directive.get("emotion", "happy"),
+            "sound_cue": directive.get("sound_cue", "happy"),
+            "action": directive.get("action"),
+            "target": directive.get("target"),
+            "brain_type": f"gemini_unified:{self.model}",
+            "inner_thought": directive.get("inner_thought")
+        }
 
     # ------------------------------------------------------------------
     # Single Cognitive Cycle
@@ -486,9 +550,27 @@ class GeminiCognitiveLoop:
             body.turn_speed = 0.0
             eng.current_behavior = "COMPANION_IDLE"
 
-        elif action in ("SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER"):
+        elif action in ("SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER", "SCAN"):
             eng.current_behavior = "EXPLORE_ROAM"
             eng.explore_substate = "SCANNING"
+
+        elif action == "LOOK_AT" and target:
+            clean_tgt = target.title()
+            eng._orient_mind_toward_target(clean_tgt, duration=0.6)
+            eng.current_behavior = "CURIOUS_GLANCE"
+            eng.behavior_target = clean_tgt
+
+        elif action == "ROAM":
+            eng.operating_mode = "EXPLORE_ROAM"
+            eng.current_behavior = "EXPLORE_ROAM"
+            eng.explore_substate = "SCANNING"
+            eng._plan_next_exploration_leg()
+
+        elif action == "NAVIGATE_TO" and target:
+            clean_tgt = target.title()
+            eng.current_behavior = "NAVIGATE_TO"
+            eng.behavior_target = clean_tgt
+            eng._plan_transit_to_target(clean_tgt)
 
         elif action == "IDLE":
             eng.current_behavior = "COMPANION_IDLE"

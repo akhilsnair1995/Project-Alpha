@@ -40,21 +40,39 @@ class TestLearningAndGemma(unittest.TestCase):
         facts = self.db.get_user_facts()
         self.assertGreaterEqual(len(facts), 3)
 
+    def test_person_introduction_and_ownership_learning(self):
+        """Tests that new persons and object ownership associations are extracted and remembered."""
+        # Introduce a guest
+        learned = self.learning_engine.extract_and_learn_from_text("This is my friend Sarah")
+        self.assertTrue(any(cat == "person_introduction" for cat, _ in learned))
+        sarah = self.db.get_person_by_name("Sarah")
+        self.assertIsNotNone(sarah)
+
+        # Mention an object belonging to Sarah
+        learned_own = self.learning_engine.extract_and_learn_from_text("This is Sarah's water bottle")
+        self.assertTrue(any(cat == "object_ownership" for cat, _ in learned_own))
+        bottle = self.db.find_objects("water bottle")
+        self.assertEqual(len(bottle), 1)
+        self.assertEqual(bottle[0]["owner_name"], "Sarah")
+
     def test_spatial_object_tracking_and_movement(self):
         """Tests that objects spotted while roaming are tracked and movements are detected."""
         # 1. Spot keys in Living Room
         sighting1 = self.learning_engine.learn_object_sighting(
             object_name="Car Keys",
             description="Silver ring with black fob",
-            room_name="Living Room"
+            room_name="Living Room",
+            owner_name="Akhil"
         )
         self.assertFalse(sighting1["moved"])
+        self.assertEqual(sighting1["owner"], "Akhil")
 
         # 2. Later, spot the SAME keys in Work Desk (Moved!)
         sighting2 = self.learning_engine.learn_object_sighting(
             object_name="Car Keys",
             description="Silver ring with black fob on desk",
-            room_name="Work Desk"
+            room_name="Work Desk",
+            owner_name="Akhil"
         )
         self.assertTrue(sighting2["moved"])
         self.assertEqual(sighting2["previous_room"], "Living Room")
@@ -63,6 +81,19 @@ class TestLearningAndGemma(unittest.TestCase):
         recall_text = self.learning_engine.recall_object_location("keys")
         self.assertIsNotNone(recall_text)
         self.assertIn("Work Desk", recall_text)
+        self.assertIn("Akhil's", recall_text)
+
+        # 4. Spot Sarah's notebook in Lab
+        self.learning_engine.learn_object_sighting(
+            object_name="Notebook",
+            description="Spiral bound math notes",
+            room_name="Lab",
+            owner_name="Sarah"
+        )
+        sarah_recall = self.learning_engine.recall_object_location("Sarah's Notebook")
+        self.assertIsNotNone(sarah_recall)
+        self.assertIn("Sarah's", sarah_recall)
+        self.assertIn("Lab", sarah_recall)
 
     def test_curiosity_scoring(self):
         """Tests curiosity scoring for brand new vs familiar objects."""
@@ -80,7 +111,6 @@ class TestLearningAndGemma(unittest.TestCase):
     def test_local_gemma_fallback_generation(self):
         """Tests that local Gemma engine generates coherent offline responses."""
         engine = LocalGemmaEngine()
-        # Even when offline and without model weights downloaded yet, it gracefully responds
         reply = engine.generate("Hello Alpha!", system_instruction="You are Alpha")
         self.assertIsInstance(reply, str)
         self.assertGreater(len(reply), 5)

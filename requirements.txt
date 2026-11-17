@@ -4,9 +4,20 @@
 google-genai>=0.1.0
 
 # Computer Vision & Image Processing
-opencv-python>=4.8.0
+opencv-python>=4.8.0,<5.0.0
 pillow>=10.0.0
 numpy>=1.24.0
+
+# High-Fidelity Neural Speech Synthesis (Edge-TTS matching Voice 1.mp3)
+edge-tts>=7.0.0
+aiohttp>=3.8.0
+
+# Speech Recognition & Microphone Streaming
+SpeechRecognition>=3.14.0
+sounddevice>=0.4.6
+
+# Windows SAPI5 TTS Engine (Windows Simulation Mode Offline Fallback)
+pywin32>=306; sys_platform == 'win32'
 
 # Raspberry Pi 5 Native GPIO & SPI Drivers (Install when deploying to physical Pi 5)
 # gpiozero>=2.0.1

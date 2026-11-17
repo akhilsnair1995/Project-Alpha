@@ -164,6 +164,31 @@ class TestGeminiCognitiveLoop(unittest.TestCase):
         self.assertEqual(self.loop.last_decision["action"], "SCAN_RIGHT")
         self.assertEqual(self.loop._consecutive_failures, 0)
 
+    @patch("core.cognitive_loop.GeminiCognitiveLoop._call_gemini")
+    def test_process_user_turn_unified_brain(self, mock_gemini):
+        mock_gemini.return_value = {
+            "action": "LOOK_AT",
+            "target": "Coffee Mug",
+            "pan_target": 25.0,
+            "tilt_target": -10.0,
+            "speech": "Your Coffee Mug is right here at (450, 140), Akhil!",
+            "inner_thought": "Akhil asked where his mug is. Turning head directly toward it.",
+            "emotion": "excited",
+            "sound_cue": "excited"
+        }
+
+        self.loop._client = MagicMock()
+        self.loop.is_active = True
+
+        res = self.loop.process_user_turn("Where is my coffee mug?")
+
+        self.assertIn("Coffee Mug", res["reply"])
+        self.assertEqual(res["action"], "LOOK_AT")
+        self.assertEqual(res["target"], "Coffee Mug")
+        self.assertEqual(self.engine.behavior_target, "Coffee Mug")
+        self.assertEqual(self.engine.current_behavior, "CURIOUS_GLANCE")
+        self.assertEqual(self.loop.last_user_message, "Where is my coffee mug?")
+
 
 if __name__ == "__main__":
     unittest.main()

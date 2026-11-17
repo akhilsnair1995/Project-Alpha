@@ -39,7 +39,8 @@ Project Alpha is a physical desktop robot companion inspired by Wall-E. It featu
 │   ├── voice_engine.py        # Procedural Wall-E sound synthesizer & cross-platform TTS
 │   ├── gemini_brain.py        # Gemini 2.5 multimodal agent with emotional expression parsing
 │   ├── motion_controller.py   # MG90S neck servos, DRV8833 tracks & emotional body gestures
-│   └── vision_pipeline.py     # Face detection, ArUco dock homing & scene analysis
+│   ├── behavior_engine.py     # Autonomous companion emotions, gaze following & behavioral state machine
+│   └── vision_pipeline.py     # Face tracking (EMA smoothed, profile/smile cues), ArUco dock & scene analysis
 ├── hardware/
 │   ├── BOM.md                 # Complete Bill of Materials
 │   ├── BUYING_GUIDE_INDIA.md  # Verified procurement links for Kerala / India
@@ -98,12 +99,33 @@ python simulator/run_sim.py
 Open `http://localhost:8085` in your browser. Key capabilities included:
 * **Tabletop Roam Arena**: Tank drive kinematics, TCRT5000 cliff edge protection, ToF laser raycasting, and draggable objects (`CUBE`, `CUP`, `KEYS`, `BOOK`) with automatic proximity sighting into SQLite.
 * **Dual GC9A01 LCD Screens (16 Expressions)**: Expressive procedural eyes reflecting 16 emotional states, interactive 2D gaze trackpad, and auto-blink.
-* **Wall-E Sound Synthesizer & Soundboard**: 12 procedural sound trigger buttons (`Startup`, `Happy`, `Curious`, `Excited`, `Alert`, `Love`, `Sad`, `Bump`, `Wink`, `Confused`, `Angry`, `Power Down`) powered by Web Audio API and Python backend WAV generation.
-* **Live Speech & Voice Cortex**: Chat with Alpha via text or microphone (Web Speech API). Features Wall-E voice pitch modulation (1.35x), speed control, real-time dynamic audio spectrum visualizer, and talking eye pupil pulsing.
+* **Wall-E Sound Synthesizer & Soundboard**: 13 sound trigger buttons featuring procedural synth audio (`Startup`, `Happy`, `Curious`, `Excited`, `Alert`, `Love`, `Sad`, `Bump`, `Wink`, `Confused`, `Angry`, `Power Down`) plus **Alpha's Authentic Voice Clip** (`🗣️ Alpha Voice: "Hello, I'm Alpha. I am your pet."` from `AlphaVoice/Voice 1.mp3`).
+* **Live Speech & High-Fidelity Voice 1 Neural Cortex (Full-Duplex Mic Streaming)**: Natural hands-free conversation with Alpha. Features live browser microphone streaming (`getUserMedia`), Web Audio real-time decibel VU meter and dual-mode audio spectrum visualizer (blue for Alpha speaking, emerald green for live user microphone stream). Supports **automatic conversational turn-taking**: whenever Alpha asks a question or finishes speaking, his ears automatically open to listen for your spoken reply with speech silence detection and auto-send. Includes voice barge-in (instantly cuts off Alpha when you start talking), dual-engine STT (Web Speech API + backend `/api/transcribe_mic`), and high-fidelity neural speech synthesis calibrated to match `AlphaVoice/Voice 1.mp3`.
 * **Wired Simulation Reactions**: Table cliff edge triggers alert siren and recoil; obstacle bump triggers impact squeak; proximity triggers curious chirps; head petting triggers purrs and loving tilts!
+* **Camera Feed & Emotional Behavior Cortex**: Real-time GPU-accelerated MediaPipe & OpenCV face tracking with EMA jitter smoothing, facial landmark detection, and autonomous companion state machine:
+  - **Discovery**: User sighted -> Alpha perks up with curious tilt, happy chirp, and greeting.
+  - **Eye Contact & Bonding**: Prolonged eye contact (> 3.2s) transitions Alpha into `LOVE` emotion with warm rose pupils, affectionate hum, and playful wink.
+  - **Smile Mirroring**: When the user smiles at Alpha, Alpha's eyes switch to `EXCITED`, wiggling joyfully with fanfare chimes.
+  - **Proximity Startle**: Leaning in close triggers `SURPRISED` / `SQUINT` emotion with defensive alert recoil.
+  - **Face Loss & Searching**: When the user vanishes, Alpha enters `CONFUSED` state with head wobbles, sweeps gaze toward exit direction, and plays soft warbles before returning to rest.
 * **AI Brain & SQLite Memory Inspector**: Real-time dashboard of persistent SQLite tables (`UserFacts`, `DiscoveredObjects` with moved tracking, `RoamingObservations`, and `ChatHistory`) with live cloud/offline toggle.
 
-### 5. Run Unit Tests
+### 5. Run Standalone Autonomous Vision Roaming Loop
+Run Alpha's autonomous companion loop directly on your laptop with live camera tracking and HUD window:
+```bash
+python main.py
+```
+* **Real-time Laptop Camera Stream**: Alpha captures your laptop webcam, displays cyber tracking HUD with corner brackets and gaze reticles, tracks your face, and reacts dynamically to your presence.
+* **Autonomous Companion Reactions**:
+  - **Greeting**: Greets you when you appear in front of the camera with curious chirps and head tilt.
+  - **Face Following**: Head servos and dual GC9A01 LCD pupil gaze smoothly track your movement in real time.
+  - **Smile Detection**: Lights up `EXCITED`, wiggles joyfully, and plays fanfare chimes when you smile.
+  - **Sustained Bonding**: Gazing into Alpha's eyes for > 3.2s triggers warm `LOVE` eyes, hum, and playful wink.
+  - **Proximity Startle**: Leaning in close (< 28cm) triggers `SURPRISED` recoil and alert sound.
+  - **Searching & Disappointment**: Sweeps gaze in the direction you left, wobbles puzzled, droops sad, then rests.
+* Add `--no-view` to run headless without opening the camera HUD preview window.
+
+### 6. Run Unit Tests
 ```bash
 python -m unittest discover tests/
 ```

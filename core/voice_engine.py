@@ -1,24 +1,123 @@
 """
 Project Alpha: Expressive Voice Cortex & Procedural Sound Synthesis Engine.
-Generates authentic Wall-E procedural sound effects (chirps, trills, sirens, beeps)
+Generates authentic Wall-E procedural sound effects (chirps, trills, sirens, beeps),
+provides native playback for Alpha's signature voice clip ('Voice 1.mp3'),
 and provides cross-platform offline Text-to-Speech (TTS) coordinated with eye animations.
 """
 
 import os
+import re
 import io
 import wave
 import struct
 import math
 import time
 import threading
-from typing import Optional, Callable, Dict, Any
+import asyncio
+import hashlib
+import concurrent.futures
+from typing import Optional, Callable, Dict, Any, Tuple
 from pathlib import Path
 
-from core.config import DATA_DIR, IS_RASPBERRY_PI
+from core.config import DATA_DIR, IS_RASPBERRY_PI, ALPHA_VOICE_PATH
 from core.eye_animator import Emotion
 
 SOUNDS_DIR = DATA_DIR / "sounds"
 SOUNDS_DIR.mkdir(parents=True, exist_ok=True)
+
+TTS_CACHE_DIR = DATA_DIR / "tts_cache"
+TTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Default high-fidelity neural voice (calibrated to match Alpha's Voice 1.mp3)
+DEFAULT_NEURAL_VOICE = "en-US-AnaNeural"
+
+# Emotion-adaptive prosody and sound mapping for living companion expressions
+EMOTION_PROSODY: Dict[str, Dict[str, str]] = {
+    "happy": {"pitch": "+14Hz", "rate": "+4%", "sound": "happy"},
+    "excited": {"pitch": "+22Hz", "rate": "+12%", "sound": "excited"},
+    "curious": {"pitch": "+16Hz", "rate": "+2%", "sound": "curious"},
+    "love": {"pitch": "+6Hz", "rate": "-4%", "sound": "love"},
+    "alert": {"pitch": "+26Hz", "rate": "+14%", "sound": "alert"},
+    "surprised": {"pitch": "+24Hz", "rate": "+10%", "sound": "alert"},
+    "sad": {"pitch": "-12Hz", "rate": "-15%", "sound": "sad"},
+    "analyzing": {"pitch": "+8Hz", "rate": "+0%", "sound": "thinking"},
+    "confused": {"pitch": "+12Hz", "rate": "-5%", "sound": "confused"},
+    "wink": {"pitch": "+15Hz", "rate": "+6%", "sound": "wink"},
+    "sleepy": {"pitch": "-16Hz", "rate": "-20%", "sound": "shutdown"},
+    "angry": {"pitch": "+8Hz", "rate": "-5%", "sound": "angry"},
+    "skeptical": {"pitch": "+6Hz", "rate": "-2%", "sound": "confused"},
+    "squint": {"pitch": "+10Hz", "rate": "+0%", "sound": "thinking"},
+}
+
+
+def sanitize_speech_text(text: str) -> str:
+    """
+    Cleans raw text for natural, conversational human-like TTS speech.
+    Strips out:
+      - Bracketed tags: [EMOTION: ...], [MOOD: ...]
+      - Stage directions: *wiggles tracks*, (laughs), *chirps happily*
+      - Markdown markers: *, _, #, `, >, ~
+      - Unicode emojis and symbol icons
+      - Multiple spaces
+    """
+    if not text:
+        return ""
+    t = re.sub(r"\[[A-Za-z0-9_: -]+\]", " ", text)
+    t = re.sub(r"\*{2,}([^*]+)\*{2,}", r"\1", t)
+    t = re.sub(r"\*[^*]+\*", " ", t)
+    t = re.sub(r"\([^)]+\)", " ", t)
+    t = re.sub(r"[*_#`>~]", "", t)
+    t = re.sub(r"[\U00010000-\U0010ffff]", "", t)
+    t = re.sub(r"[•★☆✓✔➔➡➜✨🤖👀❤️💖🐾]", "", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def _play_mp3_windows(mp3_abs_path: str) -> bool:
+    """Plays MP3 using Windows winmm MCI or PowerShell MediaPlayer fallback."""
+    try:
+        import ctypes
+        mci = ctypes.windll.winmm.mciSendStringW
+        alias = f"alpha_voice_{int(time.time() * 1000) % 100000}"
+        open_cmd = f'open "{mp3_abs_path}" type mpegvideo alias {alias}'
+        res = mci(open_cmd, None, 0, 0)
+        if res == 0:
+            mci(f'play {alias} wait', None, 0, 0)
+            mci(f'close {alias}', None, 0, 0)
+            return True
+    except Exception:
+        pass
+
+    # Secondary fallback using presentationCore MediaPlayer
+    try:
+        import subprocess
+        ps_cmd = (
+            f"Add-Type -AssemblyName presentationCore; "
+            f"$p = New-Object System.Windows.Media.MediaPlayer; "
+            f"$p.Open([System.Uri]'{mp3_abs_path}'); "
+            f"$p.Play(); "
+            f"Start-Sleep -Milliseconds 3400"
+        )
+        subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps_cmd],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _play_mp3_linux(mp3_abs_path: str) -> bool:
+    """Plays MP3 using Linux / Raspberry Pi audio tools."""
+    import subprocess
+    for cmd in [["mpg123", "-q"], ["cvlc", "--play-and-exit", "-q"], ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet"]]:
+        try:
+            res = subprocess.run(cmd + [mp3_abs_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if res.returncode == 0:
+                return True
+        except Exception:
+            continue
+    return False
 
 
 class WallESoundSynthesizer:
@@ -254,7 +353,8 @@ class WallESoundSynthesizer:
 class VoiceEngine:
     """
     Unified voice synthesizer & audio player.
-    Supports offline/online Text-to-Speech (TTS) and procedural Wall-E sounds.
+    Supports offline/online Text-to-Speech (TTS), procedural Wall-E sounds,
+    and native playback of Alpha's authentic voice ('Voice 1.mp3').
     """
 
     def __init__(self, voice_enabled: bool = True):
@@ -275,7 +375,7 @@ class VoiceEngine:
             try:
                 import win32com.client
                 self._sapi_voice = win32com.client.Dispatch("SAPI.SpVoice")
-                # Speed up slightly (+1 or +2) for cheerful, brisk robotic cadence
+                # Speed up slightly (+2) for cheerful, brisk robotic cadence
                 self._sapi_voice.Rate = 2
                 self._sapi_voice.Volume = 95
                 print("[VoiceEngine] Windows SAPI5 Speech Engine Initialized.")
@@ -284,8 +384,43 @@ class VoiceEngine:
         elif IS_RASPBERRY_PI or os.name == "posix":
             print("[VoiceEngine] Linux/Pi Audio Engine active (using aplay & espeak).")
 
+    def play_alpha_voice(self, async_play: bool = True) -> bool:
+        """
+        Plays Alpha's authentic voice clip ('Hello, I'm Alpha. I am your pet.').
+        Synchronizes with eye speech pulse callbacks.
+        """
+        if not ALPHA_VOICE_PATH.exists():
+            print(f"[VoiceEngine] Alpha voice clip not found at {ALPHA_VOICE_PATH}. Falling back to chirp.")
+            self.play_sound("happy", async_play=async_play)
+            return False
+
+        def _play_worker():
+            if self.on_speech_start:
+                self.on_speech_start()
+            mp3_abs = str(ALPHA_VOICE_PATH.resolve())
+            success = False
+            if os.name == "nt":
+                success = _play_mp3_windows(mp3_abs)
+            else:
+                success = _play_mp3_linux(mp3_abs)
+            if not success:
+                self.play_sound("happy", async_play=False)
+            if self.on_speech_end:
+                self.on_speech_end()
+
+        if async_play:
+            threading.Thread(target=_play_worker, daemon=True).start()
+        else:
+            _play_worker()
+        return True
+
     def play_sound(self, sound_name: str, async_play: bool = True) -> None:
-        """Plays a procedural Wall-E sound effect (cross-platform)."""
+        """Plays a procedural Wall-E sound effect or Alpha's authentic voice clip."""
+        s = sound_name.lower().strip()
+        if s in ("alpha_voice", "voice", "voice1", "voice_1", "intro", "alpha", "pet"):
+            self.play_alpha_voice(async_play=async_play)
+            return
+
         wav_bytes = WallESoundSynthesizer.generate_sound(sound_name)
 
         def _play():
@@ -314,6 +449,119 @@ class VoiceEngine:
         else:
             _play()
 
+    def _get_emotion_prosody(self, emotion: Optional[Emotion | str]) -> Tuple[str, str, str]:
+        """Resolves (pitch, rate, chime_sound) based on current emotion."""
+        if not emotion:
+            return ("+14Hz", "+4%", "happy")
+        emo_str = emotion.value if isinstance(emotion, Emotion) else str(emotion).lower().strip()
+        config = EMOTION_PROSODY.get(emo_str, EMOTION_PROSODY["happy"])
+        return (config["pitch"], config["rate"], config["sound"])
+
+    def get_neural_speech_file(
+        self,
+        text: str,
+        emotion: Optional[Emotion | str] = None,
+        voice: str = DEFAULT_NEURAL_VOICE
+    ) -> Optional[Path]:
+        """
+        Synthesizes high-fidelity neural MP3 speech matching Alpha's Voice 1 timbre.
+        Uses disk caching for sub-10ms retrieval on repeated phrases.
+        Returns Path to the cached MP3 file.
+        """
+        clean_text = sanitize_speech_text(text)
+        if not clean_text:
+            return None
+
+        # If text is Alpha's signature intro, return original Voice 1.mp3 asset
+        lower = clean_text.lower()
+        if (("alpha" in lower and ("pet" in lower or "your pet" in lower)) or
+            "hello, i'm alpha" in lower or "hello i'm alpha" in lower):
+            if ALPHA_VOICE_PATH.exists():
+                return ALPHA_VOICE_PATH
+
+        pitch, rate, _ = self._get_emotion_prosody(emotion)
+        cache_key = hashlib.md5(f"{voice}_{pitch}_{rate}_{clean_text}".encode("utf-8")).hexdigest()
+        cache_file = TTS_CACHE_DIR / f"{cache_key}.mp3"
+
+        if cache_file.exists() and cache_file.stat().st_size > 500:
+            return cache_file
+
+        try:
+            import edge_tts
+
+            async def _synthesize():
+                comm = edge_tts.Communicate(clean_text, voice, pitch=pitch, rate=rate)
+                await comm.save(str(cache_file))
+
+            # Safely handle existing event loops (e.g. inside tornado / asyncio servers)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    pool.submit(asyncio.run, _synthesize()).result(timeout=6.0)
+            else:
+                asyncio.run(_synthesize())
+
+            if cache_file.exists() and cache_file.stat().st_size > 500:
+                return cache_file
+        except Exception as e:
+            print(f"[VoiceEngine] Neural speech synthesis notice: {e}")
+
+        return None
+
+    def get_neural_speech_bytes(
+        self,
+        text: str,
+        emotion: Optional[Emotion | str] = None,
+        voice: str = DEFAULT_NEURAL_VOICE
+    ) -> bytes:
+        """
+        Returns high-fidelity neural MP3 bytes for the given text and emotion.
+        Suitable for HTTP streaming to the web simulator.
+        """
+        mp3_path = self.get_neural_speech_file(text, emotion, voice=voice)
+        if mp3_path and mp3_path.exists():
+            try:
+                with open(mp3_path, "rb") as f:
+                    return f.read()
+            except Exception:
+                pass
+        return b""
+
+    def stop_speaking(self) -> None:
+        """Instantly interrupts any ongoing speech or audio playback (barge-in support)."""
+        self.is_speaking = False
+        if os.name == "nt":
+            try:
+                import ctypes
+                ctypes.windll.winmm.mciSendStringW("close all", None, 0, 0)
+            except Exception:
+                pass
+            if self._sapi_voice:
+                try:
+                    self._sapi_voice.Speak("", 2)  # SVSFPurgeBeforeSpeak
+                except Exception:
+                    pass
+            try:
+                import winsound
+                winsound.PlaySound(None, 0)
+            except Exception:
+                pass
+        elif IS_RASPBERRY_PI or os.name == "posix":
+            try:
+                import subprocess
+                subprocess.run(["pkill", "-9", "-f", "aplay|mpg123|cvlc|espeak"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+        if self.on_speech_end:
+            try:
+                self.on_speech_end()
+            except Exception:
+                pass
+
     def speak(
         self,
         text: str,
@@ -322,67 +570,65 @@ class VoiceEngine:
         async_speech: bool = True
     ) -> None:
         """
-        Speaks text through TTS with emotional chimes and synchronized callbacks.
+        Speaks text through calibrated neural TTS (matching Voice 1.mp3)
+        with Wall-E emotive chimes, pupil lip-sync callbacks, and offline SAPI5/espeak fallback.
         """
         if not self.voice_enabled or not text:
             return
 
-        clean_text = text.replace("*", "").replace("#", "").replace("_", "").strip()
-
-        # Determine sound chime based on emotion
-        sound_preset = "happy"
-        if emotion:
-            emo_str = emotion.value if isinstance(emotion, Emotion) else str(emotion).lower()
-            if emo_str in ("curious", "analyzing"):
-                sound_preset = "curious"
-            elif emo_str in ("alert", "surprised"):
-                sound_preset = "alert"
-            elif emo_str in ("excited", "joy"):
-                sound_preset = "excited"
-            elif emo_str in ("sad",):
-                sound_preset = "sad"
-            elif emo_str in ("love",):
-                sound_preset = "love"
-            elif emo_str in ("wink",):
-                sound_preset = "wink"
-            elif emo_str in ("confused",):
-                sound_preset = "confused"
+        clean_text = sanitize_speech_text(text)
+        _, _, sound_preset = self._get_emotion_prosody(emotion)
 
         def _speak_worker():
             with self._lock:
                 self.is_speaking = True
                 try:
-                    # 1. Play emotive chime
+                    # 1. Play emotive Wall-E chime
                     if with_chirp:
                         self.play_sound(sound_preset, async_play=False)
-                        time.sleep(0.08)
+                        time.sleep(0.06)
 
                     # 2. Trigger speech start hook (e.g. eye pulse)
                     if self.on_speech_start:
                         self.on_speech_start()
 
-                    # 3. Speech execution
-                    if os.name == "nt" and self._sapi_voice:
-                        # 0 = SVSFDefault (synchronous in this worker thread)
-                        self._sapi_voice.Speak(clean_text, 0)
-                    elif IS_RASPBERRY_PI or os.name == "posix":
-                        import shutil
-                        import subprocess
-                        if shutil.which("espeak"):
-                            # espeak with female/cheerful robotic pitch
-                            subprocess.run(
-                                ["espeak", "-v", "en+f4", "-p", "72", "-s", "165", clean_text],
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL
-                            )
+                    # 3. Primary: High-Fidelity Neural Speech (matching Voice 1)
+                    neural_mp3 = self.get_neural_speech_file(clean_text, emotion=emotion)
+                    played_neural = False
+                    if neural_mp3 and neural_mp3.exists():
+                        abs_path = str(neural_mp3.resolve())
+                        if os.name == "nt":
+                            played_neural = _play_mp3_windows(abs_path)
+                        else:
+                            played_neural = _play_mp3_linux(abs_path)
+
+                    # 4. Secondary: Graceful Offline Fallback (Windows SAPI5 / Linux espeak)
+                    if not played_neural:
+                        if os.name == "nt":
+                            if self._sapi_voice:
+                                self._sapi_voice.Speak(clean_text, 0)
+                            else:
+                                import subprocess
+                                escaped = clean_text.replace("'", "''").replace('"', '`"')
+                                ps_cmd = f"Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Rate = 2; $s.Speak('{escaped}')"
+                                subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        elif IS_RASPBERRY_PI or os.name == "posix":
+                            import shutil
+                            import subprocess
+                            if shutil.which("espeak"):
+                                subprocess.run(
+                                    ["espeak", "-v", "en+f4", "-p", "72", "-s", "165", clean_text],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL
+                                )
+                            else:
+                                print(f"[VoiceEngine:Simulated] Speaking: {clean_text}")
+                                time.sleep(min(1.0, len(clean_text) * 0.03))
                         else:
                             print(f"[VoiceEngine:Simulated] Speaking: {clean_text}")
-                            time.sleep(min(1.0, len(clean_text) * 0.03))
-                    else:
-                        print(f"[VoiceEngine:Simulated] Speaking: {clean_text}")
-                        time.sleep(len(clean_text) * 0.05)
+                            time.sleep(len(clean_text) * 0.05)
                 except Exception as e:
-                    print(f"[VoiceEngine] TTS error: {e}")
+                    print(f"[VoiceEngine] Speak error: {e}")
                 finally:
                     self.is_speaking = False
                     if self.on_speech_end:
@@ -396,3 +642,11 @@ class VoiceEngine:
     def get_wav_bytes(self, sound_name: str) -> bytes:
         """Returns WAV bytes for a sound preset, suitable for HTTP streaming."""
         return WallESoundSynthesizer.generate_sound(sound_name)
+
+    @staticmethod
+    def get_alpha_voice_bytes() -> bytes:
+        """Returns raw MP3 bytes of Alpha's authentic voice."""
+        if ALPHA_VOICE_PATH.exists():
+            with open(ALPHA_VOICE_PATH, "rb") as f:
+                return f.read()
+        return b""

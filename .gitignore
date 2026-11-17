@@ -15,6 +15,14 @@ data/alpha_memory.db
 # Binary build artifacts
 *.apk
 
+# Generated audio cache & camera snapshots
+data/tts_cache/
+data/snapshots/
+tools/dynamic/auto_*
+
 # OS files
 .DS_Store
 Thumbs.db
+
+# Executables & Installers
+*.exe

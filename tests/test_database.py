@@ -28,6 +28,26 @@ class TestAlphaDatabase(unittest.TestCase):
         self.assertIn("Loves dark roast coffee", fact_texts)
         self.assertIn("Assembling Wall-E rover in Kerala", fact_texts)
 
+    def test_persons_catalog_and_profiles(self):
+        # Verify Akhil is automatically seeded as owner
+        akhil = self.db.get_person_by_name("Akhil")
+        self.assertIsNotNone(akhil)
+        self.assertEqual(akhil["relationship"], "owner")
+
+        # Register a friend
+        pid = self.db.get_or_create_person("Sarah", relationship="friend", visual_description="Long dark hair, blue jacket")
+        self.assertGreater(pid, 0)
+        sarah = self.db.get_person_by_name("Sarah")
+        self.assertIsNotNone(sarah)
+        self.assertEqual(sarah["relationship"], "friend")
+        self.assertIn("blue jacket", sarah["visual_description"])
+
+        # Check list of known persons
+        persons = self.db.get_known_persons()
+        names = [p["name"] for p in persons]
+        self.assertIn("Akhil", names)
+        self.assertIn("Sarah", names)
+
     def test_record_and_find_discovered_objects(self):
         self.db.record_discovered_object(
             name="Car Keys",
@@ -51,6 +71,39 @@ class TestAlphaDatabase(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["name"], "Yellow Mug")
 
+    def test_object_ownership_assignment(self):
+        # Record an object with an assigned owner
+        self.db.record_discovered_object(
+            name="MacBook Pro",
+            description="Silver laptop on desk",
+            room_name="Work Desk",
+            owner_name="Akhil"
+        )
+        # Record an object for another person
+        self.db.record_discovered_object(
+            name="Blue Water Bottle",
+            description="Insulated thermos",
+            room_name="Work Desk",
+            owner_name="Sarah"
+        )
+
+        # Search Akhil's objects
+        akhil_objs = self.db.get_person_objects("Akhil")
+        self.assertEqual(len(akhil_objs), 1)
+        self.assertEqual(akhil_objs[0]["name"], "Macbook Pro")
+        self.assertEqual(akhil_objs[0]["owner_name"], "Akhil")
+
+        # Search Sarah's objects
+        sarah_objs = self.db.get_person_objects("Sarah")
+        self.assertEqual(len(sarah_objs), 1)
+        self.assertEqual(sarah_objs[0]["name"], "Blue Water Bottle")
+        self.assertEqual(sarah_objs[0]["owner_name"], "Sarah")
+
+        # Reassign object owner
+        self.db.assign_object_owner("Blue Water Bottle", "John")
+        reassigned = self.db.find_objects("Bottle")
+        self.assertEqual(reassigned[0]["owner_name"], "John")
+
     def test_roaming_observation_log(self):
         self.db.log_observation(
             observation="Observed bright sunlight streaming through east window.",
@@ -66,9 +119,13 @@ class TestAlphaDatabase(unittest.TestCase):
     def test_system_prompt_context_generation(self):
         self.db.learn_fact("habit", "Works late night on coding projects")
         self.db.log_observation("Desk lamp was left on", room_name="Work Desk")
+        self.db.record_discovered_object("Coffee Mug", "Ceramic mug", owner_name="Akhil")
         context = self.db.generate_system_prompt_context()
 
         self.assertIn("LOCAL MEMORY & HOUSEHOLD AWARENESS", context)
+        self.assertIn("Known People in Household:", context)
+        self.assertIn("Akhil (Owner)", context)
+        self.assertIn("Coffee Mug [Owner: Akhil]", context)
         self.assertIn("Works late night on coding projects", context)
         self.assertIn("Desk lamp was left on", context)
 

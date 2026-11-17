@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Alpha - Wall-E Robot Digital Twin & Wiring Simulator</title>
+  <!-- MediaPipe Real-Time Vision & Face Tracking Cortex -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
   <style>
     :root {
       --bg: #0f141c;
@@ -878,6 +881,9 @@
     .arena-toast {
       position: absolute;
       top: 14px;
+      max-width: 85%;
+      text-align: center;
+      white-space: normal;
       left: 50%;
       transform: translateX(-50%);
       background: #0f172a;
@@ -1016,13 +1022,13 @@
             <div style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px;">
               ACTIVE GPIO BUS TRAFFIC & PIN VOLTAGES
             </div>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 0.72rem; font-family: monospace;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.72rem; font-family: monospace;">
               <div>IN1 (GPIO 6): <b id="pinG6">LOW</b></div>
               <div>IN2 (GPIO 12): <b id="pinG12">LOW</b></div>
               <div>IN3 (GPIO 13): <b id="pinG13">LOW</b></div>
               <div>IN4 (GPIO 16): <b id="pinG16">LOW</b></div>
-              <div>Pan PWM (G25): <b id="pinG25">1500µs</b></div>
-              <div>Tilt PWM (G5): <b id="pinG5">1500µs</b></div>
+              <div>Pan PWM (G25): <b id="pinG25">1500 µs</b></div>
+              <div>Tilt PWM (G5): <b id="pinG5">1500 µs</b></div>
             </div>
           </div>
         </div>
@@ -1071,7 +1077,7 @@
               <button class="chip-btn" data-expr="skeptical" onclick="setEyeExpression('skeptical')">Skeptical 🤨</button>
               <button class="chip-btn" data-expr="sad" onclick="setEyeExpression('sad')">Sad 😢</button>
               <button class="chip-btn" data-expr="sleep" onclick="setEyeExpression('sleep')">Sleep 💤</button>
-              <button class="chip-btn" data-expr="angry" onclick="setEyeExpression('angry')">Angry 💢</button>
+              <button class="chip-btn" data-expr="angry" onclick="setEyeExpression('angry')">Angry 😡</button>
               <button class="chip-btn" data-expr="offline" onclick="setEyeExpression('offline')">Offline 🛑</button>
             </div>
 
@@ -1108,7 +1114,8 @@
               </div>
             </div>
             <div class="soundboard-grid">
-              <button class="sound-btn" onclick="playWallESound('startup')">🎵 Startup</button>
+              <button class="sound-btn" style="grid-column: span 4; background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(3, 105, 161, 0.32)); border-color: #38bdf8; color: #38bdf8; font-weight: bold; padding: 7px 4px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="playWallESound('alpha_voice')">&#x1F5E3;&#xFE0F; Alpha Voice ("Hello, I'm Alpha. I am your pet.")</button>
+              <button class="sound-btn" onclick="playWallESound('startup')">🚀 Startup</button>
               <button class="sound-btn" onclick="playWallESound('happy')">😊 Happy</button>
               <button class="sound-btn" onclick="playWallESound('curious')">❓ Curious</button>
               <button class="sound-btn" onclick="playWallESound('excited')">⚡ Excited</button>
@@ -1118,8 +1125,8 @@
               <button class="sound-btn" onclick="playWallESound('bump')">💥 Bump</button>
               <button class="sound-btn" onclick="playWallESound('wink')">😉 Wink</button>
               <button class="sound-btn" onclick="playWallESound('confused')">🌀 Confused</button>
-              <button class="sound-btn" onclick="playWallESound('angry')">💢 Angry</button>
-              <button class="sound-btn" onclick="playWallESound('shutdown')">💤 Power Down</button>
+              <button class="sound-btn" onclick="playWallESound('angry')">😡 Angry</button>
+              <button class="sound-btn" onclick="playWallESound('shutdown')">🔌 Power Down</button>
             </div>
           </div>
 
@@ -1249,22 +1256,37 @@
           <div class="panel" style="display: flex; flex-direction: column; flex: 1;">
             <div class="panel-title">
               <span>ALPHA SPEECH & VOICE CORTEX</span>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                  <input type="checkbox" id="ttsEnabledToggle" checked> 🔊 Voice
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;" title="Toggle Alpha spoken voice">
+                  <input type="checkbox" id="ttsEnabledToggle" checked> 🗣️ Voice
+                </label>
+                <label style="font-size: 0.7rem; color: #4ade80; display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500;" title="Alpha automatically opens mic to listen when he finishes speaking or asks questions">
+                  <input type="checkbox" id="autoListenToggle" checked onchange="toggleHandsFreeAutoListen(this.checked)"> 👂 Live Mic Stream
                 </label>
               </div>
             </div>
 
-            <!-- Real-time Audio Spectrum Visualizer -->
-            <canvas id="audioVisualizerCanvas" height="30" width="320" style="width: 100%; height: 30px; border-radius: 4px; background: #080c14; margin-bottom: 8px; border: 1px solid #1e293b; display: block;"></canvas>
+            <!-- Real-time Dual Audio Visualizer (Alpha Speech + Live User Mic) -->
+            <canvas id="audioVisualizerCanvas" height="30" width="320" style="width: 100%; height: 30px; border-radius: 4px; background: #080c14; margin-bottom: 6px; border: 1px solid #1e293b; display: block;" title="Blue = Alpha Speaking | Green = Your Microphone Stream"></canvas>
 
-            <!-- Speech Modulation Controls -->
-            <div style="display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.68rem; color: var(--text-muted); align-items: center;">
-              <span style="white-space: nowrap;">Wall-E Pitch:</span>
-              <input type="range" id="voicePitchSlider" min="0.8" max="1.8" step="0.05" value="1.35" style="flex: 1; accent-color: var(--accent-blue);" title="Robotic Pitch (1.35x = Wall-E friendly)">
+            <!-- Live Status & VU Meter Bar -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px; font-size: 0.68rem; color: var(--text-muted); align-items: center; flex-wrap: wrap;">
+              <span id="micStatusBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;" onclick="requestMicStreamAccess()" title="Click to grant/test microphone streaming">
+                <span id="micStatusDot" style="width: 6px; height: 6px; border-radius: 50%; background: #4ade80; display: inline-block;"></span>
+                <span id="micStatusText">🎙️ Mic Stream Ready</span>
+              </span>
+              <div style="display: inline-flex; align-items: center; gap: 4px; margin-left: 2px;" title="Live volume level of your streaming microphone">
+                <span style="font-size: 0.6rem; color: var(--text-muted);">MIC:</span>
+                <div style="width: 50px; height: 5px; background: #0f172a; border-radius: 3px; border: 1px solid #1e293b; overflow: hidden; display: inline-block; vertical-align: middle;">
+                  <div id="micVUBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #4ade80); transition: width 0.04s ease;"></div>
+                </div>
+              </div>
+              <span style="flex: 1;"></span>
+              <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" title="Tuned to match AlphaVoice/Voice 1.mp3">
+                <span style="width: 5px; height: 5px; border-radius: 50%; background: #38bdf8;"></span> Voice 1
+              </span>
               <span style="white-space: nowrap;">Speed:</span>
-              <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 65px; accent-color: var(--accent-blue);" title="Speaking Rate">
+              <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 55px; accent-color: var(--accent-blue);" title="Speaking Rate">
             </div>
 
             <!-- LIVE HANDS-FREE CONVERSATION SWITCH -->
@@ -1292,7 +1314,7 @@
               <div class="chat-input-row">
                 <input type="text" class="chat-input" id="chatInputText" placeholder="Talk to Alpha (e.g., 'Where are my keys?')" onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button class="ctrl-btn" style="padding: 6px 12px; background: var(--accent-blue); color: #0f172a;" onclick="sendChatMessage()">Send</button>
-                <button class="ctrl-btn" id="btnVoiceMic" style="padding: 6px 10px;" onclick="toggleVoiceSpeechRecognition()" title="Voice Input">🎙</button>
+                <button class="ctrl-btn" id="btnVoiceMic" style="padding: 6px 10px;" onclick="toggleVoiceSpeechRecognition()" title="Voice Input">🎙️</button>
               </div>
             </div>
           </div>
@@ -1323,6 +1345,23 @@
       </div>
 
       <div class="brain-grid">
+        <!-- 0. Known People & Companions (Multi-Person Identification) -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>👥 KNOWN PEOPLE & COMPANIONS (Persons)</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span id="personCountBadge" class="badge">1 Person</span>
+              <button onclick="promptAddNewPerson()" style="background: rgba(192, 132, 252, 0.2); border: 1px solid #c084fc; color: #c084fc; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; cursor: pointer;">+ Add</button>
+            </div>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            Recognized people and visual profiles. Alpha distinguishes Akhil from friends, family, and guests.
+          </div>
+          <div class="memory-list" id="knownPersonsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
         <!-- 1. Learned User Facts -->
         <div class="panel">
           <div class="panel-title">
@@ -1354,7 +1393,7 @@
         <!-- 3. Roaming Scene Observations -->
         <div class="panel">
           <div class="panel-title">
-            <span>👁 VISUAL SCENE OBSERVATIONS (RoamingObservations)</span>
+            <span>👁️ VISUAL SCENE OBSERVATIONS (RoamingObservations)</span>
             <span id="obsCountBadge" class="badge">0 Logs</span>
           </div>
           <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
@@ -1402,7 +1441,7 @@
 
           <div class="module-card" onclick="highlightSchematic('display')">
             <div class="module-header">
-              <span class="module-title">👁 Dual GC9A01 Round LCDs</span>
+              <span class="module-title">👁️ Dual GC9A01 Round LCDs</span>
               <span class="badge" style="background:#155e75; color:#67e8f9;">SPI0 Bus</span>
             </div>
             <div class="module-pins">
@@ -1413,7 +1452,7 @@
 
           <div class="module-card" onclick="highlightSchematic('motors')">
             <div class="module-header">
-              <span class="module-title">⚙ DRV8833 Dual H-Bridge</span>
+              <span class="module-title">⚙️ DRV8833 Dual H-Bridge</span>
               <span class="badge" style="background:#166534; color:#86efac;">PWM Drive</span>
             </div>
             <div class="module-pins">
@@ -1435,7 +1474,7 @@
 
           <div class="module-card" onclick="highlightSchematic('sensors')">
             <div class="module-header">
-              <span class="module-title">🛡 Safety & Ranging Sensors</span>
+              <span class="module-title">🛡️ Safety & Ranging Sensors</span>
               <span class="badge" style="background:#581c87; color:#d8b4fe;">I2C / GPIO</span>
             </div>
             <div class="module-pins">
@@ -1882,8 +1921,8 @@
       // Convert angles to standard PWM microsecond timings (1000us - 2000us)
       const panUs = Math.round(1500 + (rover.panAngle / 90) * 500);
       const tiltUs = Math.round(1500 + (rover.tiltAngle / 90) * 500);
-      document.getElementById('pinG25').textContent = `${panUs}µs`;
-      document.getElementById('pinG5').textContent = `${tiltUs}µs`;
+      document.getElementById('pinG25').textContent = `${panUs} µs`;
+      document.getElementById('pinG5').textContent = `${tiltUs} µs`;
 
       // Update head SVG rotation
       const headGroup = document.getElementById('roverHeadGroup');
@@ -2223,6 +2262,24 @@
         masterGain.connect(ctx.destination);
 
         const s = String(name).toLowerCase().trim();
+
+        if (s === 'alpha_voice' || s === 'voice' || s === 'voice1' || s === 'voice_1' || s === 'intro' || s === 'pet') {
+          startAudioVisualizerAnimation(3400);
+          startTalkingPulse();
+          const audio = new Audio('/api/audio/voice1.mp3');
+          audio.onended = () => stopTalkingPulse();
+          audio.onerror = (e) => {
+            console.warn("Audio play error, falling back:", e);
+            stopTalkingPulse();
+          };
+          audio.play().catch(e => {
+            console.warn("Audio play blocked by browser:", e);
+            stopTalkingPulse();
+          });
+          setTimeout(() => stopTalkingPulse(), 3500);
+          setEyeExpression('happy', false);
+          return;
+        }
 
         if (s === 'startup' || s === 'boot') {
           // Ascending triad chords: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
@@ -2672,18 +2729,42 @@
         const barWidth = Math.floor(w / numBars) - 2;
         const t = Date.now() * 0.008;
 
+        const isAlphaVoiceActive = isVisualizerActive || isAlphaSpeaking;
         for (let i = 0; i < numBars; i++) {
           let barHeight = 2;
-          if (isVisualizerActive) {
+          let isUserMicBar = false;
+
+          if (isAlphaVoiceActive) {
+            // Alpha Voice: Cyan/Blue dynamic spectrum
             const wave = Math.sin(t * 1.5 + i * 0.45) * 0.45 + Math.cos(t * 2.2 + i * 0.25) * 0.35 + 0.45;
             barHeight = Math.max(3, wave * (h - 4));
+          } else if (isListeningActive && micDataArray && isUserTalkingActive) {
+            // User Microphone: Emerald Green spectrum from live Web Audio stream!
+            isUserMicBar = true;
+            const dataIdx = Math.floor((i / numBars) * (micDataArray.length * 0.65));
+            const val = micDataArray[dataIdx] || 0;
+            barHeight = Math.max(3, (val / 255.0) * (h - 3));
+          } else if (isListeningActive) {
+            // Listening idle pulse
+            const ripple = (Math.sin(t * 0.8 + i * 0.3) + 1.0) * 0.5;
+            barHeight = 2 + ripple * 4;
+            isUserMicBar = true;
           }
+
           const x = i * (barWidth + 2);
           const y = h - barHeight;
 
           const grad = ctx.createLinearGradient(0, y, 0, h);
-          grad.addColorStop(0, '#38bdf8');
-          grad.addColorStop(1, '#0284c7');
+          if (isUserMicBar) {
+            grad.addColorStop(0, '#4ade80');
+            grad.addColorStop(1, '#16a34a');
+          } else if (isAlphaVoiceActive) {
+            grad.addColorStop(0, '#38bdf8');
+            grad.addColorStop(1, '#0284c7');
+          } else {
+            grad.addColorStop(0, '#334155');
+            grad.addColorStop(1, '#1e293b');
+          }
           ctx.fillStyle = grad;
           ctx.fillRect(x, y, barWidth, barHeight);
         }
@@ -2797,7 +2878,6 @@
     }
 
 // Camera processing and inspection removed for pure desk companion
-
     // --- CONVERSATIONAL AI, SPEECH & MEMORY DASHBOARD ---
     function escapeHtml(str) {
       if (!str) return "";
@@ -2884,56 +2964,533 @@
       }
     }
 
+    // =========================================================================
+    // DUPLEX CONVERSATIONAL AUDIO CORTEX: LIVE MIC STREAMING & AUTO-LISTENING
+    // =========================================================================
+    let activeSpeechAudio = null;
+    let isAlphaSpeaking = false;
+    let isHandsFreeListening = true;
+    let isListeningActive = false;
+    let isUserTalkingActive = false;
+    let activeRecognizer = null;
+    let micMediaStream = null;
+    let micAudioContext = null;
+    let micAnalyserNode = null;
+    let micDataArray = null;
+    let micVolumeCheckInterval = null;
+    let speechSilenceTimeout = null;
+    let rawMediaRecorder = null;
+    let rawAudioChunks = [];
+
+    function updateMicBadge(state, customText) {
+      const badge = document.getElementById('micStatusBadge');
+      const dot = document.getElementById('micStatusDot');
+      const text = document.getElementById('micStatusText');
+      const micBtn = document.getElementById('btnVoiceMic');
+      if (!badge || !dot || !text) return;
+
+      if (state === 'speaking_alpha') {
+        badge.style.background = "rgba(56, 189, 248, 0.15)";
+        badge.style.color = "#38bdf8";
+        badge.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+        dot.style.background = "#38bdf8";
+        text.textContent = customText || "🗣️ Alpha Speaking...";
+        if (micBtn) micBtn.style.background = "";
+      } else if (state === 'listening') {
+        badge.style.background = "rgba(74, 222, 128, 0.2)";
+        badge.style.color = "#4ade80";
+        badge.style.border = "1px solid rgba(74, 222, 128, 0.4)";
+        dot.style.background = "#4ade80";
+        text.textContent = customText || "👂 Alpha is listening... Speak now!";
+        if (micBtn) micBtn.style.background = "#15803d";
+      } else if (state === 'hearing_user') {
+        badge.style.background = "rgba(250, 204, 21, 0.2)";
+        badge.style.color = "#facc15";
+        badge.style.border = "1px solid rgba(250, 204, 21, 0.4)";
+        dot.style.background = "#facc15";
+        text.textContent = customText || "🎙️ Hearing your voice...";
+        if (micBtn) micBtn.style.background = "#ca8a04";
+      } else {
+        badge.style.background = "rgba(148, 163, 184, 0.15)";
+        badge.style.color = "#94a3b8";
+        badge.style.border = "1px solid rgba(148, 163, 184, 0.3)";
+        dot.style.background = "#94a3b8";
+        text.textContent = customText || "🎙️ Mic Stream Ready";
+        if (micBtn) micBtn.style.background = "";
+      }
+    }
+
+    function encodeWavPcm16(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      function writeString(view, offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM format
+      view.setUint16(22, 1, true); // Mono
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    let liveAudioBuffer = [];
+    let liveSpeechStart = 0;
+    let liveSilenceStart = 0;
+    let micScriptProcessor = null;
+
+    async function sendWavToTranscribe(wavBlob) {
+      if (isAlphaSpeaking) return;
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const b64 = reader.result;
+        try {
+          const res = await fetch('/api/transcribe_mic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio_base64: b64, auto_chat: false })
+          });
+          const data = await res.json();
+          if (data.transcript && data.transcript.trim() && !isAlphaSpeaking) {
+            const chatInput = document.getElementById('chatInputText');
+            if (chatInput) chatInput.value = data.transcript.trim();
+            stopListeningTurn();
+            sendChatMessage();
+          }
+        } catch(err) {
+          console.warn("[WavTranscribe] error:", err);
+        }
+      };
+      reader.readAsDataURL(wavBlob);
+    }
+
+    async function requestMicStreamAccess() {
+      if (micMediaStream && micAudioContext) {
+        if (micAudioContext.state === 'suspended') {
+          try { await micAudioContext.resume(); } catch(e) {}
+        }
+        return true;
+      }
+      try {
+        micMediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        micAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (micAudioContext.state === 'suspended') {
+          try { await micAudioContext.resume(); } catch(e) {}
+        }
+        const source = micAudioContext.createMediaStreamSource(micMediaStream);
+        micAnalyserNode = micAudioContext.createAnalyser();
+        micAnalyserNode.fftSize = 64;
+        source.connect(micAnalyserNode);
+
+        // Continuous Web Audio VAD with PCM WAV capture
+        micScriptProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
+        micScriptProcessor.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0);
+          let sum = 0;
+          for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+          const rms = Math.sqrt(sum / input.length);
+
+          // Barge-in check: If Alpha is speaking and user speaks loudly, stop Alpha!
+          if (isAlphaSpeaking && rms > 0.065) {
+            console.log("[VAD] Barge-in detected! Stopping Alpha speech.");
+            interruptAlphaSpeech();
+            startListeningTurn();
+            return;
+          }
+
+          if (!isListeningActive || isAlphaSpeaking) return;
+
+          if (rms > 0.022) { // speech threshold
+            if (liveAudioBuffer.length === 0) {
+              liveSpeechStart = Date.now();
+              updateMicBadge('hearing_user', '🎙️ Hearing your voice...');
+            }
+            liveSilenceStart = 0;
+            liveAudioBuffer.push(new Float32Array(input));
+          } else if (liveAudioBuffer.length > 0) {
+            liveAudioBuffer.push(new Float32Array(input));
+            if (!liveSilenceStart) {
+              liveSilenceStart = Date.now();
+            } else if (Date.now() - liveSilenceStart > 900) {
+              // Silence gap detected after speech utterance!
+              const totalLen = liveAudioBuffer.reduce((acc, c) => acc + c.length, 0);
+              if (totalLen > micAudioContext.sampleRate * 0.45) { // at least 0.45s of speech
+                const merged = new Float32Array(totalLen);
+                let off = 0;
+                for (const chunk of liveAudioBuffer) {
+                  merged.set(chunk, off);
+                  off += chunk.length;
+                }
+                const wavBlob = encodeWavPcm16(merged, micAudioContext.sampleRate);
+                sendWavToTranscribe(wavBlob);
+              }
+              liveAudioBuffer = [];
+              liveSilenceStart = 0;
+            }
+          }
+        };
+        source.connect(micScriptProcessor);
+        micScriptProcessor.connect(micAudioContext.destination);
+
+        micDataArray = new Uint8Array(micAnalyserNode.frequencyBinCount);
+        startMicVUMeterLoop();
+        updateMicBadge('ready', '🎙️ Live Mic Stream Active');
+        return true;
+      } catch (err) {
+        console.warn("[MicStream] getUserMedia notice:", err);
+        updateMicBadge('ready', '⚠️ Click to Grant Mic Access');
+        return false;
+      }
+    }
+
+    function startMicVUMeterLoop() {
+      if (micVolumeCheckInterval) clearInterval(micVolumeCheckInterval);
+      const vuBar = document.getElementById('micVUBar');
+
+      micVolumeCheckInterval = setInterval(() => {
+        if (!micAnalyserNode || !micDataArray) return;
+        micAnalyserNode.getByteFrequencyData(micDataArray);
+
+        let sum = 0;
+        for (let i = 0; i < micDataArray.length; i++) {
+          sum += micDataArray[i];
+        }
+        const avg = sum / micDataArray.length; // 0 to 255
+        const pct = Math.min(100, Math.round((avg / 90) * 100));
+
+        if (vuBar) {
+          vuBar.style.width = `${pct}%`;
+        }
+
+        // Voice Activity Detection (VAD)
+        if (avg > 18 && !isAlphaSpeaking) {
+          isUserTalkingActive = true;
+        } else if (avg <= 8) {
+          isUserTalkingActive = false;
+        }
+      }, 50);
+    }
+
+    function toggleHandsFreeAutoListen(enabled) {
+      isHandsFreeListening = !!enabled;
+      if (isHandsFreeListening && !isAlphaSpeaking) {
+        startListeningTurn();
+      } else if (!isHandsFreeListening) {
+        stopListeningTurn();
+      }
+    }
+
+    function startListeningTurn() {
+      if (isAlphaSpeaking) return;
+      isListeningActive = true;
+      updateMicBadge('listening');
+
+      // Request live mic stream for visualizer & volume meter
+      requestMicStreamAccess();
+
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRec) {
+        if (activeRecognizer) {
+          try { activeRecognizer.abort(); } catch(e) {}
+        }
+
+        const recog = new SpeechRec();
+        recog.lang = "en-US";
+        recog.continuous = true;
+        recog.interimResults = true;
+        recog.maxAlternatives = 1;
+        activeRecognizer = recog;
+
+        let accumulatedTranscript = "";
+
+        recog.onstart = () => {
+          updateMicBadge('listening');
+        };
+
+        recog.onresult = (e) => {
+          if (isAlphaSpeaking) return;
+          let interim = "";
+          let final = "";
+
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const transcript = e.results[i][0].transcript;
+            if (e.results[i].isFinal) {
+              final += transcript + " ";
+            } else {
+              interim += transcript;
+            }
+          }
+
+          const currentSpeech = (final + interim).trim();
+          if (currentSpeech) {
+            updateMicBadge('hearing_user', `🎙️ "${currentSpeech.slice(-32)}"`);
+            const chatInput = document.getElementById('chatInputText');
+            if (chatInput) chatInput.value = currentSpeech;
+
+            clearTimeout(speechSilenceTimeout);
+            // Auto-send when user finishes a complete thought or pauses for 1.2s
+            speechSilenceTimeout = setTimeout(() => {
+              if (chatInput && chatInput.value.trim() && !isAlphaSpeaking) {
+                stopListeningTurn();
+                sendChatMessage();
+              }
+            }, 1250);
+          }
+        };
+
+        recog.onerror = (e) => {
+          if (e.error !== 'no-speech' && e.error !== 'aborted') {
+            console.warn("[SpeechRecognition] Notice:", e.error);
+          }
+        };
+
+        recog.onend = () => {
+          if (isListeningActive && isHandsFreeListening && !isAlphaSpeaking) {
+            // Keep ears open seamlessly
+            try { recog.start(); } catch(e) {}
+          }
+        };
+
+        try {
+          recog.start();
+        } catch(e) {
+          console.warn("[SpeechRec] start notice:", e);
+        }
+      } else {
+        // Fallback for non-WebSpeech browsers: Record audio chunks via MediaRecorder & /api/transcribe_mic
+        startMediaRecorderFallback();
+      }
+    }
+
+    function stopListeningTurn() {
+      isListeningActive = false;
+      isUserTalkingActive = false;
+      clearTimeout(speechSilenceTimeout);
+
+      if (activeRecognizer) {
+        try { activeRecognizer.stop(); } catch(e) {}
+        activeRecognizer = null;
+      }
+      stopMediaRecorderFallback();
+      updateMicBadge('ready');
+    }
+
+    function startMediaRecorderFallback() {
+      if (!micMediaStream) return;
+      try {
+        rawAudioChunks = [];
+        rawMediaRecorder = new MediaRecorder(micMediaStream);
+        rawMediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) rawAudioChunks.push(e.data);
+        };
+        rawMediaRecorder.onstop = async () => {
+          if (rawAudioChunks.length === 0 || isAlphaSpeaking) return;
+          const blob = new Blob(rawAudioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const b64 = reader.result;
+            try {
+              const res = await fetch('/api/transcribe_mic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audio_base64: b64, auto_chat: false })
+              });
+              const data = await res.json();
+              if (data.transcript && data.transcript.trim()) {
+                const chatInput = document.getElementById('chatInputText');
+                if (chatInput) chatInput.value = data.transcript.trim();
+                sendChatMessage();
+              }
+            } catch(err) {
+              console.warn("[TranscribeFallback] API notice:", err);
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+        rawMediaRecorder.start(250);
+      } catch(e) {
+        console.warn("[MediaRecorderFallback] err:", e);
+      }
+    }
+
+    function stopMediaRecorderFallback() {
+      if (rawMediaRecorder && rawMediaRecorder.state !== 'inactive') {
+        try { rawMediaRecorder.stop(); } catch(e) {}
+      }
+    }
+
+    function toggleVoiceSpeechRecognition() {
+      // Barge-in: if Alpha is speaking, cut off Alpha immediately
+      if (isAlphaSpeaking) {
+        interruptAlphaSpeech();
+      }
+
+      const toggle = document.getElementById('liveModeToggle');
+      if (toggle) {
+        toggle.checked = !toggle.checked;
+        toggleLiveVoiceConversation(toggle.checked);
+        return;
+      }
+
+      if (isListeningActive) {
+        stopListeningTurn();
+      } else {
+        requestMicStreamAccess().then(() => {
+          startListeningTurn();
+        });
+      }
+    }
+
+    function interruptAlphaSpeech() {
+      if (activeSpeechAudio) {
+        try { activeSpeechAudio.pause(); } catch(e) {}
+        activeSpeechAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      stopTalkingPulse();
+      isAlphaSpeaking = false;
+    }
+
     function speakText(text, onComplete) {
+      if (!text) {
+        if (onComplete) onComplete();
+        return;
+      }
+
+      // Barge-in check: stop any prior speech
+      interruptAlphaSpeech();
+      isAlphaSpeaking = true;
+      updateMicBadge('speaking_alpha');
+
+      // Mute listening while Alpha speaks to prevent self-hearing feedback
+      if (activeRecognizer) {
+        try { activeRecognizer.abort(); } catch(e) {}
+      }
+      if (liveVoiceRecog) {
+        try { liveVoiceRecog.stop(); } catch(e) {}
+      }
+      stopMediaRecorderFallback();
+
+      const onSpeechDone = () => {
+        stopTalkingPulse();
+        isAlphaSpeaking = false;
+        activeSpeechAudio = null;
+
+        if (onComplete) onComplete();
+
+        // AUTOMATIC TURN-TAKING: Alpha finished speaking/asking! Reopen ears immediately!
+        if (liveVoiceActive) {
+          setTimeout(() => {
+            if (liveVoiceActive && !isAlphaSpeaking) {
+              if (!liveVoiceRecog) liveVoiceRecog = initLiveSpeechRecognition();
+              try { liveVoiceRecog.start(); } catch(e) {}
+            }
+          }, 350);
+        } else {
+          const autoToggle = document.getElementById('autoListenToggle');
+          if (autoToggle && autoToggle.checked) {
+            setTimeout(() => {
+              if (!isAlphaSpeaking) {
+                startListeningTurn();
+              }
+            }, 350);
+          } else {
+            updateMicBadge('ready');
+          }
+        }
+      };
+
+      // 1. Check if text is Alpha's iconic introduction - play authentic recorded MP3 clip
+      const lower = text.toLowerCase();
+      if ((lower.includes("alpha") && (lower.includes("pet") || lower.includes("your pet"))) ||
+          lower.includes("hello, i'm alpha") || lower.includes("hello i'm alpha")) {
+        playWallESound('alpha_voice');
+        setTimeout(onSpeechDone, 3300);
+        return;
+      }
+
       const ttsToggle = document.getElementById('ttsEnabledToggle');
       const hwToggle = document.getElementById('hardwareAudioToggle');
+      const clean = text
+        .replace(/\[[A-Za-z0-9_: -]+\]/g, ' ')
+        .replace(/\*{2,}([^*]+)\*{2,}/g, '$1')
+        .replace(/\*[^*]+\*/g, ' ')
+        .replace(/\([^)]+\)/g, ' ')
+        .replace(/[*_#`>~]/g, '')
+        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+        .replace(/[•★☆✓✔➔➡➜✨🤖👀❤️💖🐾]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const currentEmo = (expressionLabel ? expressionLabel.textContent : 'happy').toLowerCase().trim();
 
-      // Trigger PC/Hardware TTS if selected
+      // Trigger PC / Physical Hardware Speaker TTS if selected
       if (hwToggle && hwToggle.checked) {
         fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, emotion: expressionLabel.textContent.toLowerCase() })
+          body: JSON.stringify({ text: clean, emotion: currentEmo })
         }).catch(e => console.warn(e));
       }
 
-      if (!ttsToggle || !ttsToggle.checked) {
-        if (onComplete) onComplete();
-        return;
-      }
-      if (!window.speechSynthesis) {
-        if (onComplete) onComplete();
+      const shouldSpeak = (ttsToggle && ttsToggle.checked) || liveVoiceActive;
+      if (!shouldSpeak) {
+        onSpeechDone();
         return;
       }
 
-      window.speechSynthesis.cancel();
-      const clean = text.replace(/[*_#]/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(clean);
-
-      const pitchSlider = document.getElementById('voicePitchSlider');
-      const rateSlider = document.getElementById('voiceRateSlider');
-      utterance.pitch = pitchSlider ? parseFloat(pitchSlider.value) : 1.35;
-      utterance.rate = rateSlider ? parseFloat(rateSlider.value) : 1.05;
-
-      startTalkingPulse();
-      startAudioVisualizerAnimation(clean.length * 85);
-
-      utterance.onend = () => {
-        stopTalkingPulse();
-        if (onComplete) onComplete();
-      };
-      utterance.onerror = () => {
-        stopTalkingPulse();
-        if (onComplete) onComplete();
-      };
-
-      window.speechSynthesis.speak(utterance);
+      // Web Speech Synthesis (expressive robotic pitch & animated eye pulse)
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+        const utterance = new SpeechSynthesisUtterance(clean);
+        window._currentSpeechUtterance = utterance; // Prevent Chrome garbage collection bug
+        const voices = window.speechSynthesis.getVoices() || [];
+        const englishVoice = voices.find(v => v.lang && v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('David') || v.name.includes('Zira') || v.name.includes('Samantha'))) || voices.find(v => v.lang && v.lang.startsWith('en'));
+        if (englishVoice) utterance.voice = englishVoice;
+        utterance.pitch = 1.35;
+        const rateSlider = document.getElementById('voiceRateSlider');
+        utterance.rate = rateSlider ? parseFloat(rateSlider.value) : 1.05;
+        startTalkingPulse();
+        startAudioVisualizerAnimation(clean.length * 85);
+        utterance.onend = () => {
+          window._currentSpeechUtterance = null;
+          onSpeechDone();
+        };
+        utterance.onerror = (err) => {
+          console.warn("[TTS]", err);
+          window._currentSpeechUtterance = null;
+          onSpeechDone();
+        };
+        window.speechSynthesis.speak(utterance);
+      } else {
+        onSpeechDone();
+      }
     }
 
     // --- CONTINUOUS HANDS-FREE LIVE VOICE MODE ---
     let liveVoiceActive = false;
     let liveVoiceRecog = null;
-    let isAlphaSpeaking = false;
     let liveSilenceTimer = null;
 
     function initLiveSpeechRecognition() {
@@ -3015,6 +3572,8 @@
           }
           updateLiveVoiceUI(true);
           showArenaToast("🎙 Live Hands-Free Conversation ON: Speak naturally!", "#38bdf8");
+          playWallESound('excited');
+          speakText("Active listening is on! I am listening to you, Akhil!");
         }
       } else {
         if (liveVoiceRecog) {
@@ -3023,6 +3582,8 @@
         updateLiveVoiceUI(false);
         if (banner) banner.style.display = "none";
         showArenaToast("Live Hands-Free Conversation OFF.", "#94a3b8");
+        playWallESound('shutdown');
+        speakText("Active listening paused.");
       }
     }
 
@@ -3097,14 +3658,6 @@
       }
     }
 
-    function toggleVoiceSpeechRecognition() {
-      const toggle = document.getElementById('liveModeToggle');
-      if (toggle) {
-        toggle.checked = !toggle.checked;
-        toggleLiveVoiceConversation(toggle.checked);
-      }
-    }
-
     async function toggleBrainMode() {
       try {
         const res = await fetch('/api/toggle_brain', {
@@ -3156,24 +3709,52 @@
           }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No facts learned yet. Talk to Alpha to teach him!</div>';
         }
 
-        // 2. DiscoveredObjects
+        // 0. Known Persons
+        const personsList = document.getElementById('knownPersonsList');
+        if (personsList && data.persons) {
+          const pBadge = document.getElementById('personCountBadge');
+          if (pBadge) pBadge.textContent = `${data.persons.length} People`;
+          personsList.innerHTML = data.persons.map(p => {
+            const relColor = p.relationship === 'owner' ? '#38bdf8' : p.relationship === 'family' ? '#4ade80' : '#c084fc';
+            return `
+              <div class="memory-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <b style="color: #fff; font-size: 0.85rem;">👤 ${escapeHtml(p.name)}</b>
+                  <span style="background: rgba(255,255,255,0.08); color: ${relColor}; border: 1px solid ${relColor}40; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: bold;">${escapeHtml((p.relationship || 'Friend').toUpperCase())}</span>
+                </div>
+                <div style="color: #cbd5e1; font-size: 0.75rem; margin: 3px 0;">${escapeHtml(p.visual_description || 'No visual description yet.')}</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                  <span>${p.notes ? escapeHtml(p.notes) : ''}</span>
+                  <span>Last seen: ${p.last_seen || ''}</span>
+                </div>
+              </div>
+            `;
+          }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No people registered yet.</div>';
+        }
+
+        // 2. DiscoveredObjects with Owner Association
         const objsList = document.getElementById('discoveredObjectsList');
         if (objsList && data.objects) {
           document.getElementById('objectCountBadge').textContent = `${data.objects.length} Objects`;
-          objsList.innerHTML = data.objects.map(o => `
-            <div class="memory-item">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <b style="color: #fff; font-size: 0.85rem;">${escapeHtml(o.name)}</b>
-                <span class="${o.is_moved ? 'tag-moved' : 'tag-stationary'}">${o.is_moved ? '📍 MOVED!' : 'Present'}</span>
+          objsList.innerHTML = data.objects.map(o => {
+            const ownerBadge = o.owner_name
+              ? `<span style="background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4); border-radius: 4px; padding: 1px 6px; font-size: 0.68rem; font-weight: bold;">👤 ${escapeHtml(o.owner_name)}</span>`
+              : `<span style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border-radius: 4px; padding: 1px 6px; font-size: 0.68rem;">Unassigned</span>`;
+            return `
+              <div class="memory-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <b style="color: #fff; font-size: 0.85rem;">📦 ${escapeHtml(o.name)}</b>
+                  ${ownerBadge}
+                </div>
+                <div style="color: var(--accent-blue); font-size: 0.75rem; margin: 3px 0;">Room: <b>${escapeHtml(o.room_name || 'Work Desk')}</b></div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(o.description || '')}</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Last seen: ${o.last_seen || ''}</span>
+                  <button onclick="promptAssignOwner('${escapeHtml(o.name)}')" style="background: transparent; border: 1px solid #334155; color: #38bdf8; font-size: 0.65rem; border-radius: 4px; padding: 1px 6px; cursor: pointer;">Assign Owner</button>
+                </div>
               </div>
-              <div style="color: var(--accent-blue); font-size: 0.75rem; margin: 3px 0;">Room: <b>${escapeHtml(o.room_name || 'Work Desk')}</b></div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(o.description || '')}</div>
-              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
-                <span>Sightings: ${o.sighting_count}</span>
-                <span>Last seen: ${o.last_seen || ''}</span>
-              </div>
-            </div>
-          `).join('') || '<div style="color: var(--text-muted); padding: 8px;">No objects sighted yet. Drive near obstacles or inspect with camera!</div>';
+            `;
+          }).join('') || '<div style="color: var(--text-muted); padding: 8px;">No objects sighted yet. Drive near obstacles or inspect with camera!</div>';
         }
 
         // 3. Observations
@@ -3207,6 +3788,44 @@
 
       } catch (err) {
         console.warn("Could not fetch memory:", err);
+      }
+    }
+
+    async function promptAssignOwner(objectName) {
+      const owner = prompt(`Assign owner for '${objectName}':\n(e.g. Akhil, Sarah, John)`, "Akhil");
+      if (!owner) return;
+      try {
+        const resp = await fetch('/api/assign_object_owner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ object_name: objectName, owner_name: owner })
+        });
+        if (resp.ok) {
+          showArenaToast(`Assigned ${objectName} to ${owner}!`, "#4ade80");
+          fetchMemoryData();
+        }
+      } catch (e) {
+        console.warn("Assign owner failed:", e);
+      }
+    }
+
+    async function promptAddNewPerson() {
+      const name = prompt("Enter Person's Name (e.g. Sarah, John):");
+      if (!name) return;
+      const rel = prompt("Relationship (friend, family, colleague, guest):", "friend") || "friend";
+      const desc = prompt("Visual cues (e.g. Wears red hoodie, tall):", "") || "";
+      try {
+        const resp = await fetch('/api/persons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, relationship: rel, visual_description: desc })
+        });
+        if (resp.ok) {
+          showArenaToast(`Registered ${name} (${rel})!`, "#c084fc");
+          fetchMemoryData();
+        }
+      } catch (e) {
+        console.warn("Add person failed:", e);
       }
     }
 
@@ -3309,6 +3928,15 @@
     }
 
     renderSchematic();
+
+    // Auto-arm Live Listening on first user interaction with page
+    window.addEventListener('click', () => {
+      if (!micMediaStream && isHandsFreeListening) {
+        requestMicStreamAccess().then(() => {
+          startListeningTurn();
+        });
+      }
+    }, { once: true });
   </script>
 </body>
 </html>

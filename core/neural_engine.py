@@ -473,15 +473,22 @@ class NeuralMindEngine:
         self.body = BiomimeticKinematics()
         self.body.on_arrival = self._on_object_arrival
 
-        # Tabletop World Model
-        self.obstacles: Dict[str, Dict[str, Any]] = {
-            "Cube": {"id": "obstacle1", "title": "Cube", "x": 450.0, "y": 140.0, "width": 50, "height": 50},
-            "Cup": {"id": "obstacle2", "title": "Cup", "x": 180.0, "y": 360.0, "width": 50, "height": 50},
-            "Keys": {"id": "obstacle3", "title": "Keys", "x": 150.0, "y": 120.0, "width": 50, "height": 50},
-            "Notebook": {"id": "obstacle4", "title": "Notebook", "x": 420.0, "y": 380.0, "width": 65, "height": 50}
+        # Physical Tabletop Environment (Real-World Physics Simulation)
+        # Note: These represent physical items in the room. Alpha's brain starts with ZERO
+        # cheat-sheet knowledge of them and must discover them organically via optical cone perception!
+        self.physical_environment_items: Dict[str, Dict[str, Any]] = {
+            "Cube": {"id": "obstacle1", "title": "Cube", "x": 450.0, "y": 140.0, "width": 50, "height": 50, "emoji": "📦"},
+            "Cup": {"id": "obstacle2", "title": "Cup", "x": 180.0, "y": 360.0, "width": 50, "height": 50, "emoji": "☕"},
+            "Keys": {"id": "obstacle3", "title": "Keys", "x": 150.0, "y": 120.0, "width": 50, "height": 50, "emoji": "🔑"},
+            "Notebook": {"id": "obstacle4", "title": "Notebook", "x": 420.0, "y": 380.0, "width": 65, "height": 50, "emoji": "📓"}
         }
-        for name, obs in self.obstacles.items():
-            self.attention.register_or_update(name, obs["x"] + obs["width"] / 2.0, obs["y"] + obs["height"] / 2.0)
+
+        # Cognitive Discovered Objects (Starts with ZERO known items; learned organically via sensors)
+        self.discovered_objects: Dict[str, Dict[str, Any]] = {}
+        self.attention.targets = {}
+
+        # Spoken Voice Feedback Queue (Wall-E sounds & TTS utterances)
+        self.speech_feedback_queue: List[Dict[str, Any]] = []
 
         # Desk Boundaries
         self.desk_min_x = 45.0
@@ -505,20 +512,68 @@ class NeuralMindEngine:
         self.behavior_expiry: float = 0.0
         self.next_impulse_time: float = time.time() + 4.0
 
-        # Autonomous Exploration State & Waypoints
+        # Biological Autonomous Exploration State Machine
+        self.explore_substate: str = "SCANNING"  # "SCANNING" | "APPROACHING" | "INSPECTING" | "RELOCATING"
+        self.scan_step: int = 0
+        self.scan_step_end_time: float = time.time() + 2.5
+        self.last_spotted_time: float = 0.0
+        self.last_spoken_time: float = 0.0
         self.last_cognitive_cycle = time.time()
         self.pause_at_destination_until: float = time.time() + 1.5
         self.scan_sweep_phase: float = 0.0
         self.edge_recovery_cooldown: float = 0.0
-        self.quadrant_idx: int = 0
-        self.quadrants: List[Tuple[float, float, str]] = [
-            (170.0, 140.0, "Northwest Tabletop"),
-            (480.0, 140.0, "Northeast Tabletop"),
-            (480.0, 360.0, "Southeast Tabletop"),
-            (170.0, 360.0, "Southwest Tabletop"),
-            (330.0, 250.0, "Center Workspace")
-        ]
         self.visited_targets: List[str] = []
+
+    @property
+    def obstacles(self) -> Dict[str, Dict[str, Any]]:
+        """Backwards compatibility accessor for physical environment items."""
+        return self.physical_environment_items
+
+    @obstacles.setter
+    def obstacles(self, val: Dict[str, Dict[str, Any]]) -> None:
+        self.physical_environment_items = val
+
+    def update_environment_physics(self, items: List[Dict[str, Any]]) -> None:
+        """
+        Updates the physical desk environment objects from simulator UI.
+        CRUCIAL: Does NOT inject these into Alpha's brain memory!
+        Alpha must naturally spot and identify them with its optical cone.
+        """
+        new_env: Dict[str, Dict[str, Any]] = {}
+        for it in items:
+            title = (it.get("title") or it.get("name") or "Object").strip().title()
+            new_env[title] = {
+                "id": it.get("id", f"obs_{title.lower()}"),
+                "title": title,
+                "x": float(it.get("x", 200.0)),
+                "y": float(it.get("y", 200.0)),
+                "width": float(it.get("width", 50.0)),
+                "height": float(it.get("height", 50.0)),
+                "emoji": it.get("emoji", "📦")
+            }
+        self.physical_environment_items = new_env
+
+    def remove_environment_physics_item(self, title: str) -> None:
+        """Removes an item from the physical desk."""
+        clean = (title or "").strip().title()
+        if clean in self.physical_environment_items:
+            del self.physical_environment_items[clean]
+
+    def queue_speech_feedback(self, text: str, emotion: str = "curious", sound: str = "curious") -> None:
+        """Queues an authentic spoken feedback for Alpha to voice aloud."""
+        feedback = {
+            "text": text,
+            "emotion": emotion,
+            "sound": sound,
+            "timestamp": time.time()
+        }
+        self.speech_feedback_queue.append(feedback)
+        self.consciousness.current_thought = text
+        if self.motion and hasattr(self.motion, "express_emotion"):
+            try:
+                self.motion.express_emotion(Emotion.from_str(emotion))
+            except Exception:
+                pass
 
     def set_operating_mode(self, mode: str) -> None:
         """Sets high-level operating mode: EXPLORE_ROAM, DESK_COMPANION, or HOLD_POSITION."""
@@ -758,87 +813,218 @@ class NeuralMindEngine:
 
     def _on_object_arrival(self, object_name: str) -> None:
         """Called when Alpha completes arrival and faces the target squarely."""
+        clean_name = object_name.title()
         self.current_behavior = "INSPECTING_OBJECT"
-        self.behavior_target = object_name
-        self.consciousness.current_thought = f"Arrived right in front of {object_name}. Directly facing and inspecting."
-        self.affective.stimulate(d_val=0.3, d_aro=0.2, d_dom=0.2)
-        self.affective.apply_stimulus("EXPLORATION_DISCOVERY", 0.9)
-        # Brief natural pause to inspect (3.5 to 5.5 seconds), then actively resume exploring!
-        self.pause_at_destination_until = time.time() + random.uniform(3.5, 5.5)
+        self.behavior_target = clean_name
+        self.consciousness.current_thought = f"Arrived right in front of {clean_name}. Tilting camera down to inspect."
+
+        # Biological tilt down to inspect item closely
+        self.body.plan_smooth_head_look(0.0, target_tilt=-22.0, duration=0.5)
+
+        # Register into discovered objects memory
+        item_data = self.physical_environment_items.get(clean_name, {})
+        ox = item_data.get("x", self.body.x) + item_data.get("width", 50.0) / 2.0
+        oy = item_data.get("y", self.body.y) + item_data.get("height", 50.0) / 2.0
+
+        is_first_time = clean_name not in self.discovered_objects
+        self.discovered_objects[clean_name] = {
+            "title": clean_name,
+            "x": round(ox, 1),
+            "y": round(oy, 1),
+            "discovered_at": time.time(),
+            "sighting_count": self.discovered_objects.get(clean_name, {}).get("sighting_count", 0) + 1,
+            "emoji": item_data.get("emoji", "📦")
+        }
+        self.attention.register_or_update(clean_name, ox, oy)
+
+        # Affective surge
+        self.affective.stimulate(d_val=0.4, d_aro=0.3, d_cur=0.35)
+        self.affective.apply_stimulus("EXPLORATION_DISCOVERY", 1.0)
+
+        # Spoken feedback aloud
+        if is_first_time:
+            self.queue_speech_feedback(
+                text=f"Aha! Found your {clean_name}, Akhil! I've stored its location in my memory.",
+                emotion="excited",
+                sound="excited"
+            )
+        else:
+            self.queue_speech_feedback(
+                text=f"Confirmed: {clean_name} is still safely right here on your desk.",
+                emotion="happy",
+                sound="happy"
+            )
+
+        # Record in SQLite database
         if self.db:
             try:
                 self.db.record_observation(
                     room_name="Work Desk",
-                    observation=f"Inspected {object_name} at close range on desk.",
+                    observation=f"Discovered and inspected {clean_name} at ({round(ox)}, {round(oy)}) on desk.",
                     ambient_light="Normal",
                     battery_level=self.battery_volts
                 )
+                if hasattr(self.db, "add_or_update_object"):
+                    self.db.add_or_update_object(
+                        name=clean_name,
+                        room_name="Work Desk",
+                        description=f"Desktop item located at ({round(ox)}, {round(oy)})."
+                    )
             except Exception:
                 pass
 
+        # Brief natural pause to inspect (3.5 to 5.0 seconds), then resume exploration!
+        self.pause_at_destination_until = time.time() + random.uniform(3.5, 5.0)
+        self.explore_substate = "SCANNING"
+        self.scan_step = 0
+        self.scan_step_end_time = self.pause_at_destination_until
+
+    def _process_optical_perception(self) -> Optional[str]:
+        """
+        Simulates the robot's physical optical camera cone:
+        - Position: (body.x + 30, body.y + 35)
+        - Optical Gaze Bearing: (body.heading + body.pan) % 360
+        - Horizontal FOV: +/- 32.0 degrees (64 degree wide cone)
+        - Optical Range: 25mm to 450mm (~130 px on desk)
+        """
+        cx = self.body.x + 30.0
+        cy = self.body.y + 35.0
+        cam_bearing = (self.body.heading + self.body.pan + 360.0) % 360.0
+        now = time.time()
+
+        # 1. Scan physical environment items in front of optical camera
+        for name, item in self.physical_environment_items.items():
+            ox = item["x"] + item.get("width", 50.0) / 2.0
+            oy = item["y"] + item.get("height", 50.0) / 2.0
+            dx = ox - cx
+            dy = oy - cy
+            dist_px = math.hypot(dx, dy)
+            dist_mm = dist_px * 3.5
+
+            if 25.0 <= dist_mm <= 450.0:
+                item_angle = (math.atan2(dx, -dy) * 180.0 / math.pi + 360.0) % 360.0
+                rel_angle = (item_angle - cam_bearing + 540.0) % 360.0 - 180.0
+
+                if abs(rel_angle) <= 32.0:
+                    # Object is inside optical field of view!
+                    if name not in self.discovered_objects:
+                        # NEW DISCOVERY SIGHTED!
+                        if now - self.last_spotted_time > 4.0:
+                            self.last_spotted_time = now
+                            self.queue_speech_feedback(
+                                text=f"Ooh! Spotted something on the desk... let me check it out.",
+                                emotion="curious",
+                                sound="curious"
+                            )
+                            self.affective.stimulate(d_val=0.25, d_aro=0.35, d_cur=0.45)
+                            if self.operating_mode == "EXPLORE_ROAM":
+                                self.explore_substate = "APPROACHING"
+                                self._plan_transit_to_target(name)
+                        return name
+
+        # 2. Check if any remembered object was removed from the physical desk
+        for disc_name, disc_info in list(self.discovered_objects.items()):
+            if disc_name not in self.physical_environment_items:
+                ox = disc_info.get("x", 0.0)
+                oy = disc_info.get("y", 0.0)
+                dx = ox - cx
+                dy = oy - cy
+                dist_px = math.hypot(dx, dy)
+                if dist_px < 130.0:
+                    item_angle = (math.atan2(dx, -dy) * 180.0 / math.pi + 360.0) % 360.0
+                    rel_angle = (item_angle - cam_bearing + 540.0) % 360.0 - 180.0
+                    if abs(rel_angle) <= 22.0:
+                        self.queue_speech_feedback(
+                            text=f"Huh? Where did the {disc_name} go? It's not on the desk anymore!",
+                            emotion="confused",
+                            sound="confused"
+                        )
+                        self.discovered_objects.pop(disc_name, None)
+                        if disc_name in self.attention.targets:
+                            self.attention.targets.pop(disc_name, None)
+                        if self.db:
+                            try:
+                                self.db.record_observation(
+                                    room_name="Work Desk",
+                                    observation=f"Observed that {disc_name} was removed from desk.",
+                                    ambient_light="Normal",
+                                    battery_level=self.battery_volts
+                                )
+                            except Exception:
+                                pass
+                        return None
+        return None
+
     def _plan_next_exploration_leg(self) -> None:
-        """Autonomous explore & roam decision driven by personality traits and drives."""
+        """
+        Biological natural exploration decision.
+        Does NOT run around continuously!
+        Instead, if at a vantage point, executes discrete sensory sweeps with pauses.
+        Only when a sweep finishes without spotting anything does Alpha relocate.
+        """
         if self.is_command_locked or self.operating_mode != "EXPLORE_ROAM":
             return
 
         now = time.time()
-        p_playful = self.affective.traits.playful
-        p_curious = self.affective.traits.curious
-        p_bold = self.affective.traits.bold
-        d_curiosity = self.affective.drives.curiosity
-        d_social = self.affective.drives.social
+        if self.body.target_coord_goal or self.body.facing_target_pos:
+            return
 
         # 1. Social check-in if social drive is low or clingy trait is high
-        if d_social < 0.35 or (self.affective.traits.clingy > 0.65 and random.random() < 0.20):
+        if self.affective.drives.social < 0.28 or (self.affective.traits.clingy > 0.65 and random.random() < 0.15):
             self.body.plan_smooth_turn(0.0, duration=0.8)
             self.body.plan_smooth_head_look(0.0, target_tilt=14.0, duration=0.6)
             self.current_behavior = "CHECKING_AKHIL"
             self.behavior_target = "Akhil"
             self.consciousness.current_thought = "Checking in on Akhil! Beep-boop, hope your work is going well!"
-            self.affective.stimulate(d_val=0.2, d_aro=0.1, d_dom=0.1)
+            self.affective.stimulate(d_val=0.2, d_aro=0.1)
             self.pause_at_destination_until = now + random.uniform(3.0, 4.5)
             return
 
-        # 2. Playful spin if playful trait & arousal are high
-        if p_playful > 0.70 and random.random() < 0.18:
-            self.body.plan_smooth_turn((self.body.heading + 360.0) % 360.0, duration=0.85)
-            self.body.plan_smooth_head_look(0.0, 16.0, duration=0.4)
-            self.current_behavior = "PLAYFUL_SPIN"
-            self.behavior_target = None
-            self.consciousness.current_thought = "Feeling energetic and playful! Doing a happy 360° spin on my treads!"
-            self.affective.stimulate(d_val=0.25, d_aro=0.3, d_dom=0.0)
-            self.pause_at_destination_until = now + 2.5
+        # 2. Biological Sensory Scanning Sequence at Current Spot
+        if self.explore_substate == "SCANNING":
+            if self.scan_step == 0:
+                self.body.plan_smooth_head_look(0.0, target_tilt=-12.0, duration=0.5)
+                self.consciousness.current_thought = "Scanning tabletop horizon with optical sensors..."
+                self.current_behavior = "EXPLORE_ROAM"
+                self.scan_step = 1
+                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+            elif self.scan_step == 1:
+                self.body.plan_smooth_head_look(-42.0, target_tilt=-14.0, duration=0.6)
+                self.consciousness.current_thought = "Surveying northwest desk area..."
+                self.scan_step = 2
+                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+            elif self.scan_step == 2:
+                self.body.plan_smooth_head_look(42.0, target_tilt=-10.0, duration=0.6)
+                self.consciousness.current_thought = "Surveying northeast desk area..."
+                self.scan_step = 3
+                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+            else:
+                self.body.plan_smooth_head_look(0.0, target_tilt=-6.0, duration=0.4)
+                self.explore_substate = "RELOCATING"
+                self.scan_step = 0
+                self.scan_step_end_time = now + 1.0
             return
 
-        # 3. Curious object investigation
-        if d_curiosity > 0.40 and random.random() < 0.50:
-            candidates = [k for k in self.obstacles.keys() if k not in self.visited_targets[-2:]]
-            if not candidates:
-                candidates = list(self.obstacles.keys())
-            chosen = random.choice(candidates)
-            self.visited_targets.append(chosen)
-            if len(self.visited_targets) > 10:
-                self.visited_targets.pop(0)
+        # 3. Relocating to a New Vantage Point
+        if self.explore_substate == "RELOCATING":
+            cx = self.body.x
+            cy = self.body.y
 
-            self._plan_transit_to_target(chosen)
-            self.current_behavior = "NAVIGATE_TO"
-            self.behavior_target = chosen
-            self.attention.focal_target = chosen
-            self.consciousness.current_thought = f"Spotted {chosen} across the desk! Rolling over with curious intent."
-            self.pause_at_destination_until = now + random.uniform(3.5, 6.0)
-            return
+            angle = random.uniform(0.0, 2.0 * math.pi)
+            dist = random.uniform(120.0, 190.0)
+            target_x = cx + math.cos(angle) * dist
+            target_y = cy + math.sin(angle) * dist
 
-        # 4. Spatial quadrant wander / perimeter patrol
-        self.quadrant_idx = (self.quadrant_idx + 1) % len(self.quadrants)
-        qx, qy, qname = self.quadrants[self.quadrant_idx]
-        dest_x = max(self.desk_min_x + 35, min(self.desk_max_x - 35, qx + random.uniform(-25, 25)))
-        dest_y = max(self.desk_min_y + 35, min(self.desk_max_y - 35, qy + random.uniform(-25, 25)))
+            # Keep safely away from desk boundaries
+            target_x = max(self.desk_min_x + 60.0, min(self.desk_max_x - 60.0, target_x))
+            target_y = max(self.desk_min_y + 60.0, min(self.desk_max_y - 60.0, target_y))
 
-        self.body.plan_smooth_drive(dest_x, dest_y)
-        self.current_behavior = "EXPLORE_ROAM"
-        self.behavior_target = qname
-        self.consciousness.current_thought = f"Autonomous exploration: patrolling over to {qname}."
-        self.pause_at_destination_until = now + random.uniform(3.0, 5.0)
+            self.body.plan_smooth_drive(target_x, target_y)
+            self.current_behavior = "EXPLORE_ROAM"
+            self.consciousness.current_thought = "Gliding smoothly over to a new vantage point to survey the desk."
+            self.explore_substate = "SCANNING"
+            self.scan_step = 0
+            self.pause_at_destination_until = now + 4.0
 
     def _trigger_spontaneous_impulse(self) -> None:
         """Called when in desk companion mode for occasional peaceful glances."""
@@ -886,14 +1072,11 @@ class NeuralMindEngine:
         # 3. Autonomous Behaviors (Exploration vs Desk Companion)
         if not self.is_command_locked:
             if self.operating_mode == "EXPLORE_ROAM":
+                # Continuous optical camera perception (biological sight cone)
+                self._process_optical_perception()
+
                 is_navigating = bool(self.body.target_coord_goal or self.body.facing_target_pos or self.body.heading_traj)
                 if is_navigating:
-                    # Active Sensory Head Scanning while cruising
-                    self.scan_sweep_phase += dt * 2.8
-                    scan_pan = math.sin(self.scan_sweep_phase) * 22.0
-                    scan_tilt = -11.0 + math.cos(self.scan_sweep_phase * 0.7) * 5.0
-                    self.body.plan_smooth_head_look(scan_pan, scan_tilt, duration=0.22)
-
                     # Edge & Cliff Safety Check while rolling
                     near_edge = (
                         self.body.x <= self.desk_min_x + 14.0 or
@@ -914,8 +1097,8 @@ class NeuralMindEngine:
                         self.affective.apply_stimulus("CLIFF_EDGE", 0.7)
                         self.pause_at_destination_until = now + 2.5
                 else:
-                    # Stationary / arrived: check pause timer, then roll to next discovery!
-                    if now >= self.pause_at_destination_until:
+                    # Stationary at vantage point: step biological sensory sweeps when step timer expires
+                    if now >= self.scan_step_end_time and now >= self.pause_at_destination_until:
                         self._plan_next_exploration_leg()
 
             elif self.operating_mode == "DESK_COMPANION":
@@ -1026,6 +1209,9 @@ class NeuralMindEngine:
         else:
             behavior = self.current_behavior
 
+        feedback = self.speech_feedback_queue.pop(0) if self.speech_feedback_queue else None
+        cam_bearing = (self.body.heading + self.body.pan + 360.0) % 360.0
+
         return {
             "x": round(self.body.x, 1),
             "y": round(self.body.y, 1),
@@ -1048,6 +1234,16 @@ class NeuralMindEngine:
             "valence": round(self.affective.valence, 2),
             "arousal": round(self.affective.arousal, 2),
             "curiosity": round(self.affective.curiosity, 2),
+            "speech_feedback": feedback,
+            "discovered_objects": list(self.discovered_objects.values()),
+            "discovered_count": len(self.discovered_objects),
+            "explore_substate": self.explore_substate,
+            "camera_bearing": round(cam_bearing, 1),
+            "optical_cone": {
+                "bearing": round(cam_bearing, 1),
+                "fov": 64.0,
+                "range_px": 130.0
+            },
             "traits": {
                 "playful": round(self.affective.traits.playful, 2),
                 "curious": round(self.affective.traits.curious, 2),

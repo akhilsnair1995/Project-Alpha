@@ -541,3 +541,17 @@ class AlphaDatabase:
                 }
                 for r in rows
             }
+
+    def clear_all_memory(self) -> None:
+        """
+        Clears all user facts, discovered objects, roaming observations, and chat history,
+        allowing the SQLite memory to build 100% organically from scratch with zero injections.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM UserFacts")
+            cursor.execute("DELETE FROM DiscoveredObjects")
+            cursor.execute("DELETE FROM RoamingObservations")
+            cursor.execute("DELETE FROM ChatHistory")
+            cursor.execute("DELETE FROM EpisodicEvents")
+            conn.commit()

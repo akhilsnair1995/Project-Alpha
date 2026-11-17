@@ -96,6 +96,10 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_chat(data)
         elif parsed.path == "/api/obstacle":
             self._handle_obstacle(data)
+        elif parsed.path == "/api/environment_physics":
+            self._handle_environment_physics(data)
+        elif parsed.path == "/api/environment_physics/delete":
+            self._handle_environment_physics_delete(data)
         elif parsed.path == "/api/motor":
             self._handle_motor(data)
         elif parsed.path == "/api/directive":
@@ -138,6 +142,18 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         r.nav.update_obstacle_position(title, x, y)
         self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
 
+    def _handle_environment_physics(self, data: dict):
+        r = get_robot()
+        items = data.get("items", [])
+        r.nav.update_environment_physics(items)
+        self._send_json({"status": "ok", "items_count": len(r.nav.engine.physical_environment_items), "telemetry": r.nav.get_telemetry()})
+
+    def _handle_environment_physics_delete(self, data: dict):
+        r = get_robot()
+        title = data.get("title", "")
+        r.nav.remove_environment_physics_item(title)
+        self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
+
     def _handle_motor(self, data: dict):
         r = get_robot()
         action = data.get("action", "stop")
@@ -160,12 +176,13 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_status(self):
         r = get_robot()
         facts = r.db.get_user_facts()
-        objects = r.db.find_objects("")
+        disc_objects = list(r.nav.engine.discovered_objects.values())
         self._send_json({
             "status": "online" if r.brain.is_online() else "offline",
             "brain_name": f"Google Gemini ({DEFAULT_GEMINI_MODEL})" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)",
             "facts_count": len(facts),
-            "objects_count": len(objects),
+            "objects_count": len(disc_objects),
+            "discovered_objects": disc_objects,
             "emotion": r.eyes.left_eye.current_emotion.value,
             "gaze_x": r.eyes.left_eye.gaze_x,
             "gaze_y": r.eyes.left_eye.gaze_y,
@@ -175,9 +192,10 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
     def _handle_memory(self):
         r = get_robot()
+        disc_objects = list(r.nav.engine.discovered_objects.values())
         self._send_json({
             "facts": r.db.get_user_facts(limit=25),
-            "objects": r.db.find_objects(""),
+            "objects": disc_objects,
             "observations": r.db.get_recent_observations(limit=15),
             "chat_history": r.db.get_recent_chat(limit=10)
         })
@@ -290,6 +308,12 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         action = chat_res.get("action")
         target = chat_res.get("target")
         if action:
+            if action in ("ROAM", "EXPLORE"):
+                r.nav.set_operating_mode("EXPLORE_ROAM")
+            elif action in ("DESK", "COMPANION"):
+                r.nav.set_operating_mode("DESK_COMPANION")
+            elif action in ("HOLD_POSITION", "STOP"):
+                r.nav.set_operating_mode("HOLD_POSITION")
             r.nav.execute_directive(action, target)
         r.nav.current_emotion = emo.value
         r.current_directive = {"action": action, "target": target}

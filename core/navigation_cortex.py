@@ -214,6 +214,19 @@ class NavigationCortex:
         """Called when an obstacle is repositioned (e.g. user drags keys on desk)."""
         self.engine.update_obstacle(title, x, y)
 
+    def update_environment_physics(self, items: List[Dict[str, Any]]) -> None:
+        """Updates the physical items on the desk simulator."""
+        self.engine.update_environment_physics(items)
+
+    def remove_environment_physics_item(self, title: str) -> None:
+        """Removes an item from the physical desk environment."""
+        self.engine.remove_environment_physics_item(title)
+
+    @property
+    def discovered_objects(self) -> Dict[str, Dict[str, Any]]:
+        """Items organically discovered and remembered by Alpha's cognitive brain."""
+        return self.engine.discovered_objects
+
     def set_manual_motion(self, action: str) -> None:
         """Handles operator manual keyboard/drive input."""
         self.engine.set_manual_motion(action)

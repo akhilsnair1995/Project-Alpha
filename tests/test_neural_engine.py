@@ -186,8 +186,14 @@ class TestNeuralEngine(unittest.TestCase):
         self.engine.pause_at_destination_until = 0.0
         self.engine.step(0.05)
 
-        # Should have initiated purposeful movement (either towards object, quadrant, or turn)
-        self.assertTrue(bool(self.engine.body.target_coord_goal or self.engine.body.facing_target_pos or self.engine.body.heading_traj))
+        # Should have initiated biological sensory head look or purposeful transit
+        self.assertTrue(bool(
+            self.engine.body.pan_traj or
+            self.engine.body.tilt_traj or
+            self.engine.body.target_coord_goal or
+            self.engine.body.facing_target_pos or
+            self.engine.body.heading_traj
+        ))
         t = self.engine.get_telemetry()
         self.assertEqual(t["operating_mode"], "EXPLORE_ROAM")
         self.assertIn("traits", t)
@@ -213,6 +219,69 @@ class TestNeuralEngine(unittest.TestCase):
         self.assertIn("bold", telemetry["traits"])
         self.assertIn("clingy", telemetry["traits"])
         self.assertIn("shy", telemetry["traits"])
+
+    def test_optical_cone_organic_discovery_and_speech(self):
+        """Tests that Alpha discovers an object only when it enters its optical cone and speaks aloud."""
+        self.engine.discovered_objects = {}
+        self.assertEqual(len(self.engine.discovered_objects), 0)
+
+        # Place a physical object directly in front of Alpha's camera cone
+        # Alpha is at (320, 250), heading = 0.0 (pointing North / -Y)
+        # Front is dy < 0, dx = 0: place keys at cx = 350 (x = 325), cy = 200 (y = 175) -> 85px ahead
+        self.engine.update_environment_physics([
+            {"id": "obs_keys", "title": "Keys", "x": 325.0, "y": 175.0, "width": 50, "height": 50, "emoji": "🔑"}
+        ])
+
+        # Verify cognitive memory does NOT cheat (zero pre-loaded knowledge)
+        self.assertEqual(len(self.engine.discovered_objects), 0)
+
+        # Point head straight forward (pan = 0, heading = 0)
+        self.engine.body.pan = 0.0
+        self.engine.body.heading = 0.0
+        self.engine.operating_mode = "EXPLORE_ROAM"
+
+        # Step neural engine: optical perception cone catches the keys!
+        self.engine._process_optical_perception()
+
+        # Should have queued spoken feedback and initiated approach
+        self.assertGreater(len(self.engine.speech_feedback_queue), 0)
+        self.assertIn("Spotted something", self.engine.speech_feedback_queue[0]["text"])
+        self.assertEqual(self.engine.explore_substate, "APPROACHING")
+
+        # Step until arrival and inspection
+        for _ in range(120):
+            self.engine.step(0.05)
+            if "Keys" in self.engine.discovered_objects:
+                break
+
+        # Sighting should now be recorded organically
+        self.assertIn("Keys", self.engine.discovered_objects)
+        t = self.engine.get_telemetry()
+        self.assertGreater(t["discovered_count"], 0)
+
+    def test_optical_cone_notices_removed_object(self):
+        """Tests that when an object is removed from HTML, Alpha notices when looking at that spot."""
+        # Pre-condition: Alpha remembers Keys at (325, 175)
+        self.engine.discovered_objects["Keys"] = {
+            "title": "Keys",
+            "x": 350.0,
+            "y": 200.0,
+            "discovered_at": time.time()
+        }
+        # But user removed it from physical desk!
+        self.engine.physical_environment_items = {}
+
+        # Alpha looks directly at where Keys used to be
+        self.engine.body.pan = 0.0
+        self.engine.body.heading = 0.0
+
+        # Run perception
+        self.engine._process_optical_perception()
+
+        # Should notice it's gone and queue speech feedback
+        self.assertNotIn("Keys", self.engine.discovered_objects)
+        self.assertGreater(len(self.engine.speech_feedback_queue), 0)
+        self.assertIn("not on the desk anymore", self.engine.speech_feedback_queue[-1]["text"])
 
 if __name__ == "__main__":
     unittest.main()

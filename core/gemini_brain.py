@@ -183,11 +183,15 @@ class HybridBrain:
             "look at", "keep an eye", "keep eye", "watch", "guard", "monitor",
             "stare at", "track", "focus on", "gaze at", "keep eyes"
         ])
+        is_companion = any(p in lower_q for p in [
+            "companion", "desk companion", "relax", "rest", "calm down",
+            "sit with me", "be quiet", "stay with me", "chill"
+        ])
         is_release_or_move = any(p in lower_q for p in [
             "not moving", "not at all moving", "why are you not moving", "start moving",
             "resume", "start roaming", "explore", "patrol", "keep moving", "wander",
             "continue roam", "move around", "stretch your treads", "come here", "you can move",
-            "move", "walk", "drive"
+            "move", "walk", "drive", "look around"
         ])
 
         if not action:
@@ -199,6 +203,8 @@ class HybridBrain:
                 target = detected_obj
             elif is_stay:
                 action = "HOLD_POSITION"
+            elif is_companion:
+                action = "DESK"
             elif is_release_or_move:
                 action = "ROAM"
             elif any(p in lower_q for p in ["dock", "charge", "go home", "return to base"]):
@@ -266,7 +272,7 @@ class HybridBrain:
 
         # 2. Spatial Memory Search: Check if user is asking for the location of an object
         if any(w in user_query.lower() for w in ["where is", "where are", "where did i leave", "find my"]):
-            for keyword in ["keys", "wallet", "shoes", "glasses", "cup", "mug", "bag", "phone", "backpack", "laptop"]:
+            for keyword in ["keys", "wallet", "shoes", "glasses", "cup", "mug", "bag", "phone", "backpack", "laptop", "notebook", "cube", "plant", "pen"]:
                 if keyword in user_query.lower():
                     recalled = self.learning_engine.recall_object_location(keyword)
                     if recalled:
@@ -281,6 +287,20 @@ class HybridBrain:
                             "brain_type": "local_memory",
                             "action": "LOOK_AT",
                             "target": keyword.title()
+                        }
+                    else:
+                        clean_reply = f"*Whirrr-curious?* I haven't discovered your {keyword.title()} on the desk yet! Let me explore and look for them for you, Akhil!"
+                        self.db.save_chat_message("assistant", clean_reply, brain_type="local_memory")
+                        emo = Emotion.CURIOUS
+                        self.last_emotion = emo
+                        self.last_sound_cue = "curious"
+                        return {
+                            "reply": clean_reply,
+                            "emotion": emo,
+                            "sound_cue": "curious",
+                            "brain_type": "local_memory",
+                            "action": "ROAM",
+                            "target": None
                         }
 
         prompt = self.build_prompt_with_memory(user_query)

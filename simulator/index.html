@@ -310,18 +310,48 @@
       position: absolute;
       width: 50px;
       height: 50px;
-      background: linear-gradient(135deg, #475569, #334155);
+      background: linear-gradient(135deg, #1e293b, #0f172a);
       border: 2px solid #94a3b8;
       border-radius: 8px;
       cursor: grab;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: bold;
       color: #fff;
       user-select: none;
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      z-index: 10;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .obstacle:hover {
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .obstacle .delete-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 16px;
+      height: 16px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.85;
+      border: 1px solid #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      z-index: 25;
+    }
+    .obstacle .delete-btn:hover {
+      opacity: 1;
+      transform: scale(1.18);
+      background: #dc2626;
     }
 
     /* Eyes & Head Section */
@@ -894,6 +924,33 @@
               <span id="tofDistanceBadge" class="status-pill status-ok">ToF Laser: 850mm</span>
             </div>
           </div>
+
+          <!-- Physical Desk Interactive Object Toolbar -->
+          <div class="desk-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 6px 12px; background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 0.72rem; font-weight: 700; color: #94a3b8;">PHYSICAL DESK:</span>
+              <select id="selectNewObject" style="background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem;">
+                <option value="Keys|🔑|#c084fc">🔑 Keys</option>
+                <option value="Coffee Mug|☕|#f97316">☕ Coffee Mug</option>
+                <option value="Notebook|📓|#38bdf8">📓 Notebook</option>
+                <option value="Wooden Cube|📦|#a3e635">📦 Wooden Cube</option>
+                <option value="Pen|🖊️|#e879f9">🖊️ Pen</option>
+                <option value="Succulent|🪴|#4ade80">🪴 Succulent Plant</option>
+                <option value="Glasses|👓|#fbbf24">👓 Glasses</option>
+                <option value="Headphones|🎧|#f43f5e">🎧 Headphones</option>
+              </select>
+              <button class="ctrl-btn" style="padding: 4px 10px; background: #0284c7; color: #fff; font-size: 0.72rem;" onclick="addDeskObjectFromToolbar()">
+                ➕ Place on Desk
+              </button>
+              <button class="ctrl-btn" style="padding: 4px 8px; background: #374151; color: #f87171; font-size: 0.72rem;" onclick="clearAllDeskObjects()">
+                🗑️ Clear
+              </button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: var(--text-muted);">
+              <span>On Desk: <b id="deskItemCount" style="color: #38bdf8;">0</b></span>
+              <span>Discovered: <b id="discoveredItemCount" style="color: #4ade80;">0</b></span>
+            </div>
+          </div>
           
           <div class="arena-container" id="arenaBox">
             <div class="desk-surface">
@@ -901,8 +958,9 @@
             </div>
             <div class="cliff-warning-label">⚠ TABLE EDGE / CLIFF DROP BOUNDARY ⚠</div>
 
-            <!-- Real-time Laser Raycast Visualizer -->
+            <!-- Real-time Laser Raycast & Optical Camera Cone Visualizer -->
             <svg id="laserOverlay" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 18;">
+              <path id="opticalVisionCone" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.45)" stroke-width="1.2" stroke-dasharray="3,2" />
               <line id="laserRayLine" x1="0" y1="0" x2="0" y2="0" stroke="#f87171" stroke-width="2" stroke-dasharray="3 3" opacity="0.8" />
               <circle id="laserHitPoint" cx="-10" cy="-10" r="4" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" opacity="0.9" />
             </svg>
@@ -946,19 +1004,8 @@
               </svg>
             </div>
 
-            <!-- Movable Obstacle Boxes -->
-            <div class="obstacle" id="obstacle1" style="top: 140px; left: 450px;">
-              <span>CUBE</span>
-            </div>
-            <div class="obstacle" id="obstacle2" style="top: 360px; left: 180px;">
-              <span>CUP</span>
-            </div>
-            <div class="obstacle" id="obstacle3" style="top: 120px; left: 150px; border-color: #c084fc; color: #c084fc;">
-              <span>KEYS</span>
-            </div>
-            <div class="obstacle" id="obstacle4" style="top: 380px; left: 420px; border-color: #38bdf8; color: #38bdf8; width: 65px;">
-              <span>BOOK</span>
-            </div>
+            <!-- Dynamic Physical Tabletop Obstacles Container -->
+            <div id="deskObstaclesContainer"></div>
 
             <!-- In-Arena Notification Toast -->
             <div id="arenaToast" class="arena-toast" style="display: none;"></div>
@@ -1165,45 +1212,22 @@
 
         </div>
 
-        <!-- Column 3: Vision Cortex (Laptop Camera) & Conversational AI -->
+        <!-- Column 3: Organic Discovered Memory & Conversational AI Voice Cortex -->
         <div style="display: flex; flex-direction: column; gap: 16px;">
           
-          <!-- Laptop Camera Eye & Face Tracking Panel -->
+          <!-- Organic Discovered Objects & Tabletop Spatial Memory Panel -->
           <div class="panel">
             <div class="panel-title">
-              <span>LAPTOP WEBCAM (ALPHA EYE)</span>
-              <span id="camStatusBadge" class="status-pill" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">Camera Idle</span>
+              <span>ALPHA ORGANIC SPATIAL MEMORY</span>
+              <span id="sideDiscoveredCountBadge" class="status-pill status-ok" style="background: rgba(34, 197, 94, 0.15); color: #4ade80;">0 Discovered</span>
             </div>
-
-            <div class="cam-feed-container">
-              <video id="webcamVideo" autoplay playsinline muted></video>
-              <canvas id="webcamCanvas" width="320" height="240"></canvas>
-              <div class="cam-hud-overlay">
-                <span id="camGazeLabel">GAZE: IDLE</span>
-                <span id="camFpsLabel">30 FPS</span>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+              Alpha has <b>zero injected knowledge</b>. It explores the desk organically and identifies items using its optical camera cone.
+            </div>
+            <div id="discoveredObjectsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+              <div style="font-size: 0.72rem; color: #64748b; font-style: italic; text-align: center; padding: 12px 0;">
+                No items discovered yet.<br>Click "🚀 Running & Explore Mode" or ask Alpha to explore!
               </div>
-              <div id="camLaserScan" class="laser-scanner" style="display: none;"></div>
-            </div>
-
-            <div style="margin-top: 10px; display: flex; gap: 8px;">
-              <button class="ctrl-btn" id="btnToggleCam" style="flex: 1; background: #0369a1; border-color: #0284c7;" onclick="toggleLaptopCamera()">
-                🎥 Start Laptop Camera
-              </button>
-              <select id="inspectRoomSelect" style="background: #111827; border: 1px solid var(--card-border); color: #fff; padding: 0 8px; border-radius: 6px; font-size: 0.75rem;">
-                <option value="Work Desk">Work Desk</option>
-                <option value="Living Room">Living Room</option>
-                <option value="Kitchen">Kitchen</option>
-                <option value="Lab / Bench">Lab / Bench</option>
-              </select>
-            </div>
-
-            <div style="margin-top: 8px;">
-              <button class="ctrl-btn" id="btnInspectFrame" style="width: 100%; background: #065f46; border-color: #059669; color: #6ee7b7;" onclick="inspectCurrentFrame()">
-                🔍 Show & Tell (Gemini Vision)
-              </button>
-            </div>
-            
-            <div id="visionResultBox" style="margin-top: 8px; padding: 8px; background: #0d1219; border-radius: 6px; font-size: 0.72rem; color: var(--text-muted); display: none;">
             </div>
           </div>
 
@@ -1564,27 +1588,109 @@
       tofDistance: 850
     };
 
-    // Obstacles
-    const obstacles = [
-      { id: 'obstacle1', title: 'Cube', x: 450, y: 140, width: 50, height: 50 },
-      { id: 'obstacle2', title: 'Cup', x: 180, y: 360, width: 50, height: 50 },
-      { id: 'obstacle3', title: 'Keys', x: 150, y: 120, width: 50, height: 50 },
-      { id: 'obstacle4', title: 'Notebook', x: 420, y: 380, width: 65, height: 50 }
+    // --- DYNAMIC PHYSICAL TABLETOP OBJECTS ---
+    let deskObjects = [
+      { id: 'obs_keys', title: 'Keys', emoji: '🔑', color: '#c084fc', x: 150, y: 120, width: 50, height: 50 },
+      { id: 'obs_mug', title: 'Coffee Mug', emoji: '☕', color: '#f97316', x: 450, y: 140, width: 50, height: 50 },
+      { id: 'obs_notebook', title: 'Notebook', emoji: '📓', color: '#38bdf8', x: 420, y: 380, width: 60, height: 50 },
+      { id: 'obs_cube', title: 'Cube', emoji: '📦', color: '#a3e635', x: 180, y: 360, width: 50, height: 50 }
     ];
-    const lastSightedTimes = {};
 
-    // Draggable Obstacles
     let activeDrag = null;
     let dragOffset = { x: 0, y: 0 };
-    document.querySelectorAll('.obstacle').forEach(obs => {
-      obs.addEventListener('mousedown', (e) => {
-        activeDrag = obs;
-        const rect = obs.getBoundingClientRect();
-        dragOffset.x = e.clientX - rect.left;
-        dragOffset.y = e.clientY - rect.top;
-        e.preventDefault();
+
+    function renderDeskObjects() {
+      const container = document.getElementById('deskObstaclesContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      deskObjects.forEach(obj => {
+        const el = document.createElement('div');
+        el.className = 'obstacle';
+        el.id = obj.id;
+        el.style.left = obj.x + 'px';
+        el.style.top = obj.y + 'px';
+        el.style.width = (obj.width || 50) + 'px';
+        el.style.height = (obj.height || 50) + 'px';
+        el.style.borderColor = obj.color || '#94a3b8';
+
+        el.innerHTML = `
+          <div class="delete-btn" title="Remove ${escapeHtml(obj.title)} from Desk" onclick="removeDeskObject(event, '${escapeHtml(obj.title)}')">✖</div>
+          <div style="font-size: 1.25rem; pointer-events: none; margin-bottom: 2px;">${obj.emoji || '📦'}</div>
+          <span style="font-size: 0.65rem; pointer-events: none; max-width: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(obj.title.toUpperCase())}</span>
+        `;
+
+        el.addEventListener('mousedown', (e) => {
+          if (e.target.classList.contains('delete-btn')) return;
+          activeDrag = el;
+          const rect = el.getBoundingClientRect();
+          dragOffset.x = e.clientX - rect.left;
+          dragOffset.y = e.clientY - rect.top;
+          e.preventDefault();
+        });
+
+        container.appendChild(el);
       });
-    });
+
+      const countBadge = document.getElementById('deskItemCount');
+      if (countBadge) countBadge.textContent = deskObjects.length;
+    }
+
+    function addDeskObjectFromToolbar() {
+      const select = document.getElementById('selectNewObject');
+      if (!select) return;
+      const parts = select.value.split('|');
+      const title = parts[0];
+      const emoji = parts[1] || '📦';
+      const color = parts[2] || '#38bdf8';
+
+      // Pick an open random position inside safe tabletop bounds
+      const randX = Math.round(75 + Math.random() * 480);
+      const randY = Math.round(75 + Math.random() * 320);
+      const id = 'obs_' + Date.now().toString(36);
+
+      deskObjects.push({
+        id: id,
+        title: title,
+        emoji: emoji,
+        color: color,
+        x: randX,
+        y: randY,
+        width: 50,
+        height: 50
+      });
+
+      renderDeskObjects();
+      syncPhysicalEnvironment();
+      showArenaToast(`➕ Placed ${title} on desk at (${randX}, ${randY})`, color);
+    }
+
+    function clearAllDeskObjects() {
+      deskObjects = [];
+      renderDeskObjects();
+      syncPhysicalEnvironment();
+      showArenaToast('🗑️ Cleared all physical objects from the desk!', '#f87171');
+    }
+
+    function removeDeskObject(e, title) {
+      if (e) e.stopPropagation();
+      deskObjects = deskObjects.filter(o => o.title.toLowerCase() !== title.toLowerCase());
+      renderDeskObjects();
+      syncPhysicalEnvironment();
+      showArenaToast(`🗑️ Removed ${title} from desk`, '#f87171');
+    }
+
+    async function syncPhysicalEnvironment() {
+      try {
+        await fetch('/api/environment_physics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: deskObjects })
+        });
+      } catch (err) {
+        console.warn("Failed to sync physical environment", err);
+      }
+    }
 
     const arenaBox = document.getElementById('arenaBox');
     window.addEventListener('mousemove', (e) => {
@@ -1596,31 +1702,22 @@
       ny = Math.max(10, Math.min(arenaRect.height - 60, ny));
       activeDrag.style.left = nx + 'px';
       activeDrag.style.top = ny + 'px';
-      const obsObj = obstacles.find(o => o.id === activeDrag.id);
+      const obsObj = deskObjects.find(o => o.id === activeDrag.id);
       if (obsObj) {
         obsObj.x = nx;
         obsObj.y = ny;
-        // Stream position update to backend navigation cortex
-        fetch('/api/obstacle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: obsObj.title, x: obsObj.x, y: obsObj.y })
-        }).catch(() => {});
       }
     });
+
     window.addEventListener('mouseup', () => {
       if (activeDrag) {
-        const obsObj = obstacles.find(o => o.id === activeDrag.id);
-        if (obsObj) {
-          fetch('/api/obstacle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: obsObj.title, x: obsObj.x, y: obsObj.y })
-          }).catch(() => {});
-        }
+        syncPhysicalEnvironment();
         activeDrag = null;
       }
     });
+
+    renderDeskObjects();
+    syncPhysicalEnvironment();
 
     // Operating Mode Control (Explore & Roam vs Desk Companion vs Hold)
     async function setAlphaOperatingMode(mode) {
@@ -1854,20 +1951,11 @@
           tofDistanceBadge.textContent = `ToF Laser: ${Math.round(data.tof_distance)}mm`;
         }
 
-        // Sync obstacle positions from backend world model if not actively dragging
-        if (!activeDrag && data.obstacles && Array.isArray(data.obstacles)) {
-          data.obstacles.forEach(backendObs => {
-            const localEl = document.getElementById(backendObs.id);
-            const localObj = obstacles.find(o => o.id === backendObs.id);
-            if (localEl && localObj) {
-              if (Math.abs(localObj.x - backendObs.x) > 1 || Math.abs(localObj.y - backendObs.y) > 1) {
-                localObj.x = backendObs.x;
-                localObj.y = backendObs.y;
-                localEl.style.left = backendObs.x + 'px';
-                localEl.style.top = backendObs.y + 'px';
-              }
-            }
-          });
+        // Update Discovered Objects List & Count
+        if (data.discovered_objects) {
+          updateDiscoveredObjectsUI(data.discovered_objects);
+          const discBadge = document.getElementById('discoveredItemCount');
+          if (discBadge) discBadge.textContent = data.discovered_objects.length;
         }
 
         // 6. Cognitive Thought & PAD Metrics
@@ -1910,7 +1998,9 @@
           const targetStr = data.locked_target ? ` [${escapeHtml(data.locked_target).toUpperCase()}]` : '';
 
           if (bState === 'EXPLORE_ROAM') {
-            autoBrainState.textContent = `🚀 PATROLLING DESK${targetStr}`;
+            const sub = data.explore_substate || '';
+            const subTxt = sub === 'SCANNING' ? 'SCANNING HORIZON' : sub === 'RELOCATING' ? 'RELOCATING VANTAGE' : 'PATROLLING';
+            autoBrainState.textContent = `🧭 EXPLORING: ${subTxt}${targetStr}`;
             autoBrainState.style.background = '#0369a1';
             autoBrainState.style.color = '#bae6fd';
           } else if (bState === 'PLAYFUL_SPIN') {
@@ -1976,7 +2066,7 @@
           }
         }
 
-        // 7. Laser Beam Rendering
+        // 7. Laser Beam & Optical Perception Cone Rendering
         const cx = rover.x + 30;
         const cy = rover.y + 35;
         const rad = (rover.heading * Math.PI) / 180;
@@ -1988,6 +2078,25 @@
         const lRad = (laserAngle * Math.PI) / 180;
         const fwdX = Math.sin(lRad);
         const fwdY = -Math.cos(lRad);
+
+        // Draw Optical Camera Vision Cone (+/-32 deg wide, 130px radius)
+        const opticalCone = document.getElementById('opticalVisionCone');
+        if (opticalCone) {
+          const camAngleRad = (laserAngle - 90) * (Math.PI / 180);
+          const fovHalfRad = (32 * Math.PI) / 180;
+          const coneRadius = 130;
+
+          const a1 = camAngleRad - fovHalfRad;
+          const a2 = camAngleRad + fovHalfRad;
+
+          const p1x = cx + Math.cos(a1) * coneRadius;
+          const p1y = cy + Math.sin(a1) * coneRadius;
+          const p2x = cx + Math.cos(a2) * coneRadius;
+          const p2y = cy + Math.sin(a2) * coneRadius;
+
+          const pathStr = `M ${cx} ${cy} L ${p1x} ${p1y} A ${coneRadius} ${coneRadius} 0 0 1 ${p2x} ${p2y} Z`;
+          opticalCone.setAttribute('d', pathStr);
+        }
 
         const visualDist = Math.min(260, data.tof_distance / 3.5);
         const endX = lx + fwdX * visualDist;
@@ -2004,6 +2113,14 @@
           hitDot.setAttribute('cx', endX);
           hitDot.setAttribute('cy', endY);
           hitDot.style.opacity = (visualDist < 255) ? '1' : '0.3';
+        }
+
+        // 8. Exploration Spoken Feedback from Alpha
+        if (data.speech_feedback && data.speech_feedback.text) {
+          const fb = data.speech_feedback;
+          addChatMessage("alpha", fb.text, "[EXPLORATION]");
+          playWallESound(fb.sound || 'curious');
+          speakText(fb.text);
         }
       } catch (err) {}
     }
@@ -2584,230 +2701,49 @@
       }
     }
 
-    // --- LAPTOP CAMERA VIEWPORT & REAL-TIME FACE TRACKING ---
-    let webcamStream = null;
-    let isWebcamRunning = false;
-    let camAnimationFrame = null;
-    const webcamVideo = document.getElementById('webcamVideo');
-    const webcamCanvas = document.getElementById('webcamCanvas');
-    const webcamCtx = webcamCanvas ? webcamCanvas.getContext('2d') : null;
-    let trackedFace = { x: 160, y: 120, w: 80, h: 90, detected: false };
+    // --- ORGANIC SPATIAL MEMORY & DISCOVERED OBJECTS UI ---
+    function updateDiscoveredObjectsUI(objects) {
+      const listEl = document.getElementById('discoveredObjectsList');
+      const badge = document.getElementById('sideDiscoveredCountBadge');
+      if (!listEl) return;
+      if (badge) badge.textContent = `${objects.length} Discovered`;
 
-    async function toggleLaptopCamera() {
-      const btn = document.getElementById('btnToggleCam');
-      const badge = document.getElementById('camStatusBadge');
-      if (isWebcamRunning) {
-        if (webcamStream) {
-          webcamStream.getTracks().forEach(t => t.stop());
-          webcamStream = null;
-        }
-        if (camAnimationFrame) {
-          cancelAnimationFrame(camAnimationFrame);
-          camAnimationFrame = null;
-        }
-        isWebcamRunning = false;
-        btn.textContent = "🎥 Start Laptop Camera";
-        btn.style.background = "#0369a1";
-        badge.textContent = "Camera Idle";
-        badge.className = "status-pill";
-        badge.style.background = "rgba(148, 163, 184, 0.15)";
-        badge.style.color = "#94a3b8";
-        document.getElementById('camGazeLabel').textContent = "GAZE: IDLE";
-        if (webcamCtx) webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+      if (!objects || objects.length === 0) {
+        listEl.innerHTML = `
+          <div style="font-size: 0.72rem; color: #64748b; font-style: italic; text-align: center; padding: 12px 0;">
+            No items discovered yet.<br>Click "🚀 Running & Explore Mode" or ask Alpha to explore!
+          </div>
+        `;
         return;
       }
 
-      try {
-        webcamStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" }
-        });
-        webcamVideo.srcObject = webcamStream;
-        await webcamVideo.play();
-        isWebcamRunning = true;
-        btn.textContent = "🛑 Stop Camera";
-        btn.style.background = "#991b1b";
-        badge.textContent = "Alpha Eye: Active";
-        badge.className = "status-pill status-ok";
-        startCameraProcessingLoop();
-      } catch (err) {
-        alert("Could not access laptop webcam: " + err.message + "\nPlease verify camera permissions in browser.");
-      }
+      listEl.innerHTML = '';
+      objects.forEach(obj => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.padding = '6px 10px';
+        row.style.background = 'rgba(255, 255, 255, 0.04)';
+        row.style.borderRadius = '6px';
+        row.style.border = '1px solid rgba(56, 189, 248, 0.2)';
+        row.style.fontSize = '0.72rem';
+
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.15rem;">${obj.emoji || '📦'}</span>
+            <div>
+              <b style="color: #f1f5f9;">${escapeHtml(obj.title)}</b>
+              <div style="font-size: 0.65rem; color: #94a3b8; font-family: monospace;">Desk pos: (${Math.round(obj.x)}, ${Math.round(obj.y)})</div>
+            </div>
+          </div>
+          <span style="font-size: 0.65rem; background: #0369a1; color: #bae6fd; padding: 2px 6px; border-radius: 4px;">Seen x${obj.sighting_count || 1}</span>
+        `;
+        listEl.appendChild(row);
+      });
     }
 
-    function startCameraProcessingLoop() {
-      if (!isWebcamRunning || !webcamCtx) return;
-
-      const w = webcamCanvas.width;
-      const h = webcamCanvas.height;
-
-      // Draw mirrored video to canvas
-      webcamCtx.drawImage(webcamVideo, 0, 0, w, h);
-
-      // Fast Facial / User Centroid Detection
-      const sampleW = 40;
-      const sampleH = 30;
-      const stepX = Math.floor(w / sampleW);
-      const stepY = Math.floor(h / sampleH);
-      
-      let sumX = 0, sumY = 0, count = 0;
-      try {
-        const imgData = webcamCtx.getImageData(0, 0, w, h).data;
-        for (let sy = 0; sy < sampleH; sy++) {
-          for (let sx = 0; sx < sampleW; sx++) {
-            const px = sx * stepX;
-            const py = sy * stepY;
-            const idx = (py * w + px) * 4;
-            const r = imgData[idx];
-            const g = imgData[idx + 1];
-            const b = imgData[idx + 2];
-
-            // Skin tone & facial luminance heuristic in RGB:
-            if (r > 80 && g > 40 && b > 20 && r > g && g >= b && (r - g) > 12 && (r - b) > 15) {
-              sumX += px;
-              sumY += py;
-              count++;
-            }
-          }
-        }
-      } catch (e) {
-        // Fallback if security restrictions apply
-      }
-
-      if (count > 25) {
-        const rawTargetX = sumX / count;
-        const rawTargetY = sumY / count;
-        
-        // Low-pass filter smoothing
-        trackedFace.x += (rawTargetX - trackedFace.x) * 0.25;
-        trackedFace.y += (rawTargetY - trackedFace.y) * 0.25;
-        trackedFace.detected = true;
-
-        // Normalized relative offset [-1 to +1] from center
-        const normDx = -((trackedFace.x - (w / 2)) / (w / 2));
-        const normDy = (trackedFace.y - (h / 2)) / (h / 2);
-
-        // Map to head Pan (-45° to +45°) and Tilt (-20° to +25°)
-        const targetPan = Math.round(normDx * 45);
-        const targetTilt = Math.round(-normDy * 25);
-
-        // Smoothly ease robot neck pan & tilt
-        rover.panAngle += Math.round((targetPan - rover.panAngle) * 0.2);
-        rover.tiltAngle += Math.round((targetTilt - rover.tiltAngle) * 0.2);
-
-        const panSlider = document.getElementById('panSlider');
-        const tiltSlider = document.getElementById('tiltSlider');
-        if (panSlider) panSlider.value = rover.panAngle;
-        if (tiltSlider) tiltSlider.value = rover.tiltAngle;
-        updateServos();
-
-        // Gaze tracking in Dual GC9A01 pupil elements
-        const eyeOffsetPxX = Math.round(normDx * 14);
-        const eyeOffsetPxY = Math.round(normDy * 10);
-        leftPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
-        rightPupil.style.transform = `translate(calc(-50% + ${eyeOffsetPxX}px), calc(-50% + ${eyeOffsetPxY}px)) scale(1.05)`;
-
-        document.getElementById('camGazeLabel').textContent = `TRACKING: PAN ${rover.panAngle}°, TILT ${rover.tiltAngle}°`;
-
-        // Render Green Futuristic HUD Reticle around detected face
-        const boxW = 75;
-        const boxH = 85;
-        const bx = trackedFace.x - boxW / 2;
-        const by = trackedFace.y - boxH / 2;
-
-        webcamCtx.strokeStyle = "#4ade80";
-        webcamCtx.lineWidth = 2;
-        
-        // Draw HUD Corner brackets
-        const cLen = 12;
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx, by + cLen); webcamCtx.lineTo(bx, by); webcamCtx.lineTo(bx + cLen, by);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx + boxW - cLen, by); webcamCtx.lineTo(bx + boxW, by); webcamCtx.lineTo(bx + boxW, by + cLen);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx, by + boxH - cLen); webcamCtx.lineTo(bx, by + boxH); webcamCtx.lineTo(bx + cLen, by + boxH);
-        webcamCtx.stroke();
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(bx + boxW - cLen, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH); webcamCtx.lineTo(bx + boxW, by + boxH - cLen);
-        webcamCtx.stroke();
-
-        // Target center crosshair
-        webcamCtx.strokeStyle = "rgba(74, 222, 128, 0.6)";
-        webcamCtx.lineWidth = 1;
-        webcamCtx.beginPath();
-        webcamCtx.moveTo(trackedFace.x - 6, trackedFace.y); webcamCtx.lineTo(trackedFace.x + 6, trackedFace.y);
-        webcamCtx.moveTo(trackedFace.x, trackedFace.y - 6); webcamCtx.lineTo(trackedFace.x, trackedFace.y + 6);
-        webcamCtx.stroke();
-
-        // Label above box
-        webcamCtx.fillStyle = "#4ade80";
-        webcamCtx.font = "bold 9px monospace";
-        webcamCtx.fillText("USER: AKHIL", bx, by - 4);
-
-      } else {
-        trackedFace.detected = false;
-        document.getElementById('camGazeLabel').textContent = "SEARCHING USER...";
-      }
-
-      camAnimationFrame = requestAnimationFrame(startCameraProcessingLoop);
-    }
-
-    // --- SHOW & TELL (GEMINI VISION INSPECTION) ---
-    async function inspectCurrentFrame() {
-      if (!isWebcamRunning) {
-        alert("Please start the laptop camera first!");
-        return;
-      }
-
-      const roomSelect = document.getElementById('inspectRoomSelect');
-      const room = roomSelect ? roomSelect.value : "Work Desk";
-      const resultBox = document.getElementById('visionResultBox');
-      const laserScan = document.getElementById('camLaserScan');
-
-      resultBox.style.display = "block";
-      resultBox.innerHTML = `<em>Scanning ${room} scene with Gemini Vision cortex...</em>`;
-      if (laserScan) laserScan.style.display = "block";
-
-      setEyeExpression('analyzing');
-
-      // Capture clean snapshot from webcamVideo
-      const offscreen = document.createElement('canvas');
-      offscreen.width = 320;
-      offscreen.height = 240;
-      const offCtx = offscreen.getContext('2d');
-      offCtx.drawImage(webcamVideo, 0, 0, 320, 240);
-      const dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
-
-      try {
-        const res = await fetch('/api/inspect_frame', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: dataUrl, room: room })
-        });
-        const data = await res.json();
-        if (laserScan) laserScan.style.display = "none";
-        setEyeExpression('happy');
-
-        if (data.status === 'success' && data.result) {
-          const obs = data.result.observation || 'Surveyed environment.';
-          const objs = (data.result.objects || []).map(o => `<b>${escapeHtml(o.name)}</b>`).join(', ');
-          resultBox.innerHTML = `<span style="color:#4ade80; font-weight:bold;">[VISION] Sighted in ${escapeHtml(room)}:</span> ${objs || 'Objects recorded.'}<br><span style="color:#cbd5e1;">"${escapeHtml(obs)}"</span>`;
-          
-          const speechMsg = `In ${room}, I see: ${objs ? (data.result.objects || []).map(o => o.name).join(', ') : 'items'}. ${obs}`;
-          addChatMessage("alpha", `*Whirrr!* In ${room}, I spot: ${objs || 'the surroundings'}. ${obs}`);
-          speakText(speechMsg);
-          fetchMemoryData();
-        } else {
-          resultBox.innerHTML = `<span style="color:#f87171;">Inspection logged:</span> ${data.message || 'Offline observation recorded.'}`;
-          addChatMessage("alpha", `*Beep-boop.* Snapshot saved to offline observation memory.`);
-        }
-      } catch (err) {
-        if (laserScan) laserScan.style.display = "none";
-        resultBox.innerHTML = `<span style="color:#f87171;">Error:</span> ${err.message}`;
-        setEyeExpression('curious');
-      }
-    }
+// Camera processing and inspection removed for pure desk companion
 
     // --- CONVERSATIONAL AI, SPEECH & MEMORY DASHBOARD ---
     function escapeHtml(str) {
@@ -2838,6 +2774,12 @@
         showArenaToast('🛑 DIRECTIVE: Motors halted. Holding position.', '#f87171');
       } else if (action === 'NAVIGATE_TO') {
         showArenaToast(`🧭 DIRECTIVE: Purposeful navigation to ${target || 'target'}.`, '#34d399');
+      } else if (action === 'ROAM') {
+        showArenaToast('🧭 DIRECTIVE: Autonomous biological exploration engaged.', '#38bdf8');
+      } else if (action === 'DESK' || action === 'COMPANION') {
+        showArenaToast('🛋️ DIRECTIVE: Desk companion mode resting.', '#94a3b8');
+      } else if (action === 'LOOK_AT') {
+        showArenaToast(`👀 DIRECTIVE: Looking at ${target || 'target'}.`, '#38bdf8');
       } else if (action === 'DOCK') {
         showArenaToast('⚡ DIRECTIVE: Autonomous docking engaged.', '#fbbf24');
       }

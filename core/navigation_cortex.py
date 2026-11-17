@@ -218,6 +218,14 @@ class NavigationCortex:
         """Updates the physical items on the desk simulator."""
         self.engine.update_environment_physics(items)
 
+    def attach_cognitive_loop(self, loop) -> None:
+        """Attaches the Gemini cognitive loop."""
+        self.engine.attach_cognitive_loop(loop)
+
+    @property
+    def cognitive_loop(self):
+        return self.engine.cognitive_loop
+
     def remove_environment_physics_item(self, title: str) -> None:
         """Removes an item from the physical desk environment."""
         self.engine.remove_environment_physics_item(title)

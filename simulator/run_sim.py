@@ -24,6 +24,7 @@ from main import AlphaRobot
 from core.config import DEFAULT_GEMINI_MODEL
 from core.eye_animator import Emotion
 from core.voice_engine import WallESoundSynthesizer
+from core.cognitive_loop import GeminiCognitiveLoop
 
 PORT = 8085
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +50,14 @@ def get_robot() -> AlphaRobot:
     if robot is None:
         robot = AlphaRobot(voice_enabled=True)
         start_backend_kinematics_loop(robot)
+        # Initialize and attach Gemini conscious cognitive loop
+        try:
+            cog_loop = GeminiCognitiveLoop(engine=robot.nav.engine)
+            robot.nav.attach_cognitive_loop(cog_loop)
+            robot.cognitive_loop = cog_loop
+            cog_loop.start()
+        except Exception as e:
+            print(f"[Simulator] Failed to start cognitive loop: {e}")
     return robot
 
 class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
@@ -76,6 +85,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_memory()
         elif path == "/api/expression":
             self._handle_get_expression()
+        elif path == "/api/cognitive_loop":
+            self._handle_get_cognitive_loop()
         elif path == "/api/sound_presets":
             self._handle_sound_presets()
         elif path.startswith("/api/audio/"):
@@ -116,6 +127,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_inspect_frame(data)
         elif parsed.path == "/api/sight_object":
             self._handle_sight_object(data)
+        elif parsed.path == "/api/cognitive_loop":
+            self._handle_post_cognitive_loop(data)
         elif parsed.path == "/api/toggle_brain":
             self._handle_toggle_brain(data)
         else:
@@ -129,6 +142,24 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(response_bytes)))
         self.end_headers()
         self.wfile.write(response_bytes)
+
+    def _handle_get_cognitive_loop(self):
+        r = get_robot()
+        cog = getattr(r, "cognitive_loop", None)
+        if cog:
+            self._send_json(cog.get_status())
+        else:
+            self._send_json({"is_active": False, "has_client": False, "last_decision": {}})
+
+    def _handle_post_cognitive_loop(self, data: dict):
+        r = get_robot()
+        cog = getattr(r, "cognitive_loop", None)
+        active = data.get("active", True)
+        if cog:
+            cog.set_active(active)
+            self._send_json({"status": "ok", "cognitive_loop": cog.get_status()})
+        else:
+            self._send_json({"status": "error", "message": "Cognitive loop not attached"}, 400)
 
     def _handle_telemetry(self):
         r = get_robot()
@@ -187,6 +218,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "gaze_x": r.eyes.left_eye.gaze_x,
             "gaze_y": r.eyes.left_eye.gaze_y,
             "battery_volts": 7.85,
+            "cognitive_loop_active": getattr(getattr(r, "cognitive_loop", None), "is_active", False),
             "voice_enabled": r.voice.voice_enabled
         })
 
@@ -293,6 +325,10 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         r = get_robot()
+        cog = getattr(r, "cognitive_loop", None)
+        if cog:
+            cog.notify_user_speech(user_msg)
+
         r.eyes.set_emotion(Emotion.ANALYZING)
         chat_res = r.brain.chat_with_emotion(user_msg)
 

@@ -1139,8 +1139,22 @@
               </div>
             </div>
 
+            <!-- Gemini Conscious Mind Master Toggle -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 6px 12px; margin: 8px 0 10px 0;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🧠</span>
+                <div>
+                  <div style="font-size: 0.78rem; font-weight: 700; color: #f1f5f9;">Gemini Living Mind</div>
+                  <div style="font-size: 0.65rem; color: #94a3b8;">Autonomous 3s cognitive cycle & real-time reasoning</div>
+                </div>
+              </div>
+              <button id="btnGeminiMindToggle" class="mode-btn active" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 6px; background: #0369a1; color: #fff; font-weight: 700; border: 1px solid #38bdf8;" onclick="toggleGeminiMind()">
+                🧠 GEMINI: ON
+              </button>
+            </div>
+
             <!-- Autonomous Operating Mode Selector -->
-            <div style="display: flex; gap: 8px; margin: 10px 0 8px 0;">
+            <div style="display: flex; gap: 8px; margin: 6px 0 8px 0;">
               <button id="btnModeExplore" class="mode-btn active" onclick="setAlphaOperatingMode('EXPLORE_ROAM')">
                 🚀 Running & Explore Mode
               </button>
@@ -1719,6 +1733,39 @@
     renderDeskObjects();
     syncPhysicalEnvironment();
 
+    // Gemini Living Mind Autonomous Cognitive Loop Toggle
+    let geminiMindActive = true;
+
+    async function toggleGeminiMind() {
+      geminiMindActive = !geminiMindActive;
+      updateGeminiMindUI(geminiMindActive);
+      try {
+        const res = await fetch('/api/cognitive_loop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: geminiMindActive })
+        });
+        const data = await res.json();
+        showArenaToast(
+          geminiMindActive ? "🧠 Gemini Mind Active: Autonomous cognitive loop is running Alpha!" :
+                             "⚙️ Rule Engine Active: Rule-based behavior fallback engaged.",
+          geminiMindActive ? "#38bdf8" : "#94a3b8"
+        );
+      } catch (err) {
+        console.warn("Failed to toggle cognitive loop", err);
+      }
+    }
+
+    function updateGeminiMindUI(isActive) {
+      const btn = document.getElementById('btnGeminiMindToggle');
+      if (btn) {
+        btn.textContent = isActive ? "🧠 GEMINI: ON" : "⚙️ GEMINI: OFF";
+        btn.style.background = isActive ? "#0369a1" : "#334155";
+        btn.style.borderColor = isActive ? "#38bdf8" : "#64748b";
+        btn.classList.toggle('active', isActive);
+      }
+    }
+
     // Operating Mode Control (Explore & Roam vs Desk Companion vs Hold)
     async function setAlphaOperatingMode(mode) {
       updateModeButtons(mode);
@@ -1967,6 +2014,12 @@
         // Live Mode Selector Sync
         if (data.operating_mode) {
           updateModeButtons(data.operating_mode);
+        }
+
+        // Live Gemini Conscious Mind Toggle Sync
+        if (typeof data.cognitive_loop_active === 'boolean' && data.cognitive_loop_active !== geminiMindActive) {
+          geminiMindActive = data.cognitive_loop_active;
+          updateGeminiMindUI(geminiMindActive);
         }
 
         // Live Personality Traits & Homeostatic Drives Sync

@@ -512,6 +512,9 @@ class NeuralMindEngine:
         self.behavior_expiry: float = 0.0
         self.next_impulse_time: float = time.time() + 4.0
 
+        # Gemini Conscious Mind Loop Reference (if attached)
+        self.cognitive_loop = None
+
         # Biological Autonomous Exploration State Machine
         self.explore_substate: str = "SCANNING"  # "SCANNING" | "APPROACHING" | "INSPECTING" | "RELOCATING"
         self.scan_step: int = 0
@@ -574,6 +577,10 @@ class NeuralMindEngine:
                 self.motion.express_emotion(Emotion.from_str(emotion))
             except Exception:
                 pass
+
+    def attach_cognitive_loop(self, loop) -> None:
+        """Attaches the Gemini-driven conscious mind cognitive loop."""
+        self.cognitive_loop = loop
 
     def set_operating_mode(self, mode: str) -> None:
         """Sets high-level operating mode: EXPLORE_ROAM, DESK_COMPANION, or HOLD_POSITION."""
@@ -1071,6 +1078,8 @@ class NeuralMindEngine:
 
         # 3. Autonomous Behaviors (Exploration vs Desk Companion)
         if not self.is_command_locked:
+            gemini_driving = bool(self.cognitive_loop and getattr(self.cognitive_loop, "is_active", False))
+
             if self.operating_mode == "EXPLORE_ROAM":
                 # Continuous optical camera perception (biological sight cone)
                 self._process_optical_perception()
@@ -1097,18 +1106,21 @@ class NeuralMindEngine:
                         self.affective.apply_stimulus("CLIFF_EDGE", 0.7)
                         self.pause_at_destination_until = now + 2.5
                 else:
-                    # Stationary at vantage point: step biological sensory sweeps when step timer expires
-                    if now >= self.scan_step_end_time and now >= self.pause_at_destination_until:
-                        self._plan_next_exploration_leg()
+                    # Stationary at vantage point: if Gemini is driving, it decides where to look and move.
+                    # Otherwise, step rule-based biological sweeps when step timer expires
+                    if not gemini_driving:
+                        if now >= self.scan_step_end_time and now >= self.pause_at_destination_until:
+                            self._plan_next_exploration_leg()
 
             elif self.operating_mode == "DESK_COMPANION":
-                if not self.body.target_coord_goal and not self.body.facing_target_pos:
-                    if now >= self.next_impulse_time:
-                        self._trigger_spontaneous_impulse()
-                        self.next_impulse_time = now + random.uniform(12.0, 20.0)
-                    elif now >= self.behavior_expiry and self.body.speed == 0.0 and self.body.turn_speed == 0.0:
-                        self.current_behavior = "COMPANION_IDLE"
-                        self.behavior_target = None
+                if not gemini_driving:
+                    if not self.body.target_coord_goal and not self.body.facing_target_pos:
+                        if now >= self.next_impulse_time:
+                            self._trigger_spontaneous_impulse()
+                            self.next_impulse_time = now + random.uniform(12.0, 20.0)
+                        elif now >= self.behavior_expiry and self.body.speed == 0.0 and self.body.turn_speed == 0.0:
+                            self.current_behavior = "COMPANION_IDLE"
+                            self.behavior_target = None
 
         # 4. If in stationary watch, track target ONLY if it actually moved (avoids wobble!)
         if self.is_command_locked and self.command_action == "STAY_AND_WATCH" and self.attention.focal_target:
@@ -1237,6 +1249,8 @@ class NeuralMindEngine:
             "speech_feedback": feedback,
             "discovered_objects": list(self.discovered_objects.values()),
             "discovered_count": len(self.discovered_objects),
+            "cognitive_loop_active": bool(self.cognitive_loop and getattr(self.cognitive_loop, "is_active", False)),
+            "last_gemini_decision": getattr(self.cognitive_loop, "last_decision", {}) if self.cognitive_loop else {},
             "explore_substate": self.explore_substate,
             "camera_bearing": round(cam_bearing, 1),
             "optical_cone": {

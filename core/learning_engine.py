@@ -142,3 +142,71 @@ class AutonomousLearningEngine:
 
         # Familiar object in familiar place
         return 0.2
+
+    # =========================================================================
+    # 5. Contextual Thompson Sampling Bandits & Adaptive Attachment
+    # =========================================================================
+
+    def sample_interaction_behavior(self, candidate_actions: Optional[List[str]] = None) -> str:
+        """
+        Samples an action using Beta-Bernoulli Thompson Sampling:
+        theta_k ~ Beta(alpha_k, beta_k)
+        Returns the action with the maximum sampled probability.
+        """
+        import random
+        bandits = self.db.get_bandit_parameters()
+        if not candidate_actions:
+            candidate_actions = list(bandits.keys()) if bandits else ["VOCAL_CHIRP"]
+
+        best_action = candidate_actions[0]
+        max_sample = -1.0
+
+        for act in candidate_actions:
+            param = bandits.get(act, {"alpha": 1.5, "beta": 1.0})
+            a = max(0.1, param["alpha"])
+            b = max(0.1, param["beta"])
+            # Sample from Beta distribution using random.betavariate
+            sampled_theta = random.betavariate(a, b)
+            if sampled_theta > max_sample:
+                max_sample = sampled_theta
+                best_action = act
+
+        return best_action
+
+    def register_interaction_feedback(self, action_name: str, positive: bool = True) -> None:
+        """Records owner feedback (praise/pet vs scold/push) to update Bandit parameters."""
+        self.db.record_bandit_feedback(action_name, positive=positive)
+        # Update long-term attachment accordingly
+        delta_attach = 0.015 if positive else -0.01
+        self.db.update_owner_attachment(owner_name="Akhil", delta=delta_attach)
+
+    # =========================================================================
+    # 6. Episodic Memory with Ebbinghaus Retention Dynamics
+    # =========================================================================
+
+    def record_affective_episode(
+        self,
+        event_type: str,
+        description: str,
+        valence_delta: float = 0.0,
+        arousal_delta: float = 0.0
+    ) -> int:
+        """Encodes an episodic experience with emotional salience."""
+        return self.db.record_episodic_event(
+            event_type=event_type,
+            description=description,
+            valence_delta=valence_delta,
+            arousal_delta=arousal_delta
+        )
+
+    def get_salient_memories(self, min_retention: float = 0.2, limit: int = 6) -> List[Dict[str, Any]]:
+        """Retrieves memories that have survived the Ebbinghaus forgetting curve."""
+        return self.db.get_active_episodic_memories(min_retention=min_retention, limit=limit)
+
+    def reinforce_memory(self, event_id: int) -> None:
+        """Strengthens memory trace via rehearsal / conversational recall."""
+        self.db.reinforce_episodic_memory(event_id)
+
+    def maintain_memory_hygiene(self) -> int:
+        """Prunes memories that have decayed below retention threshold."""
+        return self.db.prune_decayed_memories(threshold=0.08)

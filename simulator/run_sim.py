@@ -7,7 +7,9 @@ and Gemini 2.5 / Local Gemma AI brain responses over REST APIs.
 
 import os
 import sys
+import time
 import json
+import threading
 import http.server
 import socketserver
 import webbrowser
@@ -19,6 +21,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from main import AlphaRobot
+from core.config import DEFAULT_GEMINI_MODEL
 from core.eye_animator import Emotion
 from core.voice_engine import WallESoundSynthesizer
 
@@ -28,10 +31,24 @@ DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 # Global singleton robot instance
 robot = None
 
+def start_backend_kinematics_loop(r: AlphaRobot):
+    """Continuous 20Hz backend physics, navigation, and cognitive thought loop."""
+    def loop():
+        while True:
+            try:
+                r.nav.step(0.05)
+            except Exception:
+                pass
+            time.sleep(0.05)
+    t = threading.Thread(target=loop, daemon=True, name="AlphaKinematicsLoop")
+    t.start()
+    print("[Backend Kinematics] Autonomous navigation cortex active @ 20Hz.")
+
 def get_robot() -> AlphaRobot:
     global robot
     if robot is None:
         robot = AlphaRobot(voice_enabled=True)
+        start_backend_kinematics_loop(robot)
     return robot
 
 class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
@@ -51,7 +68,9 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
-        if path == "/api/status":
+        if path == "/api/telemetry":
+            self._handle_telemetry()
+        elif path == "/api/status":
             self._handle_status()
         elif path == "/api/memory":
             self._handle_memory()
@@ -75,6 +94,14 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/chat":
             self._handle_chat(data)
+        elif parsed.path == "/api/obstacle":
+            self._handle_obstacle(data)
+        elif parsed.path == "/api/motor":
+            self._handle_motor(data)
+        elif parsed.path == "/api/directive":
+            self._handle_directive(data)
+        elif parsed.path == "/api/mode":
+            self._handle_mode(data)
         elif parsed.path == "/api/expression":
             self._handle_set_expression(data)
         elif parsed.path == "/api/sound":
@@ -99,13 +126,44 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_bytes)
 
+    def _handle_telemetry(self):
+        r = get_robot()
+        self._send_json(r.nav.get_telemetry())
+
+    def _handle_obstacle(self, data: dict):
+        r = get_robot()
+        title = data.get("title", "")
+        x = float(data.get("x", 0.0))
+        y = float(data.get("y", 0.0))
+        r.nav.update_obstacle_position(title, x, y)
+        self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
+
+    def _handle_motor(self, data: dict):
+        r = get_robot()
+        action = data.get("action", "stop")
+        r.nav.set_manual_motion(action)
+        self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
+
+    def _handle_directive(self, data: dict):
+        r = get_robot()
+        action = data.get("action", "")
+        target = data.get("target")
+        r.nav.execute_directive(action, target)
+        self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
+
+    def _handle_mode(self, data: dict):
+        r = get_robot()
+        mode = data.get("mode", "EXPLORE_ROAM")
+        r.nav.set_operating_mode(mode)
+        self._send_json({"status": "ok", "operating_mode": r.nav.engine.operating_mode, "telemetry": r.nav.get_telemetry()})
+
     def _handle_status(self):
         r = get_robot()
         facts = r.db.get_user_facts()
         objects = r.db.find_objects("")
         self._send_json({
             "status": "online" if r.brain.is_online() else "offline",
-            "brain_name": "Google Gemini 2.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)",
+            "brain_name": f"Google Gemini ({DEFAULT_GEMINI_MODEL})" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)",
             "facts_count": len(facts),
             "objects_count": len(objects),
             "emotion": r.eyes.left_eye.current_emotion.value,
@@ -228,6 +286,14 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         r.eyes.set_emotion(emo)
         r.motion.express_emotion(emo)
 
+        # Enforce backend navigation cortex directive
+        action = chat_res.get("action")
+        target = chat_res.get("target")
+        if action:
+            r.nav.execute_directive(action, target)
+        r.nav.current_emotion = emo.value
+        r.current_directive = {"action": action, "target": target}
+
         # Optionally speak on PC/Hardware speaker if requested
         if data.get("speak_hardware", False):
             r.voice.speak(reply, emotion=emo, with_chirp=True)
@@ -237,6 +303,9 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             "emotion": emo.value,
             "sound_cue": sound_cue,
             "brain_type": chat_res.get("brain_type", "gemini"),
+            "action": action,
+            "target": target,
+            "telemetry": r.nav.get_telemetry(),
             "facts": r.db.get_user_facts(limit=15),
             "observations": r.db.get_recent_observations(limit=5)
         })
@@ -300,7 +369,7 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         mode_name = "online" if r.brain.is_online() else "offline"
         self._send_json({
             "mode": mode_name,
-            "brain_name": "Google Gemini 2.5 Flash" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)"
+            "brain_name": f"Google Gemini ({DEFAULT_GEMINI_MODEL})" if r.brain.is_online() else "Local Gemma 2B (Auxiliary Core)"
         })
 
 def main():
@@ -313,8 +382,15 @@ def main():
     print("=" * 65)
 
     url = f"http://localhost:{PORT}/index.html"
-    webbrowser.open(url)
+    try:
+        if os.system("which explorer.exe >/dev/null 2>&1") == 0:
+            os.system(f"explorer.exe '{url}' 2>/dev/null &")
+        else:
+            webbrowser.open(url)
+    except Exception:
+        pass
 
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), SimulatorAPIHandler) as httpd:
         try:
             httpd.serve_forever()

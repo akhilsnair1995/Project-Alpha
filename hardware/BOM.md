@@ -8,7 +8,7 @@ This document contains the complete hardware component list, technical specifica
 
 | Item | Component | Specification / Model | Qty | Key Notes |
 | :--- | :--- | :--- | :---: | :--- |
-| **1.1** | **Main Computer (SBC)** | **Raspberry Pi 5 (16GB)** *(Alt: 8GB / Pi 4)* | 1 | Quad-core Cortex-A76 @ 2.4 GHz + 16GB RAM. Runs local Gemma 2 2B (Q4) at 12+ tokens/sec, real-time 30 FPS YOLO vision, and full SQLite memory graph. |
+| **1.1** | **Main Computer (SBC)** | **Raspberry Pi 5 (8GB RAM)** *(Official)* | 1 | Quad-core Cortex-A76 @ 2.4 GHz + 8GB LPDDR4X RAM. Generous headroom: runs local Gemma 2 2B (Q4, ~1.8GB RAM) at 12+ tokens/sec, OpenCV face/ArUco tracking, procedural audio synthesis, and SQLite knowledge graph with over 5.5GB of free RAM. |
 | **1.2** | **SBC Active Cooler** | **Official Raspberry Pi 5 Active Cooler** | 1 | Custom aluminum heatsink + variable-speed PWM blower. Clips directly to Pi 5 dedicated pushpin and fan headers. |
 | **1.3** | **Chassis Cooling Fan** | **40mm 5V DC Brushless Fan (4010)** | 1 | Bolts directly to pre-cut holes on the Left side acrylic panel (32mm × 32mm M3 pattern). Pulls fresh air across the Pi 5 and exhausts out the right vent. |
 | **1.4** | **Cellular 4G LTE Modem** | **Waveshare 4G Dongle** *(or Huawei E3372 / SIM7600 USB)* | 1 | Plugs directly into Pi USB. Recognised natively in Linux as `eth1`/`wwan0`. Automatic cellular fallback when away from WiFi. |
@@ -74,4 +74,4 @@ This document contains the complete hardware component list, technical specifica
 | **6.3** | **Internal L-Angle Brackets** | **90° M3 Corner Braces / L-Brackets** (15mm × 15mm or 20mm × 20mm, M3 holes) | **8–12 pcs** | Fastened inside the body corners. Connects Front, Rear, Left, and Right vertical acrylic walls to the Bottom Base Plate and Top Lid with a clean, modular finish. |
 | **6.4** | **Board Hardware** | M2.5 & M2 Screws, Nuts, and 5mm Spacers | 1 pack | Standard mounting hardware for Raspberry Pi, Camera Module V2, and sensor breakouts. |
 | **6.5** | **Connecting Wires** | 20cm Female-to-Female & Male-to-Female Dupont Jumper Wires (28 AWG) | 1 ribbon | For clean solderless connections between modules. |
-| **6.6** | **CSI Ribbon Cable** | 15-pin to 15-pin (or 22-pin for Zero), 20cm–30cm flexible flat cable | 1 | Connects camera in head to the Pi body. |
+| **6.6** | **CSI Camera Cable** | **22-Pin (0.5mm pitch) to 15-Pin (1.0mm pitch)** Mini MIPI Cable (20cm–30cm) | 1 | Connects Camera Module V2 (15-pin) to Raspberry Pi 5 dual mini CSI/DSI ports (22-pin). |

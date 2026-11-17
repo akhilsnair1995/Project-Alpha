@@ -8,6 +8,9 @@ opencv-python>=4.8.0
 pillow>=10.0.0
 numpy>=1.24.0
 
-# Optional Raspberry Pi Hardware Drivers (Only needed when running on physical Pi)
-# RPi.GPIO>=0.7.1
+# Raspberry Pi 5 Native GPIO & SPI Drivers (Install when deploying to physical Pi 5)
+# gpiozero>=2.0.1
+# rpi-lgpio>=0.6
 # spidev>=3.6
+# Optional legacy driver for Pi 4/3:
+# RPi.GPIO>=0.7.1

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  raspberry_pi_5:
+    build:
+      context: ..
+      dockerfile: vm/Dockerfile.rpi5
+    container_name: rpi5_project_alpha
+    hostname: rpi5-alpha
+    privileged: true
+    restart: unless-stopped
+    environment:
+      - IS_RASPBERRY_PI=true
+      - RASPBERRY_PI_MODEL=Raspberry Pi 5 Model B Rev 1.0
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8085:8085"
+      - "2222:22"
+    volumes:
+      - ../core:/app/core
+      - ../hardware:/app/hardware
+      - ../data:/app/data
+      - ../simulator:/app/simulator
+      - ../main.py:/app/main.py
+      - ../.env:/app/.env:ro
+    command: python3 simulator/run_sim.py

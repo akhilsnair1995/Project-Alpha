@@ -82,7 +82,7 @@ All GPIO assignments are designed to avoid peripheral hardware conflicts:
 | **34** | **GND** | System Ground | GND | Common ground reference |
 | **35** | **GPIO 19 (PCM_FS)** | I2S Audio Bus | LRCLK / WS | Shared: MAX98357A (Amp) & INMP441 (Mic) Word Select |
 | **36** | **GPIO 16** | Motor Driver | IN4 | DRV8833 Right Motor Reverse (PWM) |
-| **37** | **GPIO 26** | *Available* | — | Spare GPIO (LED or buzzer) |
+| **37** | **GPIO 26** | Charging Dock | DETECT | Dock voltage detect (Active HIGH via diode divider) |
 | **38** | **GPIO 20 (PCM_DIN)**| I2S Audio Bus | SD / DOUT | INMP441 Microphone data IN to Raspberry Pi |
 | **39** | **GND** | System Ground | GND | Common ground reference |
 | **40** | **GPIO 21 (PCM_DOUT)**| I2S Audio Bus| DIN | MAX98357A Speaker DAC data OUT from Raspberry Pi |

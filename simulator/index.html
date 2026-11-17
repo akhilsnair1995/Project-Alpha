@@ -484,6 +484,41 @@
       background: #1e293b;
     }
 
+    /* Mode Selector Buttons & Personality Deck */
+    .mode-btn {
+      flex: 1;
+      background: #111827;
+      border: 1px solid #334155;
+      color: var(--text-muted);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .mode-btn:hover {
+      background: #1e293b;
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+    .mode-btn.active {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .trait-pill {
+      font-family: monospace;
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     /* Dynamic Expression Pupil Themes */
     .pupil.emo-happy { background: radial-gradient(circle at 40% 40%, #bae6fd 0%, #0284c7 60%, #0369a1 100%); box-shadow: 0 0 16px rgba(56, 189, 248, 0.9); }
     .pupil.emo-curious { background: radial-gradient(circle at 40% 40%, #cffafe 0%, #06b6d4 60%, #0e7490 100%); box-shadow: 0 0 14px rgba(6, 182, 212, 0.8); }
@@ -835,7 +870,7 @@
     <div class="brand">
       <h1>PROJECT ALPHA</h1>
       <span class="badge">WALL-E DIGITAL TWIN</span>
-      <span id="brainModePill" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">🟢 Gemini 3.5 Online</span>
+      <span id="brainModePill" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">🟢 Gemini Online</span>
     </div>
     <div class="nav-tabs">
       <button class="nav-btn active" id="nav-arenaTab" onclick="switchTab('arenaTab')">🎮 Actions & Tabletop Arena</button>
@@ -853,7 +888,7 @@
         <!-- Left Column: Tabletop Play area -->
         <div class="panel">
           <div class="panel-title">
-            <span>TABLETOP ROAM ARENA (VIRTUAL DESK)</span>
+            <span>TABLETOP DESK ARENA (DESKTOP COMPANION)</span>
             <div style="display: flex; gap: 8px;">
               <span id="cliffStatus" class="status-pill status-ok">Cliff Sensors: OK</span>
               <span id="tofDistanceBadge" class="status-pill status-ok">ToF Laser: 850mm</span>
@@ -1043,19 +1078,50 @@
 
           <!-- Robot Kinematics & Manual Locomotion Controls -->
           <div class="panel">
-            <!-- Autonomous Patrol Mode Toggle -->
+            <!-- Living Companion Presence Status -->
             <div class="switch-wrap">
               <div>
-                <b style="font-size: 0.85rem; color: #fff;">Autonomous Roam & Avoidance</b>
-                <div style="font-size: 0.7rem; color: var(--text-muted);">Patrols desk, halts at cliffs, evades obstacles</div>
+                <b style="font-size: 0.85rem; color: #fff;">Living Companion Cortex</b>
+                <div id="roverThoughtBubble" style="font-size: 0.72rem; color: var(--accent-amber); font-style: italic; margin-top: 2px;">
+                  "Resting naturally on your desk, observant and ready."
+                </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span id="autoBrainState" class="badge" style="display: none; background: #065f46; color: #6ee7b7;">CRUISING</span>
-                <label class="switch">
-                  <input type="checkbox" id="autoModeToggle" onchange="toggleAutonomous(this.checked)">
-                  <span class="slider-toggle"></span>
-                </label>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span id="autoBrainState" class="badge" style="background: #0369a1; color: #bae6fd;">🚀 RUNNING & EXPLORING</span>
+                <span id="padMetricsBadge" class="badge" style="background: #0f172a; border-color: #334155; color: #38bdf8; font-family: monospace;">PAD: V:+0.67 A:0.44 C:0.67</span>
               </div>
+            </div>
+
+            <!-- Autonomous Operating Mode Selector -->
+            <div style="display: flex; gap: 8px; margin: 10px 0 8px 0;">
+              <button id="btnModeExplore" class="mode-btn active" onclick="setAlphaOperatingMode('EXPLORE_ROAM')">
+                🚀 Running & Explore Mode
+              </button>
+              <button id="btnModeCompanion" class="mode-btn" onclick="setAlphaOperatingMode('DESK_COMPANION')">
+                🛋️ Desk Companion Mode
+              </button>
+              <button id="btnModeHold" class="mode-btn" onclick="setAlphaOperatingMode('HOLD_POSITION')">
+                🛑 Hold Position
+              </button>
+            </div>
+
+            <!-- Live 5-Trait Personality Matrix & Dynamic Homeostatic Drives -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; font-size: 0.72rem;">
+              <span class="trait-pill" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;" title="Curiosity Trait">
+                🧭 Curiosity: <b id="driveCuriosityVal">85%</b>
+              </span>
+              <span class="trait-pill" style="background: rgba(244, 114, 182, 0.1); border: 1px solid rgba(244, 114, 182, 0.3); color: #f472b6;" title="Playful Trait">
+                ✨ Playful: <b id="traitPlayfulVal">75%</b>
+              </span>
+              <span class="trait-pill" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24;" title="Bold Trait">
+                🛡️ Bold: <b id="traitBoldVal">60%</b>
+              </span>
+              <span class="trait-pill" style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc;" title="Social Connection Drive">
+                💖 Social: <b id="driveSocialVal">70%</b>
+              </span>
+              <span class="trait-pill" style="background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.3); color: #4ade80;" title="Battery State of Charge">
+                ⚡ Energy: <b id="driveEnergyVal">100%</b>
+              </span>
             </div>
 
             <!-- Locomotion Keypad -->
@@ -1083,7 +1149,7 @@
               </div>
               <div class="slider-row">
                 <span style="width: 100px;">Tilt (GPIO 5):</span>
-                <input type="range" id="tiltSlider" min="-30" max="40" value="0" oninput="updateServos()">
+                <input type="range" id="tiltSlider" min="-25" max="35" value="0" oninput="updateServos()">
                 <span id="tiltVal" style="width: 40px; text-align: right; font-family: monospace;">0°</span>
               </div>
             </div>
@@ -1163,6 +1229,22 @@
               <input type="range" id="voiceRateSlider" min="0.8" max="1.4" step="0.05" value="1.05" style="width: 65px; accent-color: var(--accent-blue);" title="Speaking Rate">
             </div>
 
+            <!-- LIVE HANDS-FREE CONVERSATION SWITCH -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #fff;">🎙 LIVE CONVERSATION</span>
+                <span id="liveVoiceBadge" class="status-pill status-muted" style="font-size: 0.68rem; padding: 2px 6px;">OFF</span>
+              </div>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="liveModeToggle" onchange="toggleLiveVoiceConversation(this.checked)" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
+                <span style="font-size: 0.72rem; color: var(--accent-blue); font-weight: 600;">Hands-Free Mode</span>
+              </label>
+            </div>
+            <!-- Live voice transcription interim banner -->
+            <div id="liveVoiceInterimBanner" style="display: none; font-size: 0.72rem; color: var(--accent-green); background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.25); padding: 5px 10px; border-radius: 6px; margin-bottom: 8px; font-style: italic;">
+              🎙 Listening hands-free...
+            </div>
+
             <div class="chat-card" style="height: 250px;">
               <div class="chat-transcript" id="chatTranscript">
                 <div class="chat-bubble alpha">
@@ -1195,7 +1277,7 @@
             </div>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <span id="brainTabEngineBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Google Gemini 3.5 Flash</span>
+            <span id="brainTabEngineBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">Google Gemini Flash</span>
             <button class="ctrl-btn" style="padding: 6px 12px; font-size: 0.75rem; border-color: var(--accent-amber); color: var(--accent-amber);" onclick="toggleBrainMode()">Toggle Offline Mode</button>
             <button class="ctrl-btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="fetchMemoryData()">🔄 Refresh Tables</button>
           </div>
@@ -1515,60 +1597,112 @@
       activeDrag.style.left = nx + 'px';
       activeDrag.style.top = ny + 'px';
       const obsObj = obstacles.find(o => o.id === activeDrag.id);
-      if (obsObj) { obsObj.x = nx; obsObj.y = ny; }
-    });
-    window.addEventListener('mouseup', () => { activeDrag = null; });
-
-    // Motor Actions & PWM Logic
-    function setMotorAction(action, isManualUserAction = false) {
-      // If user uses manual keyboard/buttons while in auto mode, switch to manual
-      if (isManualUserAction && rover.autoMode && action !== 'stop') {
-        toggleAutonomous(false);
-        const toggleEl = document.getElementById('autoModeToggle');
-        if (toggleEl) toggleEl.checked = false;
+      if (obsObj) {
+        obsObj.x = nx;
+        obsObj.y = ny;
+        // Stream position update to backend navigation cortex
+        fetch('/api/obstacle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: obsObj.title, x: obsObj.x, y: obsObj.y })
+        }).catch(() => {});
       }
-      
+    });
+    window.addEventListener('mouseup', () => {
+      if (activeDrag) {
+        const obsObj = obstacles.find(o => o.id === activeDrag.id);
+        if (obsObj) {
+          fetch('/api/obstacle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: obsObj.title, x: obsObj.x, y: obsObj.y })
+          }).catch(() => {});
+        }
+        activeDrag = null;
+      }
+    });
+
+    // Operating Mode Control (Explore & Roam vs Desk Companion vs Hold)
+    async function setAlphaOperatingMode(mode) {
+      updateModeButtons(mode);
+      try {
+        const res = await fetch('/api/mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          showArenaToast(
+            mode === 'EXPLORE_ROAM' ? "🚀 Running & Explore Mode Active: Alpha is freely roaming and investigating!" :
+            mode === 'DESK_COMPANION' ? "🛋️ Desk Companion Mode: Alpha is resting peacefully on your desk." :
+            "🛑 Hold Position: Standby brake engaged.",
+            mode === 'EXPLORE_ROAM' ? "#38bdf8" : "#94a3b8"
+          );
+        }
+      } catch (err) {
+        console.warn("Failed to set operating mode", err);
+      }
+    }
+
+    function updateModeButtons(mode) {
+      const btnExp = document.getElementById('btnModeExplore');
+      const btnComp = document.getElementById('btnModeCompanion');
+      const btnHold = document.getElementById('btnModeHold');
+      if (btnExp) btnExp.classList.toggle('active', mode === 'EXPLORE_ROAM');
+      if (btnComp) btnComp.classList.toggle('active', mode === 'DESK_COMPANION');
+      if (btnHold) btnHold.classList.toggle('active', mode === 'HOLD_POSITION');
+    }
+
+    // Motor Actions & PWM Logic - Streamed directly to backend
+    function setMotorAction(action, isManualUserAction = false) {
       const pinG6 = document.getElementById('pinG6');
       const pinG12 = document.getElementById('pinG12');
       const pinG13 = document.getElementById('pinG13');
       const pinG16 = document.getElementById('pinG16');
 
+      fetch('/api/motor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action })
+      }).catch(() => {});
+
       switch(action) {
         case 'forward':
-          rover.speed = 2.2;
+          rover.speed = 4.2;
           rover.turnSpeed = 0;
-          if (pinG6) { pinG6.textContent = "HIGH (80%)"; pinG12.textContent = "LOW"; }
-          if (pinG13) { pinG13.textContent = "HIGH (80%)"; pinG16.textContent = "LOW"; }
+          if (pinG6) { pinG6.textContent = "HIGH (90%)"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "HIGH (90%)"; pinG16.textContent = "LOW"; }
           break;
         case 'reverse':
-          rover.speed = -1.8;
+          rover.speed = -3.5;
           rover.turnSpeed = 0;
-          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (70%)"; }
-          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (70%)"; }
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (80%)"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (80%)"; }
           break;
         case 'left':
-          rover.speed = 1.2;
-          rover.turnSpeed = -2.6;
+          rover.speed = 2.2;
+          rover.turnSpeed = -4.0;
           if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "LOW"; }
-          if (pinG13) { pinG13.textContent = "HIGH (80%)"; pinG16.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "HIGH (85%)"; pinG16.textContent = "LOW"; }
           break;
         case 'right':
-          rover.speed = 1.2;
-          rover.turnSpeed = 2.6;
-          if (pinG6) { pinG6.textContent = "HIGH (80%)"; pinG12.textContent = "LOW"; }
+          rover.speed = 2.2;
+          rover.turnSpeed = 4.0;
+          if (pinG6) { pinG6.textContent = "HIGH (85%)"; pinG12.textContent = "LOW"; }
           if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "LOW"; }
           break;
         case 'spinLeft':
           rover.speed = 0;
-          rover.turnSpeed = -3.2;
-          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (60%)"; }
-          if (pinG13) { pinG13.textContent = "HIGH (60%)"; pinG16.textContent = "LOW"; }
+          rover.turnSpeed = -4.8;
+          if (pinG6) { pinG6.textContent = "LOW"; pinG12.textContent = "HIGH (75%)"; }
+          if (pinG13) { pinG13.textContent = "HIGH (75%)"; pinG16.textContent = "LOW"; }
           break;
         case 'spinRight':
           rover.speed = 0;
-          rover.turnSpeed = 3.2;
-          if (pinG6) { pinG6.textContent = "HIGH (60%)"; pinG12.textContent = "LOW"; }
-          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (60%)"; }
+          rover.turnSpeed = 4.8;
+          if (pinG6) { pinG6.textContent = "HIGH (75%)"; pinG12.textContent = "LOW"; }
+          if (pinG13) { pinG13.textContent = "LOW"; pinG16.textContent = "HIGH (75%)"; }
           break;
         case 'stop':
         default:
@@ -1618,6 +1752,11 @@
     function simulateHeadPet() {
       playWallESound('love');
       setEyeExpression('love');
+      fetch('/api/directive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'PET' })
+      }).catch(() => {});
       document.getElementById('tiltSlider').value = 25;
       updateServos();
       showArenaToast('Alpha loved that head pet! 💕', '#ec4899');
@@ -1636,294 +1775,241 @@
       }, 1000);
     }
 
-    // --- AUTONOMOUS FINITE STATE MACHINE ---
-    let autoState = 'CRUISE'; // 'CRUISE', 'CLIFF_REVERSE', 'CLIFF_SPIN', 'OBSTACLE_AVOID'
-    let autoTimer = 0;
-    let autoTurnDir = 1;
-
-    function setBrainBadge(text, bg, fg) {
-      const b = document.getElementById('autoBrainState');
-      if (!b) return;
-      b.style.display = rover.autoMode ? 'inline-block' : 'none';
-      b.textContent = text;
-      b.style.background = bg;
-      b.style.color = fg;
-    }
-
-    function toggleAutonomous(enabled) {
-      rover.autoMode = enabled;
-      autoState = 'CRUISE';
-      autoTimer = 0;
-      const b = document.getElementById('autoBrainState');
-      if (b) b.style.display = enabled ? 'inline-block' : 'none';
-
-      if (!enabled) {
-        setMotorAction('stop');
-      } else {
-        setEyeExpression('curious');
-        setMotorAction('forward');
-        setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
-      }
-    }
-
-    function runAutonomousLogic() {
-      if (!rover.autoMode) return;
-
-      // 1. EMERGENCY CLIFF DROP DETECTION
-      if (rover.cliffL || rover.cliffR) {
-        if (autoState !== 'CLIFF_REVERSE' && autoState !== 'CLIFF_SPIN') {
-          autoState = 'CLIFF_REVERSE';
-          autoTimer = 40; // reverse for ~0.65s (40 frames)
-          autoTurnDir = rover.cliffL ? 1 : -1; // spin away from detected edge
-          playWallESound('alert');
-          setEyeExpression('alert');
-          setBrainBadge('CLIFF ESCAPE ⚠', '#7f1d1d', '#fca5a5');
-          setMotorAction('reverse');
-          return;
-        }
-      }
-
-      // STATE: Backing away from cliff edge
-      if (autoState === 'CLIFF_REVERSE') {
-        autoTimer--;
-        if (autoTimer <= 0) {
-          autoState = 'CLIFF_SPIN';
-          autoTimer = 35 + Math.floor(Math.random() * 25); // spin 90-140 degrees
-          setBrainBadge('TURNING AWAY', '#854d0e', '#fef08a');
-          setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
-        }
-        return;
-      }
-
-      // STATE: Spinning away from cliff
-      if (autoState === 'CLIFF_SPIN') {
-        autoTimer--;
-        if (autoTimer <= 0) {
-          autoState = 'CRUISE';
-          setEyeExpression('curious');
-          setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
-          setMotorAction('forward');
-        }
-        return;
-      }
-
-      // 2. OBSTACLE PROXIMITY AVOIDANCE (< 220mm)
-      if (rover.tofDistance < 220 && autoState !== 'OBSTACLE_AVOID') {
-        autoState = 'OBSTACLE_AVOID';
-        autoTimer = 35 + Math.floor(Math.random() * 20);
-        autoTurnDir = Math.random() > 0.5 ? 1 : -1;
-        setEyeExpression('squint');
-        setBrainBadge('AVOIDING OBJECT', '#9a3412', '#fed7aa');
-        setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
-        return;
-      }
-
-      // STATE: Evading obstacle
-      if (autoState === 'OBSTACLE_AVOID') {
-        autoTimer--;
-        if (autoTimer <= 0) {
-          if (rover.tofDistance >= 220) {
-            autoState = 'CRUISE';
-            setEyeExpression('curious');
-            setBrainBadge('CRUISING', '#065f46', '#6ee7b7');
-            setMotorAction('forward');
-          } else {
-            autoTimer = 20; // continue spinning if still obstructed
-          }
-        }
-        return;
-      }
-
-      // 3. NORMAL DESK PATROL / CRUISING
-      if (autoState === 'CRUISE') {
-        if (rover.speed === 0) {
-          setMotorAction('forward');
-        }
-
-        // Random head gaze while roaming
-        if (Math.random() < 0.02) {
-          rover.panAngle = Math.round((Math.random() - 0.5) * 60);
-          const panSlider = document.getElementById('panSlider');
-          if (panSlider) panSlider.value = rover.panAngle;
-          updateServos();
-        }
-
-        // Slight natural drift / curvature
-        if (Math.random() < 0.02) {
-          rover.turnSpeed = (Math.random() - 0.5) * 1.4;
-        } else if (Math.random() < 0.02) {
-          rover.turnSpeed = 0; // straighten up
-        }
-      }
-    }
-
-    // MAIN KINEMATICS PHYSICS LOOP
+    // --- PURE BACKEND TELEMETRY STREAMING (DUMB TERMINAL VIEW) ---
     const walleEl = document.getElementById('walleRover');
     const cliffStatusBadge = document.getElementById('cliffStatus');
     const tofDistanceBadge = document.getElementById('tofDistanceBadge');
     const roverCliffL = document.getElementById('roverCliffL');
     const roverCliffR = document.getElementById('roverCliffR');
 
-    function gameLoop() {
-      runAutonomousLogic();
+    async function pollBackendTelemetry() {
+      try {
+        const res = await fetch('/api/telemetry');
+        if (!res.ok) return;
+        const data = await res.json();
 
-      // Heading and Position Update
-      rover.heading += rover.turnSpeed;
-      const rad = (rover.heading * Math.PI) / 180;
-      rover.x += Math.sin(rad) * rover.speed;
-      rover.y -= Math.cos(rad) * rover.speed;
+        // 1. Position & Heading
+        rover.x = data.x;
+        rover.y = data.y;
+        rover.heading = data.heading;
+        rover.speed = data.speed;
+        rover.turnSpeed = data.turn_speed;
+        rover.panAngle = data.pan;
+        rover.tiltAngle = data.tilt;
 
-      // Table Boundary: Dynamically match .desk-surface element coordinates
-      const arenaW = arenaBox.clientWidth;
-      const arenaH = arenaBox.clientHeight;
-      const deskEl = document.querySelector('.desk-surface');
-      const tableMinX = deskEl ? deskEl.offsetLeft : 45;
-      const tableMinY = deskEl ? deskEl.offsetTop : 45;
-      const tableMaxX = deskEl ? (deskEl.offsetLeft + deskEl.clientWidth) : (arenaW - 45);
-      const tableMaxY = deskEl ? (deskEl.offsetTop + deskEl.clientHeight) : (arenaH - 45);
+        walleEl.style.transform = `translate(${rover.x}px, ${rover.y}px) rotate(${rover.heading}deg)`;
 
-      // Center of Rover (width: 60, height: 70 -> center is 30, 35)
-      const cx = rover.x + 30;
-      const cy = rover.y + 35;
-      const cosR = Math.cos(rad);
-      const sinR = Math.sin(rad);
-
-      // Exact Sensor Coordinates (calculated using exact 2D rotation matching SVG)
-      // Left TCRT5000 cliff sensor is at SVG (8, 8) -> rel (-22, -27)
-      const sL_x = cx - 22 * cosR + 27 * sinR;
-      const sL_y = cy - 22 * sinR - 27 * cosR;
-
-      // Right TCRT5000 cliff sensor is at SVG (52, 8) -> rel (+22, -27)
-      const sR_x = cx + 22 * cosR + 27 * sinR;
-      const sR_y = cy + 22 * sinR - 27 * cosR;
-
-      // Detect when either sensor crosses the desk boundary
-      rover.cliffL = (sL_x < tableMinX || sL_x > tableMaxX || sL_y < tableMinY || sL_y > tableMaxY);
-      rover.cliffR = (sR_x < tableMinX || sR_x > tableMaxX || sR_y < tableMinY || sR_y > tableMaxY);
-
-      // Update Cliff Sensor visual LEDs
-      roverCliffL.setAttribute('fill', rover.cliffL ? '#ef4444' : '#22c55e');
-      roverCliffR.setAttribute('fill', rover.cliffR ? '#ef4444' : '#22c55e');
-
-      if (rover.cliffL || rover.cliffR) {
-        cliffStatusBadge.className = 'status-pill status-danger';
-        cliffStatusBadge.textContent = 'CLIFF DROP DETECTED! (HALT)';
-        if (!rover._cliffAlertFired) {
-          rover._cliffAlertFired = true;
-          playWallESound('alert');
-          setEyeExpression('alert', true);
-        }
-        // Non-autonomous safeguard: stop immediately if human drives off table
-        if (!rover.autoMode && rover.speed > 0) {
-          setMotorAction('stop');
-        }
-      } else {
-        rover._cliffAlertFired = false;
-        cliffStatusBadge.className = 'status-pill status-ok';
-        cliffStatusBadge.textContent = 'Cliff Sensors: OK';
-      }
-
-      // ToF Laser Sensor Origin in SVG: (30, 14) -> rel (0, -21)
-      const lx = cx + 21 * sinR;
-      const ly = cy - 21 * cosR;
-      const laserAngle = rover.heading + rover.panAngle;
-      const lRad = (laserAngle * Math.PI) / 180;
-      const fwdX = Math.sin(lRad);
-      const fwdY = -Math.cos(lRad);
-
-      let hitDist = 260; // max visual ray distance px
-      let minLaserMm = 1200;
-
-      // Raycast against obstacles
-      obstacles.forEach(o => {
-        const ox = o.x + 25;
-        const oy = o.y + 25;
-        const dx = ox - lx;
-        const dy = oy - ly;
-        const dist = Math.hypot(dx, dy);
-
-        // Ray projection
-        const proj = dx * fwdX + dy * fwdY;
-        if (proj > 0 && proj < hitDist) {
-          const perp = Math.abs(dx * (-fwdY) + dy * fwdX);
-          if (perp < 26) {
-            hitDist = Math.max(15, proj - Math.sqrt(Math.max(0, 26 * 26 - perp * perp)));
-            const mm = Math.round(hitDist * 4.2);
-            if (mm < minLaserMm) minLaserMm = mm;
-          }
+        // 2. Track treads animation
+        if (data.speed !== 0 || data.turn_speed !== 0) {
+          trackAnimOffset = (trackAnimOffset + (data.speed >= 0 ? 0.9 : -0.9) + 48) % 48;
+          const o1 = 10 + ((trackAnimOffset + 0) % 46);
+          const o2 = 10 + ((trackAnimOffset + 15) % 46);
+          const o3 = 10 + ((trackAnimOffset + 30) % 46);
+          const l1 = document.getElementById('tL1'); if (l1) { l1.setAttribute('y1', o1); l1.setAttribute('y2', o1); }
+          const l2 = document.getElementById('tL2'); if (l2) { l2.setAttribute('y1', o2); l2.setAttribute('y2', o2); }
+          const l3 = document.getElementById('tL3'); if (l3) { l3.setAttribute('y1', o3); l3.setAttribute('y2', o3); }
+          const r1 = document.getElementById('tR1'); if (r1) { r1.setAttribute('y1', o1); r1.setAttribute('y2', o1); }
+          const r2 = document.getElementById('tR2'); if (r2) { r2.setAttribute('y1', o2); r2.setAttribute('y2', o2); }
+          const r3 = document.getElementById('tR3'); if (r3) { r3.setAttribute('y1', o3); r3.setAttribute('y2', o3); }
         }
 
-        // Physical obstacle bumper collision
-        const distToBody = Math.hypot(cx - ox, cy - oy);
+        // 3. Neck Servos Display & Sliders
+        const panSlider = document.getElementById('panSlider');
+        const tiltSlider = document.getElementById('tiltSlider');
+        const panVal = document.getElementById('panVal');
+        const tiltVal = document.getElementById('tiltVal');
+        if (panSlider) panSlider.value = data.pan;
+        if (tiltSlider) tiltSlider.value = data.tilt;
+        if (panVal) panVal.textContent = data.pan + '°';
+        if (tiltVal) tiltVal.textContent = data.tilt + '°';
 
-        // Proximity learning trigger (< 95px from rover center)
-        const now = Date.now();
-        if (distToBody < 95 && (!lastSightedTimes[o.id] || (now - lastSightedTimes[o.id]) > 10000)) {
-          lastSightedTimes[o.id] = now;
-          sightProximityObject(o.title, "Work Desk");
+        // Update physical SVG head group rotation and PWM readouts from backend!
+        const headGroup = document.getElementById('roverHeadGroup');
+        if (headGroup) {
+          headGroup.setAttribute('transform', `rotate(${data.pan}, 30, 16)`);
+        }
+        const panUs = Math.round(1500 + (data.pan / 90) * 500);
+        const tiltUs = Math.round(1500 + (data.tilt / 90) * 500);
+        const pinG25 = document.getElementById('pinG25');
+        const pinG5 = document.getElementById('pinG5');
+        if (pinG25) pinG25.textContent = `${panUs}µs`;
+        if (pinG5) pinG5.textContent = `${tiltUs}µs`;
+
+        // 4. Dual LCD Expressions & Gaze
+        if (data.emotion) {
+          setEyeExpression(data.emotion.toLowerCase(), false);
+        }
+        setEyeGaze(data.gaze_x, data.gaze_y);
+
+        // 5. Cliff Sensors & ToF Distance Badges
+        if (cliffStatusBadge) {
+          cliffStatusBadge.className = (data.cliff_l || data.cliff_r) ? 'status-pill status-danger' : 'status-pill status-ok';
+          cliffStatusBadge.textContent = (data.cliff_l || data.cliff_r) ? 'Cliff Sensor: DANGER' : 'Cliff Sensors: OK';
+        }
+        if (roverCliffL) roverCliffL.setAttribute('fill', data.cliff_l ? '#ef4444' : '#22c55e');
+        if (roverCliffR) roverCliffR.setAttribute('fill', data.cliff_r ? '#ef4444' : '#22c55e');
+
+        if (tofDistanceBadge) {
+          tofDistanceBadge.className = data.tof_distance < 250 ? 'status-pill status-danger' : 'status-pill status-ok';
+          tofDistanceBadge.textContent = `ToF Laser: ${Math.round(data.tof_distance)}mm`;
         }
 
-        if (distToBody < 45) {
-          if (rover.speed > 0) {
-            rover.x -= Math.sin(rad) * 3;
-            rover.y += Math.cos(rad) * 3;
-            playWallESound('bump');
-            if (rover.autoMode && autoState !== 'OBSTACLE_AVOID') {
-              autoState = 'OBSTACLE_AVOID';
-              autoTimer = 35;
-              autoTurnDir = Math.random() > 0.5 ? 1 : -1;
-              setEyeExpression('squint');
-              setBrainBadge('OBSTACLE BUMP', '#9a3412', '#fed7aa');
-              setMotorAction(autoTurnDir > 0 ? 'spinRight' : 'spinLeft');
+        // Sync obstacle positions from backend world model if not actively dragging
+        if (!activeDrag && data.obstacles && Array.isArray(data.obstacles)) {
+          data.obstacles.forEach(backendObs => {
+            const localEl = document.getElementById(backendObs.id);
+            const localObj = obstacles.find(o => o.id === backendObs.id);
+            if (localEl && localObj) {
+              if (Math.abs(localObj.x - backendObs.x) > 1 || Math.abs(localObj.y - backendObs.y) > 1) {
+                localObj.x = backendObs.x;
+                localObj.y = backendObs.y;
+                localEl.style.left = backendObs.x + 'px';
+                localEl.style.top = backendObs.y + 'px';
+              }
             }
+          });
+        }
+
+        // 6. Cognitive Thought & PAD Metrics
+        const thoughtEl = document.getElementById('roverThoughtBubble');
+        if (thoughtEl && data.current_thought) {
+          thoughtEl.textContent = `"${data.current_thought}"`;
+        }
+
+        // Live Mode Selector Sync
+        if (data.operating_mode) {
+          updateModeButtons(data.operating_mode);
+        }
+
+        // Live Personality Traits & Homeostatic Drives Sync
+        if (data.traits) {
+          const pEl = document.getElementById('traitPlayfulVal');
+          const bEl = document.getElementById('traitBoldVal');
+          if (pEl && data.traits.playful !== undefined) pEl.textContent = Math.round(data.traits.playful * 100) + '%';
+          if (bEl && data.traits.bold !== undefined) bEl.textContent = Math.round(data.traits.bold * 100) + '%';
+        }
+        if (data.drives) {
+          const cEl = document.getElementById('driveCuriosityVal');
+          const sEl = document.getElementById('driveSocialVal');
+          const eEl = document.getElementById('driveEnergyVal');
+          if (cEl && data.drives.curiosity !== undefined) cEl.textContent = Math.round(data.drives.curiosity * 100) + '%';
+          if (sEl && data.drives.social !== undefined) sEl.textContent = Math.round(data.drives.social * 100) + '%';
+          if (eEl && data.drives.energy !== undefined) eEl.textContent = Math.round(data.drives.energy * 100) + '%';
+        }
+
+        const padMetricsBadge = document.getElementById('padMetricsBadge');
+        if (padMetricsBadge && data.valence !== undefined) {
+          const vSign = data.valence >= 0 ? '+' : '';
+          padMetricsBadge.textContent = `PAD: V:${vSign}${Number(data.valence).toFixed(2)} A:${Number(data.arousal).toFixed(2)} C:${Number(data.curiosity).toFixed(2)}`;
+        }
+
+        const autoBrainState = document.getElementById('autoBrainState');
+        if (autoBrainState) {
+          autoBrainState.style.display = 'inline-block';
+          const bState = data.behavior_state || 'COMPANION_IDLE';
+          const targetStr = data.locked_target ? ` [${escapeHtml(data.locked_target).toUpperCase()}]` : '';
+
+          if (bState === 'EXPLORE_ROAM') {
+            autoBrainState.textContent = `🚀 PATROLLING DESK${targetStr}`;
+            autoBrainState.style.background = '#0369a1';
+            autoBrainState.style.color = '#bae6fd';
+          } else if (bState === 'PLAYFUL_SPIN') {
+            autoBrainState.textContent = '✨ PLAYFUL 360° SPIN';
+            autoBrainState.style.background = '#db2777';
+            autoBrainState.style.color = '#fdf2f8';
+          } else if (bState === 'AVOIDING_EDGE') {
+            autoBrainState.textContent = '⚡ AVOIDING DESK EDGE';
+            autoBrainState.style.background = '#d97706';
+            autoBrainState.style.color = '#fef3c7';
+          } else if (bState === 'STATIONARY_WATCH') {
+            autoBrainState.textContent = `👀 WATCHING${targetStr || ' [TARGET]'}`;
+            autoBrainState.style.background = '#312e81';
+            autoBrainState.style.color = '#a5b4fc';
+          } else if (bState === 'HOLD_POSITION') {
+            autoBrainState.textContent = '🛑 HOLDING POSITION';
+            autoBrainState.style.background = '#7f1d1d';
+            autoBrainState.style.color = '#fecaca';
+          } else if (bState === 'NAVIGATE_TO') {
+            autoBrainState.textContent = `🧭 APPROACHING${targetStr || ' [TARGET]'}`;
+            autoBrainState.style.background = '#065f46';
+            autoBrainState.style.color = '#6ee7b7';
+          } else if (bState === 'INSPECTING_OBJECT') {
+            autoBrainState.textContent = `🔍 INSPECTING${targetStr || ' [OBJECT]'}`;
+            autoBrainState.style.background = '#0284c7';
+            autoBrainState.style.color = '#e0f2fe';
+          } else if (bState === 'CURIOUS_GLANCE') {
+            autoBrainState.textContent = `👀 GLANCING${targetStr || ' [OBJECT]'}`;
+            autoBrainState.style.background = '#0e7490';
+            autoBrainState.style.color = '#cffafe';
+          } else if (bState === 'CHECKING_AKHIL') {
+            autoBrainState.textContent = '🙋 CHECKING ON AKHIL';
+            autoBrainState.style.background = '#701a75';
+            autoBrainState.style.color = '#f5d0fe';
+          } else if (bState === 'CONTEMPLATING') {
+            autoBrainState.textContent = `✨ CONTEMPLATING${targetStr || ' [OBJECT]'}`;
+            autoBrainState.style.background = '#4338ca';
+            autoBrainState.style.color = '#e0e7ff';
+          } else if (bState === 'PEACEFUL_DAYDREAM') {
+            autoBrainState.textContent = '💭 DAYDREAMING';
+            autoBrainState.style.background = '#1e293b';
+            autoBrainState.style.color = '#cbd5e1';
+          } else if (bState === 'ALERT_WATCH') {
+            autoBrainState.textContent = '⚡ ALERT & OBSERVANT';
+            autoBrainState.style.background = '#854d0e';
+            autoBrainState.style.color = '#fef08a';
+          } else if (bState === 'ENJOYING_PET') {
+            autoBrainState.textContent = '💖 ENJOYING PETTING';
+            autoBrainState.style.background = '#be185d';
+            autoBrainState.style.color = '#fce7f3';
+          } else if (bState === 'MANUAL') {
+            autoBrainState.textContent = '🕹 MANUAL DRIVE';
+            autoBrainState.style.background = '#374151';
+            autoBrainState.style.color = '#f3f4f6';
+          } else if (bState === 'DOCKING') {
+            autoBrainState.textContent = '⚡ DOCKING';
+            autoBrainState.style.background = '#854d0e';
+            autoBrainState.style.color = '#fef08a';
+          } else {
+            autoBrainState.textContent = '🛋️ DESK COMPANION (RESTING)';
+            autoBrainState.style.background = '#1e293b';
+            autoBrainState.style.color = '#94a3b8';
           }
         }
-      });
 
-      rover.tofDistance = minLaserMm;
-      tofDistanceBadge.textContent = `ToF Laser: ${rover.tofDistance}mm`;
-      tofDistanceBadge.className = rover.tofDistance < 250 ? 'status-pill status-danger' : 'status-pill status-ok';
+        // 7. Laser Beam Rendering
+        const cx = rover.x + 30;
+        const cy = rover.y + 35;
+        const rad = (rover.heading * Math.PI) / 180;
+        const sinR = Math.sin(rad);
+        const cosR = Math.cos(rad);
+        const lx = cx + 21 * sinR;
+        const ly = cy - 21 * cosR;
+        const laserAngle = rover.heading + rover.panAngle;
+        const lRad = (laserAngle * Math.PI) / 180;
+        const fwdX = Math.sin(lRad);
+        const fwdY = -Math.cos(lRad);
 
-      // Update Visual Laser Beam Line & Impact Dot
-      const endX = lx + fwdX * hitDist;
-      const endY = ly + fwdY * hitDist;
-      const rayLine = document.getElementById('laserRayLine');
-      const hitDot = document.getElementById('laserHitPoint');
-      if (rayLine) {
-        rayLine.setAttribute('x1', lx);
-        rayLine.setAttribute('y1', ly);
-        rayLine.setAttribute('x2', endX);
-        rayLine.setAttribute('y2', endY);
-      }
-      if (hitDot) {
-        hitDot.setAttribute('cx', endX);
-        hitDot.setAttribute('cy', endY);
-        hitDot.style.opacity = (hitDist < 255) ? '1' : '0.3';
-      }
-
-      // Clamp rover inside outer arena box
-      rover.x = Math.max(0, Math.min(arenaW - 60, rover.x));
-      rover.y = Math.max(0, Math.min(arenaH - 70, rover.y));
-
-      // Animate track tread lines
-      if (rover.speed !== 0 || rover.turnSpeed !== 0) {
-        trackAnimOffset = (trackAnimOffset + (rover.speed >= 0 ? 0.9 : -0.9) + 48) % 48;
-        const o1 = 10 + ((trackAnimOffset + 0) % 46);
-        const o2 = 10 + ((trackAnimOffset + 15) % 46);
-        const o3 = 10 + ((trackAnimOffset + 30) % 46);
-        const l1 = document.getElementById('tL1'); if (l1) { l1.setAttribute('y1', o1); l1.setAttribute('y2', o1); }
-        const l2 = document.getElementById('tL2'); if (l2) { l2.setAttribute('y1', o2); l2.setAttribute('y2', o2); }
-        const l3 = document.getElementById('tL3'); if (l3) { l3.setAttribute('y1', o3); l3.setAttribute('y2', o3); }
-        const r1 = document.getElementById('tR1'); if (r1) { r1.setAttribute('y1', o1); r1.setAttribute('y2', o1); }
-        const r2 = document.getElementById('tR2'); if (r2) { r2.setAttribute('y1', o2); r2.setAttribute('y2', o2); }
-        const r3 = document.getElementById('tR3'); if (r3) { r3.setAttribute('y1', o3); r3.setAttribute('y2', o3); }
-      }
-
-      walleEl.style.transform = `translate(${rover.x}px, ${rover.y}px) rotate(${rover.heading}deg)`;
-
-      requestAnimationFrame(gameLoop);
+        const visualDist = Math.min(260, data.tof_distance / 3.5);
+        const endX = lx + fwdX * visualDist;
+        const endY = ly + fwdY * visualDist;
+        const rayLine = document.getElementById('laserRayLine');
+        const hitDot = document.getElementById('laserHitPoint');
+        if (rayLine) {
+          rayLine.setAttribute('x1', lx);
+          rayLine.setAttribute('y1', ly);
+          rayLine.setAttribute('x2', endX);
+          rayLine.setAttribute('y2', endY);
+        }
+        if (hitDot) {
+          hitDot.setAttribute('cx', endX);
+          hitDot.setAttribute('cy', endY);
+          hitDot.style.opacity = (visualDist < 255) ? '1' : '0.3';
+        }
+      } catch (err) {}
     }
-    requestAnimationFrame(gameLoop);
+
+    // High-speed telemetry streaming from Python backend
+    setInterval(pollBackendTelemetry, 50);
 
     // --- DUAL GC9A01 DISPLAY EXPRESSIONS & SOUND SYSTEM ---
     const leftPupil = document.getElementById('leftPupil');
@@ -2739,10 +2825,22 @@
       if (!container) return;
       const bubble = document.createElement('div');
       bubble.className = `chat-bubble ${role}`;
-      const prefix = role === 'user' ? '<b>YOU:</b> ' : `<b>ALPHA ${tag}:</b> `;
+      const prefix = role === 'user' ? '<b>YOU:</b> ' : `<b>ALPHA ${escapeHtml(tag)}:</b> `;
       bubble.innerHTML = `${prefix}${escapeHtml(text)}`;
       container.appendChild(bubble);
       container.scrollTop = container.scrollHeight;
+    }
+
+    function handleRobotActionDirective(action, target) {
+      if (action === 'STAY_AND_WATCH') {
+        showArenaToast(`🔒 DIRECTIVE: Locked position & tracking ${target || 'target'}!`, '#818cf8');
+      } else if (action === 'HOLD_POSITION') {
+        showArenaToast('🛑 DIRECTIVE: Motors halted. Holding position.', '#f87171');
+      } else if (action === 'NAVIGATE_TO') {
+        showArenaToast(`🧭 DIRECTIVE: Purposeful navigation to ${target || 'target'}.`, '#34d399');
+      } else if (action === 'DOCK') {
+        showArenaToast('⚡ DIRECTIVE: Autonomous docking engaged.', '#fbbf24');
+      }
     }
 
     async function sendChatMessage() {
@@ -2773,7 +2871,15 @@
           const emo = data.emotion ? data.emotion.toLowerCase() : 'happy';
           setEyeExpression(emo, false);
 
-          speakText(data.reply);
+          if (data.action) {
+            handleRobotActionDirective(data.action, data.target);
+          }
+
+          speakText(data.reply, () => {
+            if (liveVoiceActive && liveVoiceRecog && !isAlphaSpeaking) {
+              try { liveVoiceRecog.start(); } catch (e) {}
+            }
+          });
           fetchMemoryData();
         }
       } catch (err) {
@@ -2829,26 +2935,179 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    function toggleVoiceSpeechRecognition() {
+    // --- CONTINUOUS HANDS-FREE LIVE VOICE MODE ---
+    let liveVoiceActive = false;
+    let liveVoiceRecog = null;
+    let isAlphaSpeaking = false;
+    let liveSilenceTimer = null;
+
+    function initLiveSpeechRecognition() {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRec) {
-        alert("Speech recognition is not supported in this browser. Please type your message.");
-        return;
+        showArenaToast("Speech Recognition not supported in this browser.", "#ef4444");
+        const toggle = document.getElementById('liveModeToggle');
+        if (toggle) toggle.checked = false;
+        return null;
       }
       const recog = new SpeechRec();
       recog.lang = "en-US";
-      recog.continuous = false;
-      const micBtn = document.getElementById('btnVoiceMic');
-      micBtn.style.background = "#ef4444";
+      recog.continuous = true;
+      recog.interimResults = true;
+
+      recog.onstart = () => {
+        updateLiveVoiceUI(true);
+      };
 
       recog.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        document.getElementById('chatInputText').value = transcript;
-        sendChatMessage();
+        if (isAlphaSpeaking) return; // Ignore while Alpha is speaking
+
+        let interim = "";
+        let finalTranscript = "";
+
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          if (e.results[i].isFinal) {
+            finalTranscript += e.results[i][0].transcript;
+          } else {
+            interim += e.results[i][0].transcript;
+          }
+        }
+
+        const banner = document.getElementById('liveVoiceInterimBanner');
+        if (interim && banner) {
+          banner.style.display = "block";
+          banner.textContent = `🎙 Hearing: "${interim}..."`;
+        }
+
+        if (finalTranscript.trim()) {
+          if (banner) banner.style.display = "none";
+          document.getElementById('chatInputText').value = finalTranscript.trim();
+          sendLiveChatMessage(finalTranscript.trim());
+        }
       };
-      recog.onend = () => { micBtn.style.background = ""; };
-      recog.onerror = () => { micBtn.style.background = ""; };
-      recog.start();
+
+      recog.onerror = (e) => {
+        if (e.error === 'no-speech') return; // Silence is normal, keep listening
+        console.warn("Live voice recog notice:", e.error);
+      };
+
+      recog.onend = () => {
+        // Automatically re-arm if live mode is still active and Alpha is done speaking
+        if (liveVoiceActive && !isAlphaSpeaking) {
+          setTimeout(() => {
+            if (liveVoiceActive && !isAlphaSpeaking) {
+              try { recog.start(); } catch (err) {}
+            }
+          }, 200);
+        }
+      };
+
+      return recog;
+    }
+
+    function toggleLiveVoiceConversation(enabled) {
+      liveVoiceActive = enabled;
+      const banner = document.getElementById('liveVoiceInterimBanner');
+
+      if (enabled) {
+        if (!liveVoiceRecog) {
+          liveVoiceRecog = initLiveSpeechRecognition();
+        }
+        if (liveVoiceRecog) {
+          try {
+            liveVoiceRecog.start();
+          } catch (e) {
+            console.warn(e);
+          }
+          updateLiveVoiceUI(true);
+          showArenaToast("🎙 Live Hands-Free Conversation ON: Speak naturally!", "#38bdf8");
+        }
+      } else {
+        if (liveVoiceRecog) {
+          try { liveVoiceRecog.stop(); } catch (e) {}
+        }
+        updateLiveVoiceUI(false);
+        if (banner) banner.style.display = "none";
+        showArenaToast("Live Hands-Free Conversation OFF.", "#94a3b8");
+      }
+    }
+
+    function updateLiveVoiceUI(active) {
+      const badge = document.getElementById('liveVoiceBadge');
+      const banner = document.getElementById('liveVoiceInterimBanner');
+      if (badge) {
+        badge.textContent = active ? "LIVE (LISTENING)" : "OFF";
+        badge.className = active ? "status-pill status-ok" : "status-pill status-muted";
+      }
+      if (banner && active) {
+        banner.style.display = "block";
+        banner.textContent = "🎙 Listening hands-free... speak naturally to Alpha!";
+      }
+    }
+
+    async function sendLiveChatMessage(text) {
+      if (!text || isAlphaSpeaking) return;
+      isAlphaSpeaking = true;
+      if (liveVoiceRecog) {
+        try { liveVoiceRecog.stop(); } catch (e) {}
+      }
+
+      addChatMessage("user", text);
+      setEyeExpression('analyzing', true);
+
+      try {
+        const hwToggle = document.getElementById('hardwareAudioToggle');
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, speak_hardware: hwToggle && hwToggle.checked })
+        });
+        const data = await res.json();
+        if (data.reply) {
+          const tag = data.brain_type ? `[${data.brain_type}]` : '';
+          addChatMessage("alpha", data.reply, tag);
+
+          const soundCue = data.sound_cue || 'happy';
+          playWallESound(soundCue);
+
+          const emo = data.emotion ? data.emotion.toLowerCase() : 'happy';
+          setEyeExpression(emo, false);
+
+          if (data.action) {
+            handleRobotActionDirective(data.action, data.target);
+          }
+
+          // Speak reply and then re-arm live listening smoothly!
+          speakText(data.reply, () => {
+            isAlphaSpeaking = false;
+            if (liveVoiceActive && liveVoiceRecog) {
+              setTimeout(() => {
+                if (liveVoiceActive && !isAlphaSpeaking) {
+                  try { liveVoiceRecog.start(); } catch (e) {}
+                }
+              }, 300);
+            }
+          });
+          fetchMemoryData();
+        } else {
+          isAlphaSpeaking = false;
+          if (liveVoiceActive && liveVoiceRecog) {
+            try { liveVoiceRecog.start(); } catch (e) {}
+          }
+        }
+      } catch (err) {
+        isAlphaSpeaking = false;
+        if (liveVoiceActive && liveVoiceRecog) {
+          try { liveVoiceRecog.start(); } catch (e) {}
+        }
+      }
+    }
+
+    function toggleVoiceSpeechRecognition() {
+      const toggle = document.getElementById('liveModeToggle');
+      if (toggle) {
+        toggle.checked = !toggle.checked;
+        toggleLiveVoiceConversation(toggle.checked);
+      }
     }
 
     async function toggleBrainMode() {
@@ -2862,10 +3121,10 @@
         const pill = document.getElementById('brainModePill');
         const badge = document.getElementById('brainTabEngineBadge');
         if (data.mode === 'online') {
-          pill.textContent = "🟢 Gemini 3.5 Online";
+          pill.textContent = "🟢 Gemini Online";
           pill.style.background = "rgba(74, 222, 128, 0.15)";
           pill.style.color = "#4ade80";
-          if (badge) badge.textContent = "Google Gemini 3.5 Flash (Online)";
+          if (badge) badge.textContent = data.brain_name || "Google Gemini Flash (Online)";
         } else {
           pill.textContent = "🟡 Local Gemma Offline";
           pill.style.background = "rgba(251, 191, 36, 0.15)";

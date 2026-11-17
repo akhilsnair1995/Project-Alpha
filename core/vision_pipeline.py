@@ -7,9 +7,15 @@ and camera frame capture with graceful PC webcam fallback.
 import time
 import os
 from typing import Tuple, Optional, Dict, Any
-import numpy as np
 
-# Lazy OpenCV import for graceful fallback
+# Graceful numpy & OpenCV imports for fallback
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    np = None
+    HAS_NUMPY = False
+
 try:
     import cv2
     HAS_OPENCV = True
@@ -34,9 +40,12 @@ class VisionPipeline:
             print("[VisionPipeline] OpenCV (cv2) not installed. Running in mock vision mode.")
 
     def _init_camera(self) -> None:
-        """Initializes OpenCV video capture."""
+        """Initializes OpenCV video capture with V4L2 backend preference on Linux/Pi."""
         try:
-            self.cap = cv2.VideoCapture(self.camera_index)
+            if os.name == "posix" and hasattr(cv2, "CAP_V4L2"):
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+            if not self.cap or not self.cap.isOpened():
+                self.cap = cv2.VideoCapture(self.camera_index)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
             if self.cap.isOpened():
@@ -56,7 +65,7 @@ class VisionPipeline:
         except Exception as e:
             print(f"[VisionPipeline] Could not load face cascade: {e}")
 
-    def capture_frame(self) -> Optional[np.ndarray]:
+    def capture_frame(self) -> Optional[Any]:
         """Captures a single BGR frame from the camera."""
         if self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
@@ -64,7 +73,7 @@ class VisionPipeline:
                 return frame
         return None
 
-    def detect_face(self, frame: Optional[np.ndarray] = None) -> Tuple[bool, float, float]:
+    def detect_face(self, frame: Optional[Any] = None) -> Tuple[bool, float, float]:
         """
         Detects the primary face in the frame.
         Returns:
@@ -103,7 +112,7 @@ class VisionPipeline:
 
         return True, float(offset_x), float(offset_y)
 
-    def detect_dock_aruco(self, frame: Optional[np.ndarray] = None) -> Tuple[bool, float, float]:
+    def detect_dock_aruco(self, frame: Optional[Any] = None) -> Tuple[bool, float, float]:
         """
         Detects the charging dock's ArUco marker #0.
         Returns:
@@ -141,7 +150,7 @@ class VisionPipeline:
 
         return False, 0.0, 0.0
 
-    def detect_scene_change(self, frame: Optional[np.ndarray] = None, threshold: float = 30.0) -> bool:
+    def detect_scene_change(self, frame: Optional[Any] = None, threshold: float = 30.0) -> bool:
         """Determines if the environment in front has changed or if entering a new area."""
         if frame is None:
             frame = self.capture_frame()

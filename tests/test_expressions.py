@@ -5,7 +5,10 @@ gaze clamping, blinking, and emotion parsing.
 """
 
 import unittest
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    from core.eye_animator import Image
 from core.eye_animator import DualEyeController, EyeRenderer, Emotion
 
 class TestEyeExpressions(unittest.TestCase):

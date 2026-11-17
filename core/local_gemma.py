@@ -92,7 +92,14 @@ class LocalGemmaEngine:
         """
         Lightweight rule-based fallback if GGUF model has not yet been downloaded to disk.
         """
+        # If wrapped in system prompt, isolate the user's latest query
         p = prompt.lower()
+        if "akhil says:" in p:
+            user_part = p.split("akhil says:", 1)[1]
+            if "alpha's spoken response:" in user_part:
+                user_part = user_part.split("alpha's spoken response:", 1)[0]
+            p = user_part.strip()
+
         if "hello" in p or "hi" in p:
             return "Beep-boop! Hello Akhil! I am running on my local offline auxiliary core."
         elif "battery" in p or "charge" in p:

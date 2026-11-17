@@ -1,0 +1,19 @@
+[Unit]
+Description=Project Alpha: Wall-E Autonomous Robot Daemon
+After=network.target sound.target multi-user.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/project_alpha
+Environment=PYTHONUNBUFFERED=1
+Environment=IS_RASPBERRY_PI=true
+ExecStart=/usr/bin/python3 /home/pi/project_alpha/main.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -8,7 +8,56 @@ import time
 import math
 from enum import Enum
 from typing import Tuple, Optional, Dict, Any, List
-from PIL import Image, ImageDraw
+from pathlib import Path
+
+# Graceful PIL import with mock fallback for headless/minimal environments
+try:
+    from PIL import Image, ImageDraw
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+    class _MockImage:
+        def __init__(self, mode="RGB", size=(240, 240), color=(0, 0, 0)):
+            self.mode = mode
+            self.size = size
+            self.color = color
+
+        def convert(self, mode):
+            return self
+
+        def tobytes(self):
+            return bytes([0] * (self.size[0] * self.size[1] * 3))
+
+        def save(self, fp, format=None, **params):
+            if isinstance(fp, (str, Path)):
+                with open(fp, "wb") as f:
+                    f.write(b"")
+
+        def paste(self, im, box=None):
+            pass
+
+    class _MockImageDraw:
+        def __init__(self, im):
+            self.im = im
+        def ellipse(self, xy, fill=None, outline=None, width=1): pass
+        def line(self, xy, fill=None, width=1): pass
+        def polygon(self, xy, fill=None, outline=None): pass
+        def chord(self, xy, start, end, fill=None, outline=None): pass
+        def rectangle(self, xy, fill=None, outline=None): pass
+        def arc(self, xy, start, end, fill=None, width=1): pass
+
+    class Image:
+        Image = _MockImage
+        @staticmethod
+        def new(mode, size, color=0):
+            return _MockImage(mode=mode, size=size, color=color)
+
+    class ImageDraw:
+        ImageDraw = _MockImageDraw
+        @staticmethod
+        def Draw(im):
+            return _MockImageDraw(im)
 
 from core.config import (
     IS_RASPBERRY_PI, SPI_BUS, SPI_SPEED_HZ,
@@ -311,30 +360,88 @@ class DualEyeController:
         self.right_eye = EyeRenderer(is_right_eye=True)
         self.hardware_enabled = hardware_enabled
 
+        self.dc_device = None
+        self.rst_device = None
+        self.blk_device = None
+        self.rpi_gpio = None
+        self.spi_left = None
+        self.spi_right = None
+
         if self.hardware_enabled:
             self._init_spi_hardware()
         else:
             print("[EyeAnimator] Simulation Mode active (Hardware SPI disabled).")
 
-    def _init_spi_hardware(self) -> None:
-        """Initializes spidev and GPIO pins on Raspberry Pi."""
-        try:
-            import spidev
-            import RPi.GPIO as GPIO
+    def _set_dc(self, is_high: bool) -> None:
+        """Sets GC9A01 DC line: LOW = Command, HIGH = Data."""
+        if self.dc_device:
+            self.dc_device.value = 1 if is_high else 0
+        elif self.rpi_gpio:
+            self.rpi_gpio.output(PIN_LCD_DC, self.rpi_gpio.HIGH if is_high else self.rpi_gpio.LOW)
 
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(PIN_LCD_DC, GPIO.OUT)
-            GPIO.setup(PIN_LCD_RST, GPIO.OUT)
-            GPIO.setup(PIN_LCD_BLK, GPIO.OUT)
-            GPIO.output(PIN_LCD_BLK, GPIO.HIGH)
+    def _write_cmd(self, cmd: int, spi=None) -> None:
+        self._set_dc(False)
+        targets = [spi] if spi else [self.spi_left, self.spi_right]
+        for s in targets:
+            if s:
+                try:
+                    s.writebytes([cmd])
+                except Exception:
+                    pass
+
+    def _write_data(self, data: bytes | bytearray | list, spi=None) -> None:
+        self._set_dc(True)
+        targets = [spi] if spi else [self.spi_left, self.spi_right]
+        # Chunk into 4096-byte transfers for SPI DMA efficiency
+        chunk_size = 4096
+        for i in range(0, len(data), chunk_size):
+            chunk = data[i:i + chunk_size]
+            payload = list(chunk) if isinstance(chunk, (bytes, bytearray)) else chunk
+            for s in targets:
+                if s:
+                    try:
+                        s.writebytes2(payload) if hasattr(s, "writebytes2") else s.writebytes(payload)
+                    except Exception:
+                        pass
+
+    def _init_spi_hardware(self) -> None:
+        """Initializes spidev and GPIO pins (supporting Raspberry Pi 5 gpiozero & legacy RPi.GPIO)."""
+        # 1. Initialize control GPIOs (DC, RST, BLK)
+        try:
+            from gpiozero import DigitalOutputDevice
+            self.dc_device = DigitalOutputDevice(PIN_LCD_DC)
+            self.rst_device = DigitalOutputDevice(PIN_LCD_RST)
+            self.blk_device = DigitalOutputDevice(PIN_LCD_BLK)
+            self.blk_device.on()
 
             # Hardware Reset pulse
-            GPIO.output(PIN_LCD_RST, GPIO.LOW)
+            self.rst_device.off()
             time.sleep(0.05)
-            GPIO.output(PIN_LCD_RST, GPIO.HIGH)
+            self.rst_device.on()
             time.sleep(0.05)
+            print("[EyeAnimator] Raspberry Pi 5 Control GPIOs Initialized (gpiozero).")
+        except (ImportError, Exception):
+            try:
+                import RPi.GPIO as GPIO
+                self.rpi_gpio = GPIO
+                GPIO.setmode(GPIO.BCM)
+                GPIO.setup(PIN_LCD_DC, GPIO.OUT)
+                GPIO.setup(PIN_LCD_RST, GPIO.OUT)
+                GPIO.setup(PIN_LCD_BLK, GPIO.OUT)
+                GPIO.output(PIN_LCD_BLK, GPIO.HIGH)
 
-            # SPI handles for Left (CE0) and Right (CE1)
+                # Hardware Reset pulse
+                GPIO.output(PIN_LCD_RST, GPIO.LOW)
+                time.sleep(0.05)
+                GPIO.output(PIN_LCD_RST, GPIO.HIGH)
+                time.sleep(0.05)
+                print("[EyeAnimator] Legacy RPi.GPIO Control Pins Initialized.")
+            except Exception as e_gpio:
+                print(f"[EyeAnimator] GPIO setup notice: {e_gpio}")
+
+        # 2. Open SPI buses (CE0 = Left Eye, CE1 = Right Eye)
+        try:
+            import spidev
             self.spi_left = spidev.SpiDev()
             self.spi_left.open(SPI_BUS, 0)
             self.spi_left.max_speed_hz = SPI_SPEED_HZ
@@ -345,10 +452,80 @@ class DualEyeController:
             self.spi_right.max_speed_hz = SPI_SPEED_HZ
             self.spi_right.mode = 0
 
-            print("[EyeAnimator] Initialized Dual GC9A01 SPI displays (CE0 & CE1).")
+            # Send GC9A01 register initialization commands to both screens
+            self._gc9a01_init_display(self.spi_left)
+            self._gc9a01_init_display(self.spi_right)
+
+            print("[EyeAnimator] Initialized Dual GC9A01 SPI displays (CE0 & CE1 @ 40MHz).")
         except Exception as e:
             print(f"[EyeAnimator] Could not initialize SPI hardware: {e}. Falling back to simulation.")
             self.hardware_enabled = False
+
+    def _gc9a01_init_display(self, spi) -> None:
+        """Sends the standard GC9A01 240x240 LCD hardware initialization register sequence."""
+        if not spi:
+            return
+        init_cmds = [
+            (0xEF, []),
+            (0xEB, [0x14]),
+            (0xFE, []),
+            (0xEF, []),
+            (0xEB, [0x14]),
+            (0x84, [0x40]),
+            (0x85, [0xFF]),
+            (0x86, [0xFF]),
+            (0x87, [0xFF]),
+            (0x8E, [0xFF]),
+            (0x8F, [0xFF]),
+            (0x88, [0x0A]),
+            (0x89, [0x21]),
+            (0x8A, [0x00]),
+            (0x8B, [0x80]),
+            (0x8C, [0x01]),
+            (0x8D, [0x01]),
+            (0xB6, [0x00, 0x20]),
+            (0x36, [0x08]),  # MADCTL (BGR order)
+            (0x3A, [0x05]),  # COLMOD (16-bit RGB565)
+            (0x90, [0x08, 0x08, 0x08, 0x08]),
+            (0xBD, [0x06]),
+            (0xBC, [0x00]),
+            (0xFF, [0x60, 0x01, 0x04]),
+            (0xC3, [0x13]),
+            (0xC4, [0x13]),
+            (0xC9, [0x22]),
+            (0xBE, [0x11]),
+            (0xE1, [0x10, 0x0E]),
+            (0xDF, [0x21, 0x0C, 0x02]),
+            (0xF0, [0x45, 0x09, 0x08, 0x08, 0x26, 0x2A]),
+            (0xF1, [0x43, 0x70, 0x72, 0x36, 0x37, 0x6F]),
+            (0xF2, [0x45, 0x09, 0x08, 0x08, 0x26, 0x2A]),
+            (0xF3, [0x43, 0x70, 0x72, 0x36, 0x37, 0x6F]),
+            (0xED, [0x1B, 0x0B]),
+            (0xAE, [0x77]),
+            (0xCD, [0x63]),
+            (0x70, [0x07, 0x07, 0x04, 0x0E, 0x0F, 0x09, 0x07, 0x08, 0x03]),
+            (0xE8, [0x34]),
+            (0x62, [0x18, 0x0D, 0x71, 0xED, 0x70, 0x70, 0x18, 0x0F, 0x71, 0xEF, 0x70, 0x70]),
+            (0x63, [0x18, 0x11, 0x71, 0xF1, 0x70, 0x70, 0x18, 0x13, 0x71, 0xF3, 0x70, 0x70]),
+            (0x64, [0x28, 0x29, 0xF1, 0x01, 0xF1, 0x00, 0x07]),
+            (0x66, [0x3C, 0x00, 0xCD, 0x67, 0x45, 0x45, 0x10, 0x00, 0x00, 0x00]),
+            (0x67, [0x00, 0x3C, 0x00, 0x00, 0x00, 0x01, 0x54, 0x10, 0x32, 0x98]),
+            (0x74, [0x10, 0x85, 0x80, 0x00, 0x00, 0x4E, 0x00]),
+            (0x98, [0x3E, 0x07]),
+            (0x35, []),
+            (0x21, []),      # Display Inversion ON
+            (0x11, []),      # Sleep OUT
+        ]
+        try:
+            for cmd, data in init_cmds:
+                self._write_cmd(cmd, spi=spi)
+                if data:
+                    self._write_data(bytes(data), spi=spi)
+            time.sleep(0.12)
+            self._write_cmd(0x29, spi=spi)  # Display ON
+            time.sleep(0.02)
+        except Exception as e:
+            print(f"[EyeAnimator] GC9A01 init notice: {e}")
 
     def set_emotion(self, emotion: Emotion | str) -> Emotion:
         """Applies an emotional state across both eyes. Accepts Emotion enum or string."""
@@ -455,5 +632,38 @@ class DualEyeController:
         if not self.hardware_enabled:
             return
         left_img, right_img = self.render_eyes()
-        # On Raspberry Pi, writes buffer to dual GC9A01 over SPI CE0 and CE1
-        pass
+        if self.spi_left:
+            self._send_frame_to_lcd(left_img, self.spi_left)
+        if self.spi_right:
+            self._send_frame_to_lcd(right_img, self.spi_right)
+
+    def _send_frame_to_lcd(self, img: Image.Image, spi) -> None:
+        """Writes a 240x240 RGB frame as packed RGB565 over GC9A01 SPI bus."""
+        if not spi:
+            return
+        try:
+            # Column Address Set (0 to 239)
+            self._write_cmd(0x2A, spi=spi)
+            self._write_data(bytes([0x00, 0x00, 0x00, 0xEF]), spi=spi)
+            # Row Address Set (0 to 239)
+            self._write_cmd(0x2B, spi=spi)
+            self._write_data(bytes([0x00, 0x00, 0x00, 0xEF]), spi=spi)
+            # Memory Write
+            self._write_cmd(0x2C, spi=spi)
+
+            # Convert RGB888 image to RGB565 byte buffer
+            raw_rgb = img.convert("RGB").tobytes()
+            total_pixels = self.left_eye.WIDTH * self.left_eye.HEIGHT
+            buf = bytearray(total_pixels * 2)
+
+            for i in range(total_pixels):
+                r = raw_rgb[i * 3]
+                g = raw_rgb[i * 3 + 1]
+                b = raw_rgb[i * 3 + 2]
+                rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+                buf[i * 2] = (rgb565 >> 8) & 0xFF
+                buf[i * 2 + 1] = rgb565 & 0xFF
+
+            self._write_data(buf, spi=spi)
+        except Exception:
+            pass

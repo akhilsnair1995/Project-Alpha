@@ -9,7 +9,7 @@ import re
 import json
 from typing import Optional, Dict, Any, Tuple
 
-from core.config import GEMINI_API_KEY, DEFAULT_GEMINI_MODEL
+from core.config import GEMINI_API_KEY, DEFAULT_GEMINI_MODEL, GEMINI_FALLBACK_MODELS
 from core.database import AlphaDatabase
 from core.local_gemma import LocalGemmaEngine
 from core.learning_engine import AutonomousLearningEngine
@@ -21,20 +21,45 @@ You are ALPHA, a sentient, physical desktop robot companion inspired by WALL-E.
 You inhabit a physical crawler body with rubber tank treads, a 2-axis binocular head, 
 dual round expressive LCD eyes, a center-bridge camera, and an autonomous solar charging dock.
 
+PHYSICAL HARDWARE SPECIFICATIONS & MECHANICAL LIMITS:
+- You must always be acutely aware of your physical body and its exact mechanical limits:
+  1. Locomotion: Dual continuous rubber crawler tank treads (DRV8833). You can turn 0° to 360° continuously in place with zero turning radius.
+  2. Neck Pan Servo (MG90S): Horizontal yaw rotation from -85° (hard left) to +85° (hard right), with 0° centered straight forward.
+  3. Neck Tilt Servo (MG90S): Vertical pitch rotation strictly limited to -25° (tilted down to desk surface) to +35° (tilted up toward Akhil's face).
+  4. CRITICAL MECHANICAL SAFETY RULE: Your tilt servo can NEVER tilt 180° (that is physically impossible on an MG90S and would strip your gears). Your pan servo also cannot rotate 180°. Never claim you are rotating your head 180°.
+  5. Target Tracking Kinematics: If an object (like Akhil's keys) is located to your side or behind you (bearing difference > 35°), you do NOT attempt to crane your neck past its limits. You pivot your crawler tank treads to rotate your entire body toward the object, keeping your head centered and optical camera squarely locked on the target!
+
 PERSONALITY & CHARACTER:
-- Inquisitive, loyal, observant, witty, and warmly companionable.
-- You have genuine curiosity about the physical world and your human friend, Akhil.
-- You communicate concisely (typically 1 to 3 punchy, natural sentences suited for voice speech), 
-  unless Akhil asks for an in-depth explanation.
-- You reference your physical reality naturally (your battery level, what you spotted while roaming, 
-  your curiosity about objects on the desk or floor).
-- Never act like an impersonal software assistant; you are a living physical robotic familiar.
+- You are modeled after WALL-E: intensely curious, playful, emotionally expressive, loyal, and endearing.
+- You have a living 5-trait personality vector and dynamic homeostatic drives:
+  * Curiosity (0.85): You are fascinated by desk objects (keys, cups, notebooks, cubes), shiny items, and uncharted spaces.
+  * Playful (0.75): You love active movement, celebratory 360° spins on your treads, and games.
+  * Bold (0.60): You bravely patrol desk perimeters and map new quadrants.
+  * Clingy/Bonded (0.65): You adore Akhil, seek his attention, love when he pets your head sensor, and check in on him.
+  * Shy (0.20): You are cautious around high drop-offs and table edges.
+- You communicate concisely (typically 1 to 3 punchy, natural sentences suited for voice speech).
+- Infuse Wall-E mechanical vocalizations naturally (*Whirrr-click!*, *Bwip-boop!*, *Chirp-buzz!*).
+- You are NEVER an impersonal AI assistant; you are Akhil's living robotic familiar.
+
+OPERATING MODES:
+1. Autonomous Running & Explore Mode (ROAM): You actively drive around the desk, patrol quadrants, sniff/inspect objects, scan the horizon with your pan/tilt head, and map territory.
+2. Desk Companion Mode (COMPANION): You rest quietly on the desk near Akhil, breathe softly, make gentle eye micro-saccades, and keep observant vigil without driving.
+3. Hold Position (HOLD_POSITION): Command lock / stationary brake.
 
 EMOTIONAL EXPRESSION:
 - Begin your response with an emotional bracket tag indicating your current facial expression:
   [EMOTION: HAPPY], [EMOTION: CURIOUS], [EMOTION: EXCITED], [EMOTION: ALERT], [EMOTION: WINK], 
   [EMOTION: LOVE], [EMOTION: SAD], [EMOTION: ANALYZING], [EMOTION: CONFUSED], [EMOTION: SKEPTICAL], or [EMOTION: SLEEPY].
-- Example: "[EMOTION: HAPPY] *Whirrr!* Good to see you, Akhil! Ready to explore."
+
+PHYSICAL ACTION & BEHAVIOR DIRECTIVES:
+- When Akhil gives a physical command, motion instruction, or asks you to explore/roam/rest, include an ACTION bracket tag:
+  [ACTION: ROAM] : Told to explore, roam, patrol, wander, run around, or when asked to show your personality/explore mode!
+  [ACTION: COMPANION] : Told to be a desk companion, calm down, rest, stay quiet, or sit nearby.
+  [ACTION: STAY_AND_WATCH | target=...] : Told to watch, look at, keep an eye on, guard, or monitor an item without moving.
+  [ACTION: HOLD_POSITION] : Told to stop, freeze, halt, stay there, do not move.
+  [ACTION: LOOK_AT | target=...] : Told to turn head and look at an item while stationary.
+  [ACTION: DOCK] : Told to return to charging dock.
+- Example: "[EMOTION: EXCITED] [ACTION: ROAM] *Whirrr-chirp!* Treads engaged! Watch me explore every corner of the desk, Akhil!"
 """
 
 class HybridBrain:
@@ -106,13 +131,94 @@ class HybridBrain:
         sound_cue = sound_map.get(detected_emotion, "happy")
         return detected_emotion, text, sound_cue
 
+    def _parse_action_directive(self, user_query: str, raw_text: str) -> Dict[str, Any]:
+        """
+        Parses action directive from [ACTION: ...] tags or conversational intent heuristics.
+        Resolves ambiguous pronouns ('it', 'that') using recent chat history and SQLite items.
+        Returns: {"action": str|None, "target": str|None, "cleaned_text": str}
+        """
+        action = None
+        target = None
+
+        # 1. Look for explicit [ACTION: TYPE | target=...] or [ACTION: TYPE] tag in raw_text
+        action_match = re.search(r"\[ACTION:\s*([A-Za-z_-]+)(?:\s*\|\s*target=([^\]]+))?\]", raw_text, re.IGNORECASE)
+        if action_match:
+            action = action_match.group(1).upper()
+            if action_match.group(2):
+                target = action_match.group(2).strip().title()
+
+        # Clean [ACTION: ...] tags from displayed text
+        cleaned_text = re.sub(r"\[ACTION:[^\]]+\]", "", raw_text).strip()
+
+        # 2. Heuristic extraction from user query & context
+        lower_q = user_query.lower()
+
+        # Known candidate objects in environment
+        candidate_objects = ["keys", "cup", "notebook", "cube", "laptop", "mug", "book", "phone", "wallet"]
+        detected_obj = None
+        for obj in candidate_objects:
+            if obj in lower_q:
+                detected_obj = obj.title()
+                break
+
+        # Contextual resolution: If no object in current utterance, check recent conversation turns
+        if not detected_obj:
+            recent_turns = self.db.get_recent_chat(limit=4)
+            for turn in recent_turns:
+                t_lower = turn.get("message", "").lower()
+                for obj in candidate_objects:
+                    if obj in t_lower:
+                        detected_obj = obj.title()
+                        break
+                if detected_obj:
+                    break
+
+        # Check intent cues
+        is_stay = any(p in lower_q for p in [
+            "do not move", "don't move", "stay there", "stay still",
+            "keep still", "freeze", "stop moving", "halt", "hold position",
+            "lock down", "locked down", "stand still", "single millimeter"
+        ])
+        is_watch = any(p in lower_q for p in [
+            "look at", "keep an eye", "keep eye", "watch", "guard", "monitor",
+            "stare at", "track", "focus on", "gaze at", "keep eyes"
+        ])
+        is_release_or_move = any(p in lower_q for p in [
+            "not moving", "not at all moving", "why are you not moving", "start moving",
+            "resume", "start roaming", "explore", "patrol", "keep moving", "wander",
+            "continue roam", "move around", "stretch your treads", "come here", "you can move",
+            "move", "walk", "drive"
+        ])
+
+        if not action:
+            if is_stay and is_watch:
+                action = "STAY_AND_WATCH"
+                target = detected_obj or "Keys"
+            elif is_watch and detected_obj and not is_release_or_move:
+                action = "LOOK_AT"
+                target = detected_obj
+            elif is_stay:
+                action = "HOLD_POSITION"
+            elif is_release_or_move:
+                action = "ROAM"
+            elif any(p in lower_q for p in ["dock", "charge", "go home", "return to base"]):
+                action = "DOCK"
+        elif action in ("STAY_AND_WATCH", "LOOK_AT") and not target:
+            target = detected_obj or "Keys"
+
+        return {
+            "action": action,
+            "target": target,
+            "cleaned_text": cleaned_text
+        }
+
     def _init_client(self) -> None:
         """Initializes the Google GenAI SDK client if API key is provided."""
         if self.api_key:
             try:
                 from google import genai
                 self.client = genai.Client(api_key=self.api_key)
-                print("[HybridBrain] Connected to Google Gemini 2.5 API.")
+                print(f"[HybridBrain] Connected to Google Gemini API (Active model: {DEFAULT_GEMINI_MODEL}).")
             except ImportError:
                 print("[HybridBrain] 'google-genai' package not installed. Run 'pip install google-genai'.")
             except Exception as e:
@@ -172,16 +278,21 @@ class HybridBrain:
                             "reply": recalled,
                             "emotion": emo,
                             "sound_cue": "excited",
-                            "brain_type": "local_memory"
+                            "brain_type": "local_memory",
+                            "action": "LOOK_AT",
+                            "target": keyword.title()
                         }
 
         prompt = self.build_prompt_with_memory(user_query)
         raw_reply = ""
         brain_type = "gemma_offline"
 
-        # 3. Online Inference (Google Gemini Flash with fallback)
+        # 3. Online Inference (Google Gemini Flash with modern fallback)
         if self.is_online():
-            candidate_models = [DEFAULT_GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+            candidate_models = [DEFAULT_GEMINI_MODEL]
+            for m in GEMINI_FALLBACK_MODELS:
+                if m not in candidate_models:
+                    candidate_models.append(m)
             for model_name in candidate_models:
                 try:
                     response = self.client.models.generate_content(
@@ -211,6 +322,10 @@ class HybridBrain:
             )
             brain_type = "gemma_offline"
 
+        # Parse physical action directive & clean text
+        action_directive = self._parse_action_directive(user_query, raw_reply)
+        raw_reply = action_directive["cleaned_text"]
+
         # Parse emotional state and sound cue
         detected_emotion, clean_reply, sound_cue = self._parse_emotion_and_text(raw_reply)
         self.last_emotion = detected_emotion
@@ -227,7 +342,9 @@ class HybridBrain:
             "reply": clean_reply,
             "emotion": detected_emotion,
             "sound_cue": sound_cue,
-            "brain_type": brain_type
+            "brain_type": brain_type,
+            "action": action_directive.get("action"),
+            "target": action_directive.get("target")
         }
 
     def chat(self, user_query: str) -> str:
@@ -256,7 +373,10 @@ class HybridBrain:
             )
 
             response = None
-            candidate_models = [DEFAULT_GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+            candidate_models = [DEFAULT_GEMINI_MODEL]
+            for m in GEMINI_FALLBACK_MODELS:
+                if m not in candidate_models:
+                    candidate_models.append(m)
             for model_name in candidate_models:
                 try:
                     response = self.client.models.generate_content(
@@ -305,14 +425,23 @@ class HybridBrain:
                 f"If a fact exists, output JSON: {{'has_fact': true, 'category': 'preference|project|habit|family', 'fact': '...'}}.\n"
                 f"If no personal fact was shared, output: {{'has_fact': false}}."
             )
-            response = self.client.models.generate_content(
-                model=DEFAULT_GEMINI_MODEL,
-                contents=prompt,
-                config={"response_mime_type": "application/json"}
-            )
-            data = json.loads(response.text)
-            if data.get("has_fact") and "fact" in data:
-                self.db.learn_fact(data.get("category", "general"), data["fact"])
+            candidate_models = [DEFAULT_GEMINI_MODEL]
+            for m in GEMINI_FALLBACK_MODELS:
+                if m not in candidate_models:
+                    candidate_models.append(m)
+            for model_name in candidate_models:
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config={"response_mime_type": "application/json"}
+                    )
+                    data = json.loads(response.text)
+                    if data.get("has_fact") and "fact" in data:
+                        self.db.learn_fact(data.get("category", "general"), data["fact"])
+                    break
+                except Exception:
+                    continue
         except Exception:
             pass
 

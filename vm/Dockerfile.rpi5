@@ -1,0 +1,64 @@
+# =============================================================================
+# Project Alpha: Raspberry Pi 5 Virtual Machine Environment
+# Emulates Raspberry Pi OS (Debian 12 Bookworm ARM64) with native RP1 GPIO,
+# Dual SPI GC9A01 LCD controllers, I2S ALSA audio, and OpenCV vision cortex.
+# =============================================================================
+
+FROM debian:bookworm-slim
+
+LABEL maintainer="Akhil <Project Alpha>"
+LABEL description="Raspberry Pi 5 Bookworm Virtual Machine Container for Project Alpha"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV RASPBERRY_PI_MODEL="Raspberry Pi 5 Model B Rev 1.0"
+
+# Install Raspberry Pi OS compatible packages and runtime libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-dev \
+    python3-venv \
+    python3-setuptools \
+    python3-wheel \
+    python3-numpy \
+    python3-pil \
+    python3-opencv \
+    python3-gpiozero \
+    python3-libgpiod \
+    gpiod \
+    libgpiod-dev \
+    i2c-tools \
+    spi-tools \
+    sqlite3 \
+    alsa-utils \
+    espeak \
+    sox \
+    libsox-fmt-all \
+    git \
+    curl \
+    nano \
+    sudo \
+    htop \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Emulate Raspberry Pi 5 Device Tree Model in /proc/device-tree/model
+RUN mkdir -p /etc/pi_device_tree && \
+    echo "Raspberry Pi 5 Model B Rev 1.0" > /etc/pi_device_tree/model
+
+# Setup Project Alpha workspace
+WORKDIR /app
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt || true
+
+# Copy firmware files
+COPY . /app/
+
+# Expose ports:
+# 8085: Digital Twin Web Simulator
+# 2222: Optional SSH access
+EXPOSE 8085 2222
+
+# Default entrypoint runs the firmware in simulation/autonomous mode
+CMD ["python3", "main.py"]

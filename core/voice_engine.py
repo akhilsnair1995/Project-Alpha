@@ -295,17 +295,19 @@ class VoiceEngine:
                     # In dedicated background worker thread, SND_MEMORY plays cleanly without blocking caller
                     winsound.PlaySound(wav_bytes, winsound.SND_MEMORY)
                 else:
-                    # On Linux/Pi, stream raw WAV to aplay
+                    # On Linux/Pi, stream raw WAV to aplay if available
+                    import shutil
                     import subprocess
-                    proc = subprocess.Popen(
-                        ["aplay", "-q"],
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                    proc.communicate(input=wav_bytes)
+                    if shutil.which("aplay"):
+                        proc = subprocess.Popen(
+                            ["aplay", "-q"],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
+                        proc.communicate(input=wav_bytes)
             except Exception as e:
-                print(f"[VoiceEngine] Error playing sound '{sound_name}': {e}")
+                pass
 
         if async_play:
             threading.Thread(target=_play, daemon=True).start()
@@ -364,13 +366,18 @@ class VoiceEngine:
                         # 0 = SVSFDefault (synchronous in this worker thread)
                         self._sapi_voice.Speak(clean_text, 0)
                     elif IS_RASPBERRY_PI or os.name == "posix":
+                        import shutil
                         import subprocess
-                        # espeak with female/cheerful robotic pitch
-                        subprocess.run(
-                            ["espeak", "-v", "en+f4", "-p", "72", "-s", "165", clean_text],
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL
-                        )
+                        if shutil.which("espeak"):
+                            # espeak with female/cheerful robotic pitch
+                            subprocess.run(
+                                ["espeak", "-v", "en+f4", "-p", "72", "-s", "165", clean_text],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL
+                            )
+                        else:
+                            print(f"[VoiceEngine:Simulated] Speaking: {clean_text}")
+                            time.sleep(min(1.0, len(clean_text) * 0.03))
                     else:
                         print(f"[VoiceEngine:Simulated] Speaking: {clean_text}")
                         time.sleep(len(clean_text) * 0.05)

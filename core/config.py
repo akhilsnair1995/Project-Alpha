@@ -79,7 +79,8 @@ PIN_I2S_SPK_DOUT = 21     # GPIO 21 (Pin 40) - MAX98357A Speaker Data Out
 # =============================================================================
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 LOCAL_GEMMA_GGUF_PATH = os.environ.get(
     "LOCAL_GEMMA_PATH",
     str(DATA_DIR / "models" / "gemma-2-2b-it-Q4_K_M.gguf")

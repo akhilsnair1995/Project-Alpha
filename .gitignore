@@ -1,12 +1,19 @@
-# Python caches
+# Python caches & virtual environments
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
 
 # Local SQLite databases & environment keys
 *.db
 data/alpha_memory.db
 .env
+
+# Binary build artifacts
+*.apk
 
 # OS files
 .DS_Store

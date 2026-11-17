@@ -64,11 +64,25 @@ class AlphaDatabase:
                     description TEXT,
                     thumbnail_path TEXT,
                     confidence REAL DEFAULT 0.8,
+                    sighting_count INTEGER DEFAULT 1,
+                    is_moved INTEGER DEFAULT 0,
+                    previous_room TEXT,
                     first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (room_id) REFERENCES Rooms(room_id)
                 )
             """)
+
+            # Safe migrations for existing databases
+            for col_def in [
+                ("sighting_count", "INTEGER DEFAULT 1"),
+                ("is_moved", "INTEGER DEFAULT 0"),
+                ("previous_room", "TEXT")
+            ]:
+                try:
+                    cursor.execute(f"ALTER TABLE DiscoveredObjects ADD COLUMN {col_def[0]} {col_def[1]}")
+                except Exception:
+                    pass
 
             # 4. Roaming Observations (Episodic memory timeline)
             cursor.execute("""
@@ -94,13 +108,43 @@ class AlphaDatabase:
                 )
             """)
 
-            # Seed default room if empty
-            cursor.execute("SELECT COUNT(*) FROM Rooms")
-            if cursor.fetchone()[0] == 0:
-                cursor.execute(
-                    "INSERT INTO Rooms (name, description) VALUES (?, ?)",
-                    ("Work Desk", "Home base and charging dock station.")
+            # 6. Episodic Events Memory with Salience and Reinforcement
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS EpisodicEvents (
+                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    event_type TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    valence_delta REAL DEFAULT 0.0,
+                    arousal_delta REAL DEFAULT 0.0,
+                    salience REAL DEFAULT 0.5,
+                    reinforcement_count INTEGER DEFAULT 1,
+                    last_recalled TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+
+            # 7. Owner Profile (Akhil's long-term attachment profile)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS OwnerProfile (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    owner_name TEXT NOT NULL UNIQUE,
+                    face_enrolled INTEGER DEFAULT 1,
+                    voice_enrolled INTEGER DEFAULT 1,
+                    attachment_level REAL DEFAULT 0.75,
+                    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # 8. Contextual Thompson Sampling Interaction Bandits
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS InteractionBandits (
+                    action_name TEXT PRIMARY KEY,
+                    alpha_param REAL DEFAULT 1.0,
+                    beta_param REAL DEFAULT 1.0,
+                    total_trials INTEGER DEFAULT 0,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
             conn.commit()
 
@@ -176,42 +220,58 @@ class AlphaDatabase:
             cursor = conn.cursor()
             # Check if this object was already seen anywhere in the house
             cursor.execute(
-                "SELECT object_id FROM DiscoveredObjects WHERE name = ?",
+                "SELECT object_id, room_id FROM DiscoveredObjects WHERE name = ?",
                 (clean_name,)
             )
             existing = cursor.fetchone()
             if existing:
+                # Detect if object has moved to a new room
+                cursor.execute("SELECT name FROM Rooms WHERE room_id = ?", (existing["room_id"],))
+                prev_room_row = cursor.fetchone()
+                prev_room_name = prev_room_row["name"] if prev_room_row else ""
+                moved = (prev_room_name.lower() != room_name.lower()) if prev_room_name else False
+
                 cursor.execute("""
                     UPDATE DiscoveredObjects SET
                         room_id = ?,
                         description = ?,
                         thumbnail_path = COALESCE(?, thumbnail_path),
                         confidence = ?,
+                        sighting_count = COALESCE(sighting_count, 1) + 1,
+                        is_moved = ?,
+                        previous_room = CASE WHEN ? = 1 THEN ? ELSE previous_room END,
                         last_seen = CURRENT_TIMESTAMP
                     WHERE object_id = ?
-                """, (room_id, description, thumbnail_path, confidence, existing["object_id"]))
+                """, (
+                    room_id, description, thumbnail_path, confidence,
+                    1 if moved else 0, 1 if moved else 0, prev_room_name,
+                    existing["object_id"]
+                ))
                 conn.commit()
                 return existing["object_id"]
             else:
                 cursor.execute("""
-                    INSERT INTO DiscoveredObjects (name, room_id, description, thumbnail_path, confidence)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO DiscoveredObjects (name, room_id, description, thumbnail_path, confidence, sighting_count, is_moved)
+                    VALUES (?, ?, ?, ?, ?, 1, 0)
                 """, (clean_name, room_id, description, thumbnail_path, confidence))
                 conn.commit()
                 return cursor.lastrowid
 
-    def find_objects(self, query: str) -> List[Dict[str, Any]]:
+    def find_objects(self, query: str = "", limit: int = 50) -> List[Dict[str, Any]]:
         """Answers 'where are my keys / shoes / wallet' by searching memory."""
         clean_q = f"%{query.strip()}%"
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT o.name, o.description, r.name as room_name, o.last_seen, o.thumbnail_path
+                SELECT o.name, o.description, r.name as room_name, o.last_seen, o.thumbnail_path,
+                       COALESCE(o.sighting_count, 1) as sighting_count,
+                       COALESCE(o.is_moved, 0) as is_moved,
+                       o.previous_room
                 FROM DiscoveredObjects o
                 LEFT JOIN Rooms r ON o.room_id = r.room_id
                 WHERE o.name LIKE ? OR o.description LIKE ?
-                ORDER BY o.last_seen DESC LIMIT 5
-            """, (clean_q, clean_q))
+                ORDER BY o.last_seen DESC LIMIT ?
+            """, (clean_q, clean_q, limit))
             return [dict(row) for row in cursor.fetchall()]
 
     # =========================================================================
@@ -294,3 +354,190 @@ class AlphaDatabase:
                 context_lines.append(f" - At {obs['timestamp']} in {obs['room_name']}: {obs['observation']}")
 
         return "\n".join(context_lines)
+
+    # =========================================================================
+    # 6. Episodic Memory & Ebbinghaus Retention Dynamics
+    # =========================================================================
+
+    def record_episodic_event(
+        self,
+        event_type: str,
+        description: str,
+        valence_delta: float = 0.0,
+        arousal_delta: float = 0.0,
+        salience: Optional[float] = None
+    ) -> int:
+        """
+        Stores an episodic event with an intrinsic salience.
+        Salience S = min(1.0, |d_val| + |d_aro| + baseline).
+        """
+        if salience is None:
+            salience = min(1.0, 0.35 + abs(valence_delta) + abs(arousal_delta))
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO EpisodicEvents (
+                    event_type, description, valence_delta, arousal_delta, salience
+                ) VALUES (?, ?, ?, ?, ?)
+            """, (event_type, description.strip(), float(valence_delta), float(arousal_delta), float(salience)))
+            event_id = cursor.lastrowid
+            conn.commit()
+            return event_id
+
+    def get_active_episodic_memories(
+        self,
+        min_retention: float = 0.15,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Computes Ebbinghaus retention R(t) = S * (1 + delta_hours / 24.0) ** -0.45
+        Returns currently retained active episodic memories.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT event_id, timestamp, event_type, description,
+                       valence_delta, arousal_delta, salience,
+                       reinforcement_count, last_recalled
+                FROM EpisodicEvents
+                ORDER BY event_id DESC
+                LIMIT 50
+            """)
+            rows = cursor.fetchall()
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        active = []
+        for r in rows:
+            d = dict(r)
+            try:
+                # Handle SQLite timestamp parsing
+                ts_str = d["timestamp"].replace("Z", "").split(".")[0]
+                ev_time = datetime.datetime.fromisoformat(ts_str)
+                if ev_time.tzinfo is None:
+                    ev_time = ev_time.replace(tzinfo=datetime.timezone.utc)
+                delta_hours = max(0.0, (now - ev_time).total_seconds() / 3600.0)
+            except Exception:
+                delta_hours = 0.0
+
+            # Ebbinghaus Power-Law Retention Equation
+            s = d["salience"]
+            # Each reinforcement extends effective stability
+            tau = 24.0 * (1.0 + 0.5 * (d["reinforcement_count"] - 1))
+            retention = s * ((1.0 + (delta_hours / tau)) ** -0.45)
+            d["retention"] = round(retention, 4)
+
+            if retention >= min_retention:
+                active.append(d)
+                if len(active) >= limit:
+                    break
+
+        return active
+
+    def reinforce_episodic_memory(self, event_id: int) -> None:
+        """Strengthens an episodic memory when recalled, increasing retention."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE EpisodicEvents
+                SET reinforcement_count = reinforcement_count + 1,
+                    salience = MIN(1.0, salience + 0.15),
+                    last_recalled = CURRENT_TIMESTAMP
+                WHERE event_id = ?
+            """, (event_id,))
+            conn.commit()
+
+    def prune_decayed_memories(self, threshold: float = 0.08) -> int:
+        """Prunes memories whose retention has fallen below retention threshold."""
+        active = self.get_active_episodic_memories(min_retention=threshold, limit=500)
+        active_ids = {m["event_id"] for m in active}
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT event_id FROM EpisodicEvents")
+            all_ids = {r[0] for r in cursor.fetchall()}
+            decayed_ids = all_ids - active_ids
+            if decayed_ids:
+                placeholders = ",".join("?" for _ in decayed_ids)
+                cursor.execute(f"DELETE FROM EpisodicEvents WHERE event_id IN ({placeholders})", list(decayed_ids))
+                conn.commit()
+            return len(decayed_ids)
+
+    # =========================================================================
+    # 7. Owner Profile & Attachment Dynamics
+    # =========================================================================
+
+    def get_or_create_owner_profile(self, owner_name: str = "Akhil") -> Dict[str, Any]:
+        """Fetches or initializes the long-term owner profile."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM OwnerProfile WHERE owner_name = ?", (owner_name,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            cursor.execute(
+                "INSERT INTO OwnerProfile (owner_name, attachment_level) VALUES (?, ?)",
+                (owner_name, 0.85)
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM OwnerProfile WHERE owner_name = ?", (owner_name,))
+            return dict(cursor.fetchone())
+
+    def update_owner_attachment(self, owner_name: str = "Akhil", delta: float = 0.02) -> float:
+        """Modulates attachment level toward owner with asymptotic limits [0.1, 1.0]."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT attachment_level FROM OwnerProfile WHERE owner_name = ?", (owner_name,))
+            row = cursor.fetchone()
+            curr = row[0] if row else 0.8
+            new_level = max(0.1, min(1.0, curr + delta))
+            cursor.execute("""
+                UPDATE OwnerProfile
+                SET attachment_level = ?, last_seen = CURRENT_TIMESTAMP
+                WHERE owner_name = ?
+            """, (new_level, owner_name))
+            conn.commit()
+            return new_level
+
+    # =========================================================================
+    # 8. Contextual Thompson Sampling Interaction Bandits
+    # =========================================================================
+
+    def record_bandit_feedback(self, action_name: str, positive: bool = True) -> None:
+        """Updates Beta distribution parameters (alpha, beta) for an interaction action."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if positive:
+                cursor.execute("""
+                    INSERT INTO InteractionBandits (action_name, alpha_param, beta_param, total_trials)
+                    VALUES (?, 2.0, 1.0, 1)
+                    ON CONFLICT(action_name) DO UPDATE SET
+                        alpha_param = alpha_param + 1.0,
+                        total_trials = total_trials + 1,
+                        last_updated = CURRENT_TIMESTAMP
+                """, (action_name,))
+            else:
+                cursor.execute("""
+                    INSERT INTO InteractionBandits (action_name, alpha_param, beta_param, total_trials)
+                    VALUES (?, 1.0, 2.0, 1)
+                    ON CONFLICT(action_name) DO UPDATE SET
+                        beta_param = beta_param + 1.0,
+                        total_trials = total_trials + 1,
+                        last_updated = CURRENT_TIMESTAMP
+                """, (action_name,))
+            conn.commit()
+
+    def get_bandit_parameters(self) -> Dict[str, Dict[str, float]]:
+        """Retrieves active alpha, beta params for all interaction behaviors."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT action_name, alpha_param, beta_param, total_trials FROM InteractionBandits")
+            rows = cursor.fetchall()
+            return {
+                r["action_name"]: {
+                    "alpha": r["alpha_param"],
+                    "beta": r["beta_param"],
+                    "trials": r["total_trials"]
+                }
+                for r in rows
+            }

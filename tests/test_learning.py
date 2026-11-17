@@ -85,5 +85,30 @@ class TestLearningAndGemma(unittest.TestCase):
         self.assertIsInstance(reply, str)
         self.assertGreater(len(reply), 5)
 
+    def test_action_directive_extraction_and_pronoun_resolution(self):
+        """Tests that physical action directives are parsed and pronouns ('that', 'it') resolve from context."""
+        brain = HybridBrain(db=self.db, api_key=None)
+
+        # 1. Direct explicit instruction
+        d1 = brain._parse_action_directive("Keep an eye on the keys and do not move", "[ACTION: STAY_AND_WATCH | target=Keys] Watching them!")
+        self.assertEqual(d1["action"], "STAY_AND_WATCH")
+        self.assertEqual(d1["target"], "Keys")
+
+        # 2. Contextual pronoun resolution from recent chat
+        self.db.save_chat_message("user", "Where did I put my keys?")
+        self.db.save_chat_message("assistant", "Found on work desk.")
+
+        d2 = brain._parse_action_directive("Go and look at that. Do not move. Just look at that and keep an eye on it.", "Understood!")
+        self.assertEqual(d2["action"], "STAY_AND_WATCH")
+        self.assertEqual(d2["target"], "Keys")
+
+        # 3. Pure hold position directive
+        d3 = brain._parse_action_directive("Halt! Freeze! Do not move!", "Stopping now!")
+        self.assertEqual(d3["action"], "HOLD_POSITION")
+
+        # 4. Resume roam directive
+        d4 = brain._parse_action_directive("Okay Alpha, resume roaming and explore the room", "Exploring now!")
+        self.assertEqual(d4["action"], "ROAM")
+
 if __name__ == "__main__":
     unittest.main()

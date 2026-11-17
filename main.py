@@ -8,7 +8,10 @@ import sys
 import time
 import argparse
 from pathlib import Path
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    from core.eye_animator import Image
 
 from core.config import DATA_DIR, SNAPSHOTS_DIR
 from core.database import AlphaDatabase
@@ -17,6 +20,7 @@ from core.motion_controller import MotionController
 from core.vision_pipeline import VisionPipeline
 from core.gemini_brain import GeminiBrain
 from core.voice_engine import VoiceEngine, WallESoundSynthesizer
+from core.navigation_cortex import NavigationCortex, BehaviorState
 
 class AlphaRobot:
     """The unified physical and cognitive robot instance."""
@@ -32,12 +36,11 @@ class AlphaRobot:
         self.vision = VisionPipeline()
         self.voice = VoiceEngine(voice_enabled=voice_enabled)
         self.brain = GeminiBrain(db=self.db)
+        self.nav = NavigationCortex(motion_controller=self.motion, eye_controller=self.eyes, db=self.db)
+        self.current_directive = {"action": "COMPANION_IDLE", "target": None}
 
         # Wire up speech synchronization with eyes
         self.voice.on_speech_start = lambda: self.eyes.talking_pulse(cycles=1)
-
-        # Seed initial facts if fresh database
-        self._seed_initial_profile()
 
         # Play startup greeting chime & nod
         self.voice.play_sound("startup")
@@ -45,12 +48,8 @@ class AlphaRobot:
         self.motion.nod(repeats=1)
 
     def _seed_initial_profile(self) -> None:
-        """Seeds initial user profile facts if empty."""
-        facts = self.db.get_user_facts()
-        if not facts:
-            self.db.learn_fact("user", "Akhil is the creator and companion of Project Alpha.")
-            self.db.learn_fact("project", "Building a Wall-E inspired autonomous rover.")
-            self.db.learn_fact("location", "Located in Kerala, India.")
+        """Disabled: Zero artificial injection. Alpha learns purely through interaction."""
+        pass
 
     def run_cli_chat(self, voice_output: bool = True) -> None:
         """Interactive terminal session testing continuous memory, voice, and AI brain."""
@@ -114,6 +113,14 @@ class AlphaRobot:
                 emo = chat_res["emotion"]
                 sound_cue = chat_res.get("sound_cue", "happy")
 
+                # Synchronize physical directive execution via Navigation Cortex
+                action = chat_res.get("action")
+                target = chat_res.get("target")
+                if action:
+                    self.nav.execute_directive(action, target)
+                    self.current_directive = {"action": action, "target": target}
+                    print(f"[Navigation Cortex]: Executed {action} (Target: {target}). Thought: {self.nav.current_thought}")
+
                 # Synchronize expression, gesture, and speech
                 self.eyes.set_emotion(emo)
                 self.motion.express_emotion(emo)
@@ -150,14 +157,27 @@ class AlphaRobot:
     def run_autonomous_loop(self) -> None:
         """The main autonomous sensory & roaming loop."""
         print("\n[Alpha] Starting Autonomous Roaming & Face Tracking Loop...")
+        if not self.motion.hardware_enabled:
+            print("[Notice] Running on PC / Simulation environment.")
+            print("         • To simulate Pi 5 hardware work cycle: python3 pi5_vm_simulator.py")
+            print("         • To chat interactively with Alpha:     python3 main.py --cli")
+            print("         • To launch browser 3D simulator:       python3 simulator/run_sim.py")
         print("Press Ctrl+C to stop.\n")
 
         self.eyes.set_emotion(Emotion.IDLE)
         last_blink = time.time()
+        last_heartbeat = time.time()
         was_tracking_face = False
 
         try:
             while True:
+                # 0. Step backend navigation & intentional presence cortex
+                self.nav.step(0.05)
+
+                # Periodic simulation heartbeat every 8 seconds
+                if not self.motion.hardware_enabled and (time.time() - last_heartbeat > 8.0):
+                    print("[Sensory Loop Heartbeat]: Scanning for face | Cliff IR active | Waiting for events...")
+                    last_heartbeat = time.time()
                 # 1. Natural periodic eye blink (every 3 to 6 seconds)
                 if time.time() - last_blink > 4.5:
                     self.eyes.blink()
@@ -187,6 +207,18 @@ class AlphaRobot:
                     self.eyes.set_emotion(Emotion.ALERT)
                     self.voice.play_sound("alert")
                     self.motion.alert_recoil()
+                    self.motion.stop()
+
+                # 4. Head Petting Touch Reaction (TTP223)
+                if self.motion.is_head_touched():
+                    self.eyes.set_emotion(Emotion.LOVE)
+                    self.voice.play_sound("love")
+                    self.motion.head_pet_reaction()
+
+                # 5. Charging Dock Engagement Detection (GPIO 26)
+                if self.motion.is_dock_charging():
+                    self.eyes.set_emotion(Emotion.SLEEPY)
+                    self.voice.play_sound("startup")
                     self.motion.stop()
 
                 time.sleep(0.05)

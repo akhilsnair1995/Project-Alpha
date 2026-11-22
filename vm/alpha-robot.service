@@ -9,7 +9,7 @@ User=pi
 WorkingDirectory=/home/pi/project_alpha
 Environment=PYTHONUNBUFFERED=1
 Environment=IS_RASPBERRY_PI=true
-ExecStart=/usr/bin/python3 /home/pi/project_alpha/main.py
+ExecStart=/usr/bin/python3 /home/pi/project_alpha/main.py --no-view
 Restart=always
 RestartSec=5
 StandardOutput=journal

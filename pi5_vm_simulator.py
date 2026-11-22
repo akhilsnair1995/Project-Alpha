@@ -586,17 +586,33 @@ def main():
         robot = AlphaRobot(voice_enabled=True)
         robot.run_cli_chat(voice_output=True)
     elif args.web:
-        print("\nStarting Project Alpha Virtual Machine with Digital Twin Web Simulator on http://localhost:8085...\n")
-        from simulator.run_sim import get_robot
+        print("\nStarting Project Alpha Virtual Machine with Digital Twin Web Simulator...\n")
+        from simulator.run_sim import get_robot, SimulatorAPIHandler, PORT
         import http.server
         import socketserver
-        from simulator.run_sim import SimulatorAPIHandler, PORT
 
         robot = get_robot()
         print(vm.render_ascii_telemetry(robot))
-        print(f"[Web Simulator] Listening on http://localhost:{PORT}")
-        print(f"[Web Simulator] Open in your browser: http://localhost:{PORT}")
-        url = f"http://localhost:{PORT}"
+
+        active_port = PORT
+        httpd = None
+        candidate_ports = [PORT] + [p for p in [8086, 8088, 8090, 8080] if p != PORT]
+        socketserver.ThreadingTCPServer.allow_reuse_address = True
+        for test_port in candidate_ports:
+            try:
+                httpd = socketserver.ThreadingTCPServer(("", test_port), SimulatorAPIHandler)
+                active_port = test_port
+                break
+            except OSError:
+                continue
+
+        if not httpd:
+            print(f"[Web Simulator] Error: Could not bind to port {PORT} or fallback ports.")
+            return
+
+        print(f"[Web Simulator] Listening on http://localhost:{active_port}")
+        print(f"[Web Simulator] Open in your browser: http://localhost:{active_port}")
+        url = f"http://localhost:{active_port}"
         try:
             if os.system("which explorer.exe >/dev/null 2>&1") == 0:
                 os.system(f"explorer.exe '{url}' 2>/dev/null &")
@@ -605,8 +621,8 @@ def main():
                 webbrowser.open(url)
         except Exception:
             pass
-        socketserver.TCPServer.allow_reuse_address = True
-        with socketserver.TCPServer(("", PORT), SimulatorAPIHandler) as httpd:
+
+        with httpd:
             try:
                 httpd.serve_forever()
             except KeyboardInterrupt:

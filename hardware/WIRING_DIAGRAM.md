@@ -22,12 +22,12 @@ This document defines the power distribution architecture and the complete pin-t
            ▼                                                 ▼
 ┌─────────────────────────┐                       ┌─────────────────────────┐
 │   BUCK CONVERTER #1     │                       │   BUCK CONVERTER #2     │
-│   (XL4015 or MP1584)    │                       │        (MP1584)         │
-│   Output: 5.1V @ 3A-5A  │                       │   Output: 5.5V-6.0V @ 2A│
+│   (XL4015 or 5A UBEC)   │                       │        (MP1584)         │
+│   Output: 5.1V @ 5A     │                       │   Output: 5.5V-6.0V @ 2A│
 └──────────┬──────────────┘                       └──────────┬──────────────┘
            │                                                 │
            ▼ [LOGIC POWER RAIL]                              ▼ [MOTOR POWER RAIL]
- • Raspberry Pi 4 (Pins 2 & 4)                     • DRV8833 Motor Driver (VCC)
+ • Raspberry Pi 5 (8 GB) (Pins 2 & 4)              • DRV8833 Motor Driver (VCC)
  • Waveshare 4G LTE Dongle                         • Pan Servo MG90S (Red wire)
  • 1.28" GC9A01 Round LCD (VCC)                    • Tilt Servo MG90S (Red wire)
  • MAX98357A Audio Amp (VIN)
@@ -157,14 +157,56 @@ Tilt Servo SIG (Orange)-->  Pin 29 (GPIO 5)
 
 ### D. Desk Cliff Protection (TCRT5000 IR Modules)
 ```
-Sensor Module         Raspberry Pi Pin
--------------         ----------------
-Left TCRT5000 VCC --->  3.3V or 5.1V Logic Rail
+Sensor Module         Raspberry Pi Pin / Power
+-------------         ------------------------
+Left TCRT5000 VCC --->  3.3V Logic Rail only (Do NOT connect to 5V; protect 3.3V GPIO inputs)
 Left TCRT5000 GND --->  System GND
-Left TCRT5000 D0  --->  Pin 11 (GPIO 17)
+Left TCRT5000 D0  --->  Pin 11 (GPIO 17) [or ESP32-S3 GPIO 10 in offload mode]
 
-Right TCRT5000 VCC--->  3.3V or 5.1V Logic Rail
+Right TCRT5000 VCC--->  3.3V Logic Rail only (Do NOT connect to 5V; protect 3.3V GPIO inputs)
 Right TCRT5000 GND--->  System GND
-Right TCRT5000 D0 --->  Pin 13 (GPIO 27)
+Right TCRT5000 D0 --->  Pin 13 (GPIO 27) [or ESP32-S3 GPIO 11 in offload mode]
 ```
-*Note: Calibrate the onboard potentiometers on the TCRT5000 modules so the output pin goes HIGH when reflecting off the table surface, and drops LOW immediately when reaching a table edge.*
+*Note: Calibrate the onboard potentiometers on the TCRT5000 modules so the output pin goes HIGH when reflecting off the table surface, and drops LOW immediately when reaching a table edge. Always power from 3.3V so D0 never outputs 5V.*
+
+---
+
+## 4. Real-Time Offload Architecture: ESP32-S3 Mini Microcontroller
+
+To guarantee deterministic, microsecond-level hardware reflexes and eliminate jitter or CPU starvation under heavy local AI loads (e.g. Gemma 2B inference), real-time motor, servo, and cliff control is offloaded to an **ESP32-S3 Mini**.
+
+### A. Pi 5 ↔ ESP32-S3 Interconnect
+
+```
+Raspberry Pi 5                           ESP32-S3 Mini
+---------------------                    ---------------------
+USB 3.0 / 2.0 Port   ==================> USB-C Port (Native USB CDC /dev/ttyACM0)
+  -- OR Alternative Hardware UART --
+Pin 08 (GPIO 14 TXD) ------------------> GPIO 44 (U0RXD)
+Pin 10 (GPIO 15 RXD) <------------------ GPIO 43 (U0TXD)
+Pin 06 / 09 / 14 GND ------------------> Common System GND
+```
+
+### B. ESP32-S3 Mini Actuator & Sensor Pinout
+
+All GPIO assignments deliberately avoid strapping pins (GPIO 0, 3, 45, 46) and internal SPI flash/PSRAM (GPIO 33–37):
+
+```
+Peripheral Signal         ESP32-S3 Mini GPIO   Power Source / Destination
+------------------------  ------------------   --------------------------
+DRV8833 IN1 (Left FWD)    GPIO 4 (PWM 20kHz)   DRV8833 IN1
+DRV8833 IN2 (Left REV)    GPIO 5 (PWM 20kHz)   DRV8833 IN2
+DRV8833 IN3 (Right FWD)   GPIO 6 (PWM 20kHz)   DRV8833 IN3
+DRV8833 IN4 (Right REV)   GPIO 7 (PWM 20kHz)   DRV8833 IN4
+Pan Servo MG90S SIG       GPIO 8 (PWM 50Hz)    Orange wire (VCC: Buck #2 +5.5V Rail)
+Tilt Servo MG90S SIG      GPIO 9 (PWM 50Hz)    Orange wire (VCC: Buck #2 +5.5V Rail)
+Left Cliff TCRT5000 D0    GPIO 10 (Input)      Left D0 (VCC: 3.3V Rail only, Active LOW)
+Right Cliff TCRT5000 D0   GPIO 11 (Input)      Right D0 (VCC: 3.3V Rail only, Active LOW)
+Left Encoder Phase A      GPIO 12 (PCNT)       Optional Left Wheel Encoder
+Left Encoder Phase B      GPIO 13 (PCNT)       Optional Left Wheel Encoder
+Right Encoder Phase A     GPIO 14 (PCNT)       Optional Right Wheel Encoder
+Right Encoder Phase B     GPIO 15 (PCNT)       Optional Right Wheel Encoder
+Status / Watchdog LED     GPIO 2 (Output)      Onboard / External LED
+```
+
+*Safety Rule*: The ESP32-S3 firmware enforces a 200+ Hz hardware cliff interrupt/poll loop and a 500 ms dead-man watchdog that instantly kills motor PWM if serial heartbeats from the Pi 5 cease.

@@ -26,3 +26,12 @@ Thumbs.db
 
 # Executables & Installers
 *.exe
+
+# PlatformIO & Embedded Build Artifacts
+.pio/
+.pioenvs/
+
+# ROS 2 Workspace Build Artifacts
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/

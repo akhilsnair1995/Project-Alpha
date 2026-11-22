@@ -33,15 +33,24 @@ ALPHA_VOICE_DIR = PROJECT_ROOT / "AlphaVoice"
 ALPHA_VOICE_PATH = ALPHA_VOICE_DIR / "Voice 1.mp3"
 
 # Hardware Platform Detection
-IS_RASPBERRY_PI = False
-try:
-    if os.path.exists("/proc/device-tree/model"):
-        with open("/proc/device-tree/model", "r") as f:
-            model = f.read().lower()
-            if "raspberry pi" in model:
-                IS_RASPBERRY_PI = True
-except Exception:
+_env_is_pi = os.environ.get("IS_RASPBERRY_PI")
+if _env_is_pi is not None:
+    IS_RASPBERRY_PI = _env_is_pi.strip().lower() in ("true", "1", "yes", "on")
+else:
     IS_RASPBERRY_PI = False
+    try:
+        if os.path.exists("/proc/device-tree/model"):
+            with open("/proc/device-tree/model", "r") as f:
+                model = f.read().lower()
+                if "raspberry pi" in model:
+                    IS_RASPBERRY_PI = True
+    except Exception:
+        IS_RASPBERRY_PI = False
+
+# Serial & ESP32-S3 Microcontroller Configuration
+ESP32_SERIAL_PORT = os.environ.get("ESP32_SERIAL_PORT", "auto")
+ESP32_BAUD_RATE = int(os.environ.get("ESP32_BAUD_RATE", "115200"))
+MOTION_BACKEND = os.environ.get("MOTION_BACKEND", "auto")  # "auto", "serial_esp32", "gpiozero", "rpi_gpio", "sim"
 
 # =============================================================================
 # GPIO Pin Assignments (Matches hardware/WIRING_DIAGRAM.md)
@@ -83,8 +92,14 @@ PIN_I2S_SPK_DOUT = 21     # GPIO 21 (Pin 40) - MAX98357A Speaker Data Out
 # =============================================================================
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+GEMINI_FALLBACK_MODELS = [
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+]
 LOCAL_GEMMA_GGUF_PATH = os.environ.get(
     "LOCAL_GEMMA_PATH",
     str(DATA_DIR / "models" / "gemma-2-2b-it-Q4_K_M.gguf")

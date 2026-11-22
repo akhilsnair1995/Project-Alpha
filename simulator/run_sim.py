@@ -35,7 +35,7 @@ from core.eye_animator import Emotion
 from core.voice_engine import WallESoundSynthesizer
 from core.cognitive_loop import GeminiCognitiveLoop
 
-PORT = 8085
+PORT = int(os.environ.get("ALPHA_SIM_PORT", os.environ.get("PORT", 8085)))
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 # Global singleton robot instance
@@ -97,10 +97,11 @@ class VisionStreamWorker:
             frame = self.robot.vision.capture_frame()
             if frame is None:
                 now = time.time()
-                if now - last_reconnect_t > 2.0:
+                if now - last_reconnect_t > 30.0:
                     last_reconnect_t = now
-                    self.robot.vision._init_camera()
-                    frame = self.robot.vision.capture_frame()
+                    if sys.platform == "win32" or os.path.exists("/dev/video0"):
+                        self.robot.vision._init_camera()
+                        frame = self.robot.vision.capture_frame()
 
             if frame is None:
                 # If physical camera is not ready or blocked, create a stylized fallback screen
@@ -180,6 +181,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_get_cognitive_loop()
         elif path == "/api/behavior_status":
             self._handle_behavior_status()
+        elif path == "/api/arduino/status":
+            self._handle_arduino_status()
         elif path == "/api/sound_presets":
             self._handle_sound_presets()
         elif path == "/api/persons":
@@ -210,6 +213,10 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_environment_physics_delete(data)
         elif parsed.path == "/api/motor":
             self._handle_motor(data)
+        elif parsed.path == "/api/arduino/command":
+            self._handle_arduino_command(data)
+        elif parsed.path == "/api/arduino/simulate_event":
+            self._handle_arduino_simulate_event(data)
         elif parsed.path == "/api/directive":
             self._handle_directive(data)
         elif parsed.path == "/api/mode":
@@ -295,6 +302,40 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         action = data.get("action", "stop")
         r.nav.set_manual_motion(action)
         self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
+
+    def _handle_arduino_status(self):
+        r = get_robot()
+        bridge = getattr(r.motion, "bridge", None)
+        if bridge:
+            self._send_json(bridge.get_telemetry())
+        else:
+            self._send_json({"connected": False, "is_simulated": True})
+
+    def _handle_arduino_command(self, data: dict):
+        r = get_robot()
+        bridge = getattr(r.motion, "bridge", None)
+        cmd = data.get("cmd", "")
+        if bridge and cmd:
+            resp = bridge.send_command(cmd)
+            self._send_json({"status": "ok", "response": resp, "telemetry": bridge.get_telemetry()})
+        else:
+            self._send_json({"status": "error", "message": "No bridge or empty cmd"}, 400)
+
+    def _handle_arduino_simulate_event(self, data: dict):
+        r = get_robot()
+        bridge = getattr(r.motion, "bridge", None)
+        event_type = data.get("event", "")
+        active = bool(data.get("active", True))
+        if bridge and hasattr(bridge, "sim"):
+            if event_type == "cliff":
+                bridge.sim.trigger_cliff_sensor(active)
+            elif event_type == "touch":
+                bridge.sim.trigger_touch_sensor(active)
+            elif event_type == "charge":
+                bridge.sim.trigger_charging(active)
+            self._send_json({"status": "ok", "telemetry": bridge.get_telemetry()})
+        else:
+            self._send_json({"status": "error", "message": "Simulation event only supported in virtual mode"}, 400)
 
     def _handle_directive(self, data: dict):
         r = get_robot()
@@ -1048,10 +1089,27 @@ def main():
     worker = get_vision_worker()
     print(f"[Simulator] Laptop Camera Vision Stream Cortex: ACTIVE")
     print(f"[Simulator] Serving digital twin from: {DIRECTORY}")
-    print(f"[Simulator] Live Backend URL: http://localhost:{PORT}")
+    # Try binding PORT or fallback if in use
+    active_port = PORT
+    httpd = None
+    candidate_ports = [PORT] + [p for p in [8086, 8088, 8090, 8080] if p != PORT]
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    for test_port in candidate_ports:
+        try:
+            httpd = socketserver.ThreadingTCPServer(("", test_port), SimulatorAPIHandler)
+            active_port = test_port
+            break
+        except OSError:
+            continue
+
+    if not httpd:
+        print(f"[Simulator] Error: Could not bind to port {PORT} or fallback ports.")
+        return
+
+    print(f"[Simulator] Live Backend URL: http://localhost:{active_port}")
     print("=" * 65)
 
-    url = f"http://localhost:{PORT}/index.html"
+    url = f"http://localhost:{active_port}/index.html"
     try:
         if os.system("which explorer.exe >/dev/null 2>&1") == 0:
             os.system(f"explorer.exe '{url}' 2>/dev/null &")
@@ -1060,8 +1118,7 @@ def main():
     except Exception:
         pass
 
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    with socketserver.ThreadingTCPServer(("", PORT), SimulatorAPIHandler) as httpd:
+    with httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

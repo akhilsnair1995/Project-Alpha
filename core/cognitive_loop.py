@@ -108,7 +108,7 @@ class GeminiCognitiveLoop:
     def __init__(
         self,
         engine,                          # NeuralMindEngine reference
-        cycle_interval: float = 3.0,     # seconds between cognitive cycles
+        cycle_interval: float = 6.0,     # relaxed biological rhythm (~10 RPM, well under 15 RPM limit)
         api_key: Optional[str] = None,
     ):
         self.engine = engine
@@ -119,6 +119,11 @@ class GeminiCognitiveLoop:
         self._api_key: str = api_key or GEMINI_API_KEY
         self._client = None
         self._init_client()
+
+        # Rate limit cooldown tracking
+        self._rate_limit_cooldown_until: float = 0.0
+        self._last_rate_limit_logged: float = 0.0
+        self._last_fallback_reason: Optional[str] = None
 
         # On/off switch — when False the rule engine drives behavior
         self.is_active: bool = False
@@ -187,7 +192,11 @@ class GeminiCognitiveLoop:
         while not self._stop_event.is_set():
             cycle_start = time.time()
             try:
-                if self.is_active and self._client:
+                now = time.time()
+                if now < self._rate_limit_cooldown_until:
+                    # In rate-limit backoff: quietly let rule engine drive without API calls
+                    self._fallback_to_rule_engine("Rate-limit backoff active")
+                elif self.is_active and self._client:
                     self._cognitive_cycle()
                 elif self.is_active and not self._client:
                     # No client — fall back silently
@@ -202,7 +211,7 @@ class GeminiCognitiveLoop:
 
             # Sleep remainder of the interval
             elapsed = time.time() - cycle_start
-            sleep_time = max(0.1, self.cycle_interval - elapsed)
+            sleep_time = max(0.2, self.cycle_interval - elapsed)
             self._stop_event.wait(timeout=sleep_time)
 
     def process_user_turn(self, user_message: str) -> Dict[str, Any]:
@@ -214,6 +223,7 @@ class GeminiCognitiveLoop:
         both the conversational reply AND the immediate physical motion/gaze/emotion.
         """
         self.notify_user_speech(user_message)
+        self._rate_limit_cooldown_until = 0.0
 
         # Halt any ongoing roaming/movement so Alpha gives full attention to Akhil
         body = self.engine.body
@@ -280,6 +290,7 @@ class GeminiCognitiveLoop:
         if directive:
             self._apply_directive(directive)
             self._consecutive_failures = 0
+            self._last_fallback_reason = None
         else:
             self._consecutive_failures += 1
             if self._consecutive_failures >= 3:
@@ -445,7 +456,17 @@ class GeminiCognitiveLoop:
             except json.JSONDecodeError as je:
                 print(f"[CognitiveLoop] JSON parse error from {model_name}: {je}")
             except Exception as exc:
-                print(f"[CognitiveLoop] Model {model_name} failed: {exc}")
+                err_str = str(exc)
+                if any(k in err_str for k in ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE")):
+                    now = time.time()
+                    cooldown = 45.0
+                    self._rate_limit_cooldown_until = now + cooldown
+                    if now - self._last_rate_limit_logged > 30.0:
+                        print(f"[CognitiveLoop] Rate limit / high demand on {model_name}. Pausing background cycles for {cooldown:.0f}s; rule engine active.")
+                        self._last_rate_limit_logged = now
+                    break  # Stop hammering fallback models when quota/demand limit hit
+                else:
+                    print(f"[CognitiveLoop] Model {model_name} failed: {exc}")
 
         return None
 
@@ -639,7 +660,9 @@ class GeminiCognitiveLoop:
 
     def _fallback_to_rule_engine(self, reason: str) -> None:
         """Hands control back to the rule-based exploration planner."""
-        print(f"[CognitiveLoop] Falling back to rule engine ({reason}).")
+        if getattr(self, "_last_fallback_reason", None) != reason:
+            print(f"[CognitiveLoop] Falling back to rule engine ({reason}).")
+            self._last_fallback_reason = reason
         try:
             if self.engine.operating_mode == "EXPLORE_ROAM":
                 self.engine._plan_next_exploration_leg()

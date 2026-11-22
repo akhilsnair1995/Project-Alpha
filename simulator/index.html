@@ -912,6 +912,7 @@
       <button class="nav-btn active" id="nav-arenaTab" onclick="switchTab('arenaTab')">🎮 Actions & Tabletop Arena</button>
       <button class="nav-btn" id="nav-brainTab" onclick="switchTab('brainTab')">🧠 AI Brain & SQLite Memory</button>
       <button class="nav-btn" id="nav-wiringTab" onclick="switchTab('wiringTab')">⚡ Live Wiring Schematic</button>
+      <button class="nav-btn" id="nav-arduinoTab" onclick="switchTab('arduinoTab')">🔌 Arduino Spinal & Serial Bus</button>
       <button class="nav-btn" style="border: 1px dashed var(--accent-amber); color: var(--accent-amber); padding: 4px 10px; font-size: 0.75rem;" onclick="toggleBrainMode()">Toggle Offline Mode</button>
     </div>
   </header>
@@ -1526,6 +1527,135 @@
 
       </div>
     </div>
+
+    <!-- TAB 4: ARDUINO SPINAL & SERIAL BUS -->
+    <div id="arduinoTab" class="tab-content">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+        
+        <!-- Left: Arduino Hardware & Pin Registers -->
+        <div class="panel">
+          <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>⚡ ARDUINO HARDWARE SUBSYSTEM</span>
+            <span id="arduinoModeBadge" class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80;">🟢 Virtual ATmega328P</span>
+          </div>
+
+          <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px; padding: 14px; margin-top: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
+              <span style="color: var(--text-muted);">Clock Frequency:</span>
+              <span style="font-family: monospace; font-weight: 700; color: #fff;">16.0 MHz (Crystal Oscillator)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
+              <span style="color: var(--text-muted);">Serial Communication:</span>
+              <span style="font-family: monospace; font-weight: 700; color: var(--accent-blue);">USB CDC / 115,200 Baud</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+              <span style="color: var(--text-muted);">Safety Watchdog Timer:</span>
+              <span id="arduinoWatchdogStatus" style="font-family: monospace; font-weight: 700; color: var(--accent-green);">HEALTHY (300ms Heartbeat)</span>
+            </div>
+          </div>
+
+          <!-- Actuator Outputs -->
+          <div style="margin-top: 16px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.5px; margin-bottom: 8px;">
+              ACTUATOR PIN REGISTERS (PWM)
+            </div>
+
+            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                <span>Pan Servo (Pin D9 - OCR1A):</span>
+                <span id="ardPanVal" style="font-family: monospace; color: var(--accent-amber); font-weight: 700;">0.0°</span>
+              </div>
+              <div style="background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div id="ardPanBar" style="background: var(--accent-amber); width: 50%; height: 100%; transition: width 0.1s;"></div>
+              </div>
+            </div>
+
+            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                <span>Tilt Servo (Pin D10 - OCR1B):</span>
+                <span id="ardTiltVal" style="font-family: monospace; color: var(--accent-amber); font-weight: 700;">0.0°</span>
+              </div>
+              <div style="background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div id="ardTiltBar" style="background: var(--accent-amber); width: 50%; height: 100%; transition: width 0.1s;"></div>
+              </div>
+            </div>
+
+            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                <span>DRV8833 Left Track (Pins D3/D5):</span>
+                <span id="ardMotorLVal" style="font-family: monospace; color: var(--accent-green); font-weight: 700;">0 PWM</span>
+              </div>
+              <div style="background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div id="ardMotorLBar" style="background: var(--accent-green); width: 50%; height: 100%; transition: width 0.1s;"></div>
+              </div>
+            </div>
+
+            <div style="background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                <span>DRV8833 Right Track (Pins D6/D11):</span>
+                <span id="ardMotorRVal" style="font-family: monospace; color: var(--accent-green); font-weight: 700;">0 PWM</span>
+              </div>
+              <div style="background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden;">
+                <div id="ardMotorRBar" style="background: var(--accent-green); width: 50%; height: 100%; transition: width 0.1s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hardware Fault & Sensor Injection -->
+          <div style="margin-top: 16px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--accent-red); letter-spacing: 0.5px; margin-bottom: 8px;">
+              FAULT INJECTION & HARDWARE SENSORS
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button id="btnSimCliff" class="btn" style="background: #7f1d1d; border-color: #ef4444; color: #fff; font-size: 0.78rem;" onclick="toggleSimCliff()">
+                🚨 Trigger Cliff IR (Pin D2)
+              </button>
+              <button id="btnSimTouch" class="btn" style="background: #14532d; border-color: #22c55e; color: #fff; font-size: 0.78rem;" onclick="simulateHeadTouch()">
+                🖐️ Pet Head (Pin D7)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: Live Serial Bus Monitor & Packet Sender -->
+        <div class="panel">
+          <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📡 USB SERIAL BUS MONITOR (115,200 BAUD)</span>
+            <button class="btn" style="padding: 2px 8px; font-size: 0.7rem; background: transparent; border: 1px solid var(--card-border);" onclick="clearSerialLog()">Clear</button>
+          </div>
+
+          <!-- Raw Terminal Output -->
+          <div id="arduinoSerialLog" style="height: 340px; background: #090d16; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.75rem; overflow-y: auto; color: #cbd5e1; margin-top: 12px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="color: #64748b;">[System] Arduino Serial Monitor Initialized @ 115200 baud...</div>
+          </div>
+
+          <!-- Packet Command Injector -->
+          <div style="margin-top: 14px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.5px; margin-bottom: 8px;">
+              SEND RAW SERIAL COMMAND (PI ➔ ARDUINO)
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="rawSerialInput" placeholder="e.g. H 25 -10  or  M 150 150  or  STOP" style="flex: 1; background: #0f172a; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 0.8rem;" onkeydown="if(event.key==='Enter') sendRawSerialCommand()">
+              <button class="btn" style="background: var(--accent-blue); color: #000; font-weight: 700; font-size: 0.8rem; padding: 8px 16px;" onclick="sendRawSerialCommand()">Send</button>
+            </div>
+
+            <!-- Quick Command Buttons -->
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('H 0 0')">Center Head (H 0 0)</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('H 45 -15')">Look Right (H 45 -15)</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('H -45 20')">Look Left (H -45 20)</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('M 120 120')">Drive Fwd (M 120 120)</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('M -100 100')">Pivot (M -100 100)</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #7f1d1d;" onclick="injectSerialCmd('STOP')">Emergency STOP</button>
+              <button class="btn" style="padding: 4px 8px; font-size: 0.72rem; background: #1e293b;" onclick="injectSerialCmd('PING')">Send PING</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
   </main>
 
   <script>
@@ -1604,6 +1734,9 @@
 
     // --- TAB SWITCHING ---
     let brainPollInterval = null;
+    let arduinoPollInterval = null;
+    let simCliffActive = false;
+
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -1616,13 +1749,153 @@
         clearInterval(brainPollInterval);
         brainPollInterval = null;
       }
+      if (arduinoPollInterval) {
+        clearInterval(arduinoPollInterval);
+        arduinoPollInterval = null;
+      }
 
       if (tabId === 'wiringTab') {
         renderSchematic();
       } else if (tabId === 'brainTab') {
         fetchMemoryData();
         brainPollInterval = setInterval(fetchMemoryData, 3000);
+      } else if (tabId === 'arduinoTab') {
+        fetchArduinoData();
+        arduinoPollInterval = setInterval(fetchArduinoData, 350);
       }
+    }
+
+    async function fetchArduinoData() {
+      try {
+        const res = await fetch('/api/arduino/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        renderArduinoUI(data);
+      } catch (e) {
+        console.error("Arduino status error:", e);
+      }
+    }
+
+    function renderArduinoUI(data) {
+      const pan = data.pan || 0;
+      const tilt = data.tilt || 0;
+      const ml = data.motor_left || 0;
+      const mr = data.motor_right || 0;
+
+      const panPct = Math.max(0, Math.min(100, ((pan + 85) / 170) * 100));
+      const tiltPct = Math.max(0, Math.min(100, ((tilt + 25) / 60) * 100));
+      const mlPct = Math.max(0, Math.min(100, ((ml + 255) / 510) * 100));
+      const mrPct = Math.max(0, Math.min(100, ((mr + 255) / 510) * 100));
+
+      const panValEl = document.getElementById('ardPanVal');
+      const panBarEl = document.getElementById('ardPanBar');
+      if (panValEl) panValEl.innerText = `${pan.toFixed(1)}°`;
+      if (panBarEl) panBarEl.style.width = `${panPct}%`;
+
+      const tiltValEl = document.getElementById('ardTiltVal');
+      const tiltBarEl = document.getElementById('ardTiltBar');
+      if (tiltValEl) tiltValEl.innerText = `${tilt.toFixed(1)}°`;
+      if (tiltBarEl) tiltBarEl.style.width = `${tiltPct}%`;
+
+      const mlValEl = document.getElementById('ardMotorLVal');
+      const mlBarEl = document.getElementById('ardMotorLBar');
+      if (mlValEl) mlValEl.innerText = `${ml} PWM (${Math.round((ml/255)*100)}%)`;
+      if (mlBarEl) mlBarEl.style.width = `${mlPct}%`;
+
+      const mrValEl = document.getElementById('ardMotorRVal');
+      const mrBarEl = document.getElementById('ardMotorRBar');
+      if (mrValEl) mrValEl.innerText = `${mr} PWM (${Math.round((mr/255)*100)}%)`;
+      if (mrBarEl) mrBarEl.style.width = `${mrPct}%`;
+
+      const wdEl = document.getElementById('arduinoWatchdogStatus');
+      if (wdEl) {
+        if (data.watchdog_active) {
+          wdEl.innerText = "TRIPPED (Motors Cut Off)";
+          wdEl.style.color = "var(--accent-red)";
+        } else {
+          wdEl.innerText = "HEALTHY (300ms Heartbeat)";
+          wdEl.style.color = "var(--accent-green)";
+        }
+      }
+
+      const logBox = document.getElementById('arduinoSerialLog');
+      if (logBox && data.recent_logs && data.recent_logs.length > 0) {
+        let html = '';
+        data.recent_logs.forEach(item => {
+          const isTx = item.dir === 'TX';
+          const color = isTx ? '#38bdf8' : '#4ade80';
+          const prefix = isTx ? '➔ [TX]' : '⬅ [RX]';
+          html += `<div><span style="color:#64748b;">${new Date(item.time * 1000).toISOString().substr(11, 8)}</span> <span style="color:${color}; font-weight:700;">${prefix}</span> ${item.msg}</div>`;
+        });
+        logBox.innerHTML = html;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    }
+
+    async function sendRawSerialCommand() {
+      const input = document.getElementById('rawSerialInput');
+      if (!input || !input.value.trim()) return;
+      const cmd = input.value.trim();
+      input.value = '';
+      await injectSerialCmd(cmd);
+    }
+
+    async function injectSerialCmd(cmd) {
+      try {
+        const res = await fetch('/api/arduino/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cmd })
+        });
+        const data = await res.json();
+        if (data.telemetry) renderArduinoUI(data.telemetry);
+      } catch (e) {
+        console.error("Serial command failed:", e);
+      }
+    }
+
+    async function toggleSimCliff() {
+      simCliffActive = !simCliffActive;
+      const btn = document.getElementById('btnSimCliff');
+      if (btn) {
+        btn.innerText = simCliffActive ? "⚠️ Cliff ACTIVE (Clear)" : "🚨 Trigger Cliff IR (Pin D2)";
+        btn.style.background = simCliffActive ? "#ef4444" : "#7f1d1d";
+      }
+      try {
+        const res = await fetch('/api/arduino/simulate_event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'cliff', active: simCliffActive })
+        });
+        const data = await res.json();
+        if (data.telemetry) renderArduinoUI(data.telemetry);
+      } catch (e) {
+        console.error("Cliff simulation error:", e);
+      }
+    }
+
+    async function simulateHeadTouch() {
+      try {
+        await fetch('/api/arduino/simulate_event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'touch', active: true })
+        });
+        setTimeout(async () => {
+          await fetch('/api/arduino/simulate_event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: 'touch', active: false })
+          });
+        }, 1200);
+      } catch (e) {
+        console.error("Touch simulation error:", e);
+      }
+    }
+
+    function clearSerialLog() {
+      const logBox = document.getElementById('arduinoSerialLog');
+      if (logBox) logBox.innerHTML = '<div style="color: #64748b;">[System] Log cleared.</div>';
     }
 
     // --- ROBOT STATE & KINEMATICS ---

@@ -58,7 +58,7 @@ This document contains the complete hardware component list, technical specifica
 | **5.1** | **Battery Cells (Option B)** | **2x High-Capacity 18650 3.7V Cells (3500mAh each)** *(e.g. Samsung 35E / Panasonic NCR18650B / LG MJ1)* | 2 | Connected in series for a **7.4V nominal (8.4V peak) @ 3500mAh (25.9 Wh)** pack. Delivers ~2.5 to 3 hours of continuous autonomous face tracking, 4G cellular data, and locomotion. |
 | **5.2** | **Battery Holder** | 2S 18650 Battery Holder with Wire Leads | 1 | Holds both cells securely in the lower deck. |
 | **5.3** | **2S Charger & BMS** | 2S 8.4V Type-C Li-ion Booster Charging Board (e.g. IP2326 or TP5100 based) | 1 | Allows recharging the robot using standard USB-C smartphone chargers. |
-| **5.4** | **Logic Buck Converter** | **XL4015** *(or MP1584)* DC-DC Buck Module (Output set to 5.1V @ 3A–5A) | 1 | Dedicated to Raspberry Pi, 4G dongle, screen, and sensors. |
+| **5.4** | **Logic Buck Converter** | **XL4015** *(or 5A UBEC)* DC-DC Buck Module (Output set to 5.1V @ 5A) | 1 | Dedicated to Raspberry Pi 5 (8 GB), 4G dongle, screen, and sensors. MP1584 is insufficient for Pi 5 under peak AI/4G load and must NOT be used on logic rail to prevent brownouts. |
 | **5.5** | **Motor Buck Converter** | **MP1584** DC-DC Step-Down Module (Output set to 5.5V–6.0V @ 2A) | 1 | **Isolated power rail** for the 2x MG90S servos and N20 drive motors to prevent CPU brownouts. |
 | **5.6** | **Power Switch** | Mini Rocker Switch (KCD11) or SPST Toggle Switch | 1 | Cuts main 7.4V line from battery. |
 | **5.7** | **ADC (Battery Level)** | **ADS1115** 16-Bit I2C ADC Module *(or 100k/47k voltage divider)* | 1 | Monitors battery discharge state and alerts when recharging is needed. |

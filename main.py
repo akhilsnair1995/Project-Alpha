@@ -41,10 +41,10 @@ class AlphaRobot:
         self.vision.db = self.db
         self.voice = VoiceEngine(voice_enabled=voice_enabled)
         self.brain = GeminiBrain(db=self.db)
-        self.nav = NavigationCortex(motion_controller=self.motion, eye_controller=self.eyes, db=self.db)
-        self.behavior = self.nav.engine.behavior_engine
-        self.current_directive = {"action": "COMPANION_IDLE", "target": None}
         self.behavior = AlphaBehaviorEngine(brain=self.brain)
+        self.nav = NavigationCortex(motion_controller=self.motion, eye_controller=self.eyes, db=self.db)
+        self.nav.engine.behavior_engine = self.behavior
+        self.current_directive = {"action": "COMPANION_IDLE", "target": None}
         self.listener = LiveMicrophoneListener(
             voice_engine=self.voice,
             brain=self.brain,

@@ -1,0 +1,24 @@
+# Project Alpha: ROS 2 Parameter Configuration
+# Defaulting dry_run: true for safe bench and PC simulation testing
+
+alpha_motion_node:
+  ros__parameters:
+    dry_run: true                 # Set false on physical robot
+    motion_backend: "auto"        # "auto", "serial_esp32", "gpiozero", "rpi_gpio", "sim"
+    serial_port: "auto"           # ESP32 serial port or /dev/alpha_esp32
+    baud_rate: 115200
+    track_width: 0.12             # Meters between crawler tracks
+    max_linear_speed: 0.30        # Max linear velocity (m/s)
+
+alpha_brain_node:
+  ros__parameters:
+    dry_run: true
+    llm_provider: "local_gemma"   # "local_gemma", "ollama", or "gemini"
+    ollama_model: "qwen2.5:1.5b"  # or gemma-2-2b-it-Q4_K_M
+    ollama_url: "http://localhost:11434/api/generate"
+    n_threads: 4                  # Pi 5 Cortex-A76 cores dedicated to LLM inference
+
+alpha_face_voice_node:
+  ros__parameters:
+    dry_run: true
+    voice_enabled: true

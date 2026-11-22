@@ -23,6 +23,11 @@ except ImportError:
 try:
     import cv2
     HAS_OPENCV = True
+    if hasattr(cv2, "utils") and hasattr(cv2.utils, "logging"):
+        try:
+            cv2.utils.logging.setLogLevel(cv2.utils.logging.LOG_LEVEL_ERROR)
+        except Exception:
+            pass
 except ImportError:
     HAS_OPENCV = False
 
@@ -215,11 +220,20 @@ class VisionPipeline:
                 print(f"[VisionPipeline] Camera index {self.camera_index} invalid. Running in simulated vision mode.")
                 return
 
-            # Multi-backend fallback: MSMF (Windows Media Foundation), CAP_ANY, DSHOW (DirectShow)
-            backends = [cv2.CAP_ANY, cv2.CAP_MSMF, cv2.CAP_DSHOW] if sys.platform == "win32" else [cv2.CAP_V4L2, cv2.CAP_ANY]
-
-            # Try candidate backends and indices (0 and 1)
-            indices_to_try = [self.camera_index] if self.camera_index != 0 else [0, 1]
+            if sys.platform != "win32":
+                # Check whether any /dev/video device nodes actually exist before invoking OpenCV
+                available_devs = [idx for idx in [self.camera_index, 0, 1] if os.path.exists(f"/dev/video{idx}")]
+                if not available_devs:
+                    if not getattr(self, "_no_camera_logged", False):
+                        print("[VisionPipeline] No physical /dev/video devices detected. Running in simulated vision mode.")
+                        self._no_camera_logged = True
+                    self.cap = None
+                    return
+                indices_to_try = list(dict.fromkeys(available_devs))
+                backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+            else:
+                indices_to_try = [self.camera_index] if self.camera_index != 0 else [0, 1]
+                backends = [cv2.CAP_ANY, cv2.CAP_MSMF, cv2.CAP_DSHOW]
             for idx in indices_to_try:
                 for b in backends:
                     try:

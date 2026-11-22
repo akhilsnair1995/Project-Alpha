@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "author": "Project Alpha",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 120, "left": 100, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo_pan", "top": -60, "left": 40, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo_tilt", "top": -60, "left": 280, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "btn_cliff", "top": 450, "left": 50, "attrs": { "color": "red", "label": "Cliff IR" } },
+    { "type": "wokwi-pushbutton", "id": "btn_touch", "top": 450, "left": 200, "attrs": { "color": "green", "label": "Head Touch" } }
+  ],
+  "connections": [
+    [ "uno:GND.1", "servo_pan:GND", "black", [ "v-20", "h-60" ] ],
+    [ "uno:5V", "servo_pan:V+", "red", [ "v-30", "h-40" ] ],
+    [ "uno:9", "servo_pan:PWM", "orange", [ "v-40", "h-20" ] ],
+
+    [ "uno:GND.2", "servo_tilt:GND", "black", [ "v-20", "h120" ] ],
+    [ "uno:5V", "servo_tilt:V+", "red", [ "v-30", "h140" ] ],
+    [ "uno:10", "servo_tilt:PWM", "yellow", [ "v-40", "h160" ] ],
+
+    [ "btn_cliff:1.l", "uno:GND.3", "black", [ "v-10", "h40" ] ],
+    [ "btn_cliff:2.l", "uno:2", "red", [ "v-20", "h60" ] ],
+
+    [ "btn_touch:1.l", "uno:5V", "red", [ "v-20", "h-40" ] ],
+    [ "btn_touch:2.l", "uno:7", "green", [ "v-30", "h-20" ] ]
+  ],
+  "dependencies": {}
+}

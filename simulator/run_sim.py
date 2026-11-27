@@ -59,6 +59,7 @@ def get_robot() -> AlphaRobot:
     global robot
     if robot is None:
         robot = AlphaRobot(voice_enabled=True)
+        robot.nav.set_operating_mode("EXPLORE_ROAM")
         start_backend_kinematics_loop(robot)
         # Initialize and attach Gemini conscious cognitive loop
         try:
@@ -221,6 +222,8 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_directive(data)
         elif parsed.path == "/api/mode":
             self._handle_mode(data)
+        elif parsed.path == "/api/reset_position":
+            self._handle_reset_position()
         elif parsed.path == "/api/expression":
             self._handle_set_expression(data)
         elif parsed.path == "/api/vision_event":
@@ -349,6 +352,19 @@ class SimulatorAPIHandler(http.server.SimpleHTTPRequestHandler):
         mode = data.get("mode", "EXPLORE_ROAM")
         r.nav.set_operating_mode(mode)
         self._send_json({"status": "ok", "operating_mode": r.nav.engine.operating_mode, "telemetry": r.nav.get_telemetry()})
+
+    def _handle_reset_position(self):
+        r = get_robot()
+        r.nav.engine.body.x = 350.0
+        r.nav.engine.body.y = 250.0
+        r.nav.engine.body.heading = 0.0
+        r.nav.engine.body.speed = 0.0
+        r.nav.engine.body.turn_speed = 0.0
+        r.nav.engine.body.target_coord_goal = None
+        r.nav.engine.body.facing_target_pos = None
+        r.nav.engine.cliff_left = False
+        r.nav.engine.cliff_right = False
+        self._send_json({"status": "ok", "telemetry": r.nav.get_telemetry()})
 
     def _handle_status(self):
         r = get_robot()

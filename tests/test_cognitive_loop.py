@@ -189,6 +189,35 @@ class TestGeminiCognitiveLoop(unittest.TestCase):
         self.assertEqual(self.engine.current_behavior, "CURIOUS_GLANCE")
         self.assertEqual(self.loop.last_user_message, "Where is my coffee mug?")
 
+    def test_explore_roam_relocate_and_scan_nudge(self):
+        """Tests that EXPLORE_RELOCATE without move_to and repeated scans still trigger smooth movement in EXPLORE_ROAM."""
+        import math
+        self.engine.set_operating_mode("EXPLORE_ROAM")
+        self.engine.body.target_coord_goal = None
+
+        # 1. EXPLORE_RELOCATE with null move_to picks a valid distant waypoint
+        self.loop._apply_directive({
+            "action": "EXPLORE_RELOCATE",
+            "move_to": None,
+            "inner_thought": "Relocating to explore."
+        })
+        self.assertIsNotNone(self.engine.body.target_coord_goal)
+        gx, gy = self.engine.body.target_coord_goal
+        self.assertGreaterEqual(math.hypot(gx - self.engine.body.x, gy - self.engine.body.y), 60.0)
+
+        # 2. Repeated SCAN actions in EXPLORE_ROAM automatically nudge relocation
+        self.engine.body.target_coord_goal = None
+        self.loop._last_actions = []
+        self.loop._apply_directive({"action": "SCAN_LEFT", "pan_target": -45.0})
+        self.assertIsNone(self.engine.body.target_coord_goal)
+        self.loop._apply_directive({"action": "SCAN_RIGHT", "pan_target": 45.0})
+        self.assertIsNotNone(self.engine.body.target_coord_goal)
+
+        # 3. COMPANION_REST / IDLE in EXPLORE_ROAM keeps exploring
+        self.engine.body.target_coord_goal = None
+        self.loop._apply_directive({"action": "IDLE", "inner_thought": "Exploring."})
+        self.assertIsNotNone(self.engine.body.target_coord_goal)
+
 
 if __name__ == "__main__":
     unittest.main()

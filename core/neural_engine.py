@@ -391,7 +391,7 @@ class BiomimeticKinematics:
             self.turn_speed = 0.0
 
         # 6. Step Organic Coordinate Navigation (Fast, responsive & direct object facing)
-        if self.target_coord_goal:
+        if self.target_coord_goal and not self.heading_traj:
             tx, ty = self.target_coord_goal
             cx = self.x + 30.0
             cy = self.y + 35.0
@@ -637,6 +637,9 @@ class NeuralMindEngine:
             self.affective.stimulate(d_val=0.3, d_aro=0.4, d_cur=0.5)
             self.consciousness.current_thought = "Releasing stationary lock. Autonomous running and exploring mode engaged!"
             self.pause_at_destination_until = 0.0
+            self.scan_step = 0
+            self.scan_step_end_time = 0.0
+            self.explore_substate = "SCANNING"
             self._plan_next_exploration_leg()
 
         elif action in ("DESK", "COMPANION", "IDLE", "REST"):
@@ -984,54 +987,61 @@ class NeuralMindEngine:
             self.behavior_target = "Akhil"
             self.consciousness.current_thought = "Checking in on Akhil! Beep-boop, hope your work is going well!"
             self.affective.stimulate(d_val=0.2, d_aro=0.1)
-            self.pause_at_destination_until = now + random.uniform(3.0, 4.5)
+            self.explore_substate = "RELOCATING"
+            self.scan_step = 0
+            self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+            self.pause_at_destination_until = self.scan_step_end_time
             return
 
         # 2. Biological Sensory Scanning Sequence at Current Spot
         if self.explore_substate == "SCANNING":
             if self.scan_step == 0:
-                self.body.plan_smooth_head_look(0.0, target_tilt=-12.0, duration=0.5)
-                self.consciousness.current_thought = "Scanning tabletop horizon with optical sensors..."
+                self.body.plan_smooth_head_look(-40.0, target_tilt=-12.0, duration=0.5)
+                self.consciousness.current_thought = "Surveying northwest desk area..."
                 self.current_behavior = "EXPLORE_ROAM"
                 self.scan_step = 1
-                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+                self.scan_step_end_time = now + random.uniform(1.2, 1.7)
+                return
             elif self.scan_step == 1:
-                self.body.plan_smooth_head_look(-42.0, target_tilt=-14.0, duration=0.6)
-                self.consciousness.current_thought = "Surveying northwest desk area..."
-                self.scan_step = 2
-                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
-            elif self.scan_step == 2:
-                self.body.plan_smooth_head_look(42.0, target_tilt=-10.0, duration=0.6)
+                self.body.plan_smooth_head_look(40.0, target_tilt=-10.0, duration=0.6)
                 self.consciousness.current_thought = "Surveying northeast desk area..."
-                self.scan_step = 3
-                self.scan_step_end_time = now + random.uniform(2.5, 3.5)
+                self.current_behavior = "EXPLORE_ROAM"
+                self.scan_step = 2
+                self.scan_step_end_time = now + random.uniform(1.2, 1.7)
+                return
             else:
-                self.body.plan_smooth_head_look(0.0, target_tilt=-6.0, duration=0.4)
+                # Immediately transition to relocating in the same leg so exploration flows naturally
                 self.explore_substate = "RELOCATING"
                 self.scan_step = 0
-                self.scan_step_end_time = now + 1.0
-            return
 
         # 3. Relocating to a New Vantage Point
         if self.explore_substate == "RELOCATING":
-            cx = self.body.x
-            cy = self.body.y
+            cx = self.body.x + 30.0
+            cy = self.body.y + 35.0
+            min_tx, max_tx = self.desk_min_x + 60.0, self.desk_max_x - 60.0
+            min_ty, max_ty = self.desk_min_y + 60.0, self.desk_max_y - 60.0
 
-            angle = random.uniform(0.0, 2.0 * math.pi)
-            dist = random.uniform(120.0, 190.0)
-            target_x = cx + math.cos(angle) * dist
-            target_y = cy + math.sin(angle) * dist
+            target_x, target_y = 350.0, 250.0
+            for _ in range(12):
+                angle = random.uniform(0.0, 2.0 * math.pi)
+                dist = random.uniform(130.0, 210.0)
+                cand_x = max(min_tx, min(max_tx, cx + math.cos(angle) * dist))
+                cand_y = max(min_ty, min(max_ty, cy + math.sin(angle) * dist))
+                if math.hypot(cand_x - cx, cand_y - cy) >= 100.0:
+                    target_x, target_y = cand_x, cand_y
+                    break
+            else:
+                target_x = min_tx + 40.0 if cx > 350.0 else max_tx - 40.0
+                target_y = min_ty + 40.0 if cy > 260.0 else max_ty - 40.0
 
-            # Keep safely away from desk boundaries
-            target_x = max(self.desk_min_x + 60.0, min(self.desk_max_x - 60.0, target_x))
-            target_y = max(self.desk_min_y + 60.0, min(self.desk_max_y - 60.0, target_y))
-
+            self.body.plan_smooth_head_look(0.0, target_tilt=-8.0, duration=0.4)
             self.body.plan_smooth_drive(target_x, target_y)
             self.current_behavior = "EXPLORE_ROAM"
             self.consciousness.current_thought = "Gliding smoothly over to a new vantage point to survey the desk."
             self.explore_substate = "SCANNING"
             self.scan_step = 0
-            self.pause_at_destination_until = now + 4.0
+            self.pause_at_destination_until = now + 2.0
+            self.scan_step_end_time = now + 2.0
 
     def _trigger_spontaneous_impulse(self) -> None:
         """Called when in desk companion mode for occasional peaceful glances."""
@@ -1078,7 +1088,13 @@ class NeuralMindEngine:
 
         # 3. Autonomous Behaviors (Exploration vs Desk Companion)
         if not self.is_command_locked:
-            gemini_driving = bool(self.cognitive_loop and getattr(self.cognitive_loop, "is_active", False))
+            if self.cognitive_loop:
+                if hasattr(self.cognitive_loop, "is_effectively_driving"):
+                    gemini_driving = bool(self.cognitive_loop.is_effectively_driving)
+                else:
+                    gemini_driving = bool(getattr(self.cognitive_loop, "is_active", False))
+            else:
+                gemini_driving = False
 
             if self.operating_mode == "EXPLORE_ROAM":
                 # Continuous optical camera perception (biological sight cone)

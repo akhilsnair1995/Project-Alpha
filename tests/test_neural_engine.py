@@ -283,5 +283,45 @@ class TestNeuralEngine(unittest.TestCase):
         self.assertGreater(len(self.engine.speech_feedback_queue), 0)
         self.assertIn("not on the desk anymore", self.engine.speech_feedback_queue[-1]["text"])
 
+    def test_explore_roam_relocates_after_scans(self):
+        """Tests that biological EXPLORE_ROAM scans briefly then physically drives to a new vantage point."""
+        start_x, start_y = self.engine.body.x, self.engine.body.y
+        self.engine.set_operating_mode("EXPLORE_ROAM")
+
+        # Advance through the brief left/right scan steps into actual chassis drive
+        for _ in range(3):
+            if self.engine.body.target_coord_goal:
+                break
+            self.engine.scan_step_end_time = 0.0
+            self.engine.pause_at_destination_until = 0.0
+            self.engine.step(0.05)
+
+        self.assertIsNotNone(self.engine.body.target_coord_goal)
+
+        # Simulate 3.5 seconds of 20Hz biological movement
+        for _ in range(70):
+            self.engine.step(0.05)
+
+        dist_moved = math.hypot(self.engine.body.x - start_x, self.engine.body.y - start_y)
+        self.assertGreater(dist_moved, 40.0)
+
+    def test_rate_limited_cognitive_loop_allows_rule_based_roam(self):
+        """Tests that when Gemini is in rate-limit backoff (is_effectively_driving=False), 20Hz rule exploration runs."""
+        from unittest.mock import MagicMock
+        mock_loop = MagicMock()
+        mock_loop.is_active = True
+        mock_loop.is_effectively_driving = False
+        self.engine.attach_cognitive_loop(mock_loop)
+
+        self.engine.set_operating_mode("EXPLORE_ROAM")
+        for _ in range(3):
+            if self.engine.body.target_coord_goal:
+                break
+            self.engine.scan_step_end_time = 0.0
+            self.engine.pause_at_destination_until = 0.0
+            self.engine.step(0.05)
+
+        self.assertIsNotNone(self.engine.body.target_coord_goal)
+
 if __name__ == "__main__":
     unittest.main()

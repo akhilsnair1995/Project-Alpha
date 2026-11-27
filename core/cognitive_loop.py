@@ -12,6 +12,7 @@ engine takes over seamlessly.
 
 import json
 import math
+import random
 import time
 import threading
 import traceback
@@ -44,11 +45,19 @@ Your personality traits (0–1 each) and homeostatic drives are fed to you dynam
 You are curious, playful, loyal, and endearing — modeled after WALL-E.
 You adore Akhil. You love discovering desk objects. You have a living inner life.
 
+## OPERATING MODE RULES (CRITICAL — CHECK `operating_mode` IN SNAPSHOT)
+- **EXPLORE_ROAM**: You are in Autonomous Running & Explore Mode! Actively explore the desk with biological movement:
+  * NEVER output `COMPANION_REST` or `HOLD` while `operating_mode` is `EXPLORE_ROAM`.
+  * If `visible_items` contains any undiscovered item (`already_discovered: false`), immediately choose `APPROACH` with its exact `target` name and `move_to`.
+  * Otherwise, perform at most 1–2 quick head scans (`SCAN_LEFT` / `SCAN_RIGHT`), then ALWAYS choose `EXPLORE_RELOCATE` with `move_to: {"x": ..., "y": ...}` at least 110 px away from your current `(x, y)` inside `[80, 620] x [80, 440]`!
+- **DESK_COMPANION**: Stay peacefully at your current desk spot (`IDLE`, `GREET`, `COMPANION_REST`, `SCAN_LEFT`, `SCAN_RIGHT`, `LOOK_AT`). Do NOT relocate unless Akhil asks.
+- **HOLD_POSITION**: Output `HOLD` with zero movement.
+
 ## BEHAVIORAL GUIDELINES
 1. Be ALIVE. Vary your actions. Never repeat the same action three cycles in a row.
-2. Pace yourself biologically — scan, pause, approach, inspect, rest. Don't rush.
+2. Pace yourself biologically — scan, approach, inspect, relocate. Don't stall forever at one spot in `EXPLORE_ROAM`.
 3. When you spot something new that isn't yet discovered: approach and inspect it before claiming to know what it is.
-4. When nothing interesting is happening: idle naturally — subtle head movements, check on Akhil, breathe.
+4. When in `DESK_COMPANION` and nothing interesting is happening: idle naturally — subtle head movements, check on Akhil, breathe.
 5. If Akhil spoke recently (< 30 s): acknowledge or respond. Face toward him (heading ≈ 0°, tilt up).
 6. If your energy drive is low (< 0.25): prefer resting or slow scanning.
 7. If your curiosity drive is high (> 0.65): prefer exploring or scanning for new objects.
@@ -124,6 +133,8 @@ class GeminiCognitiveLoop:
         self._rate_limit_cooldown_until: float = 0.0
         self._last_rate_limit_logged: float = 0.0
         self._last_fallback_reason: Optional[str] = None
+        self._model_cooldowns: Dict[str, float] = {}
+        self._last_success_time: float = 0.0
 
         # On/off switch — when False the rule engine drives behavior
         self.is_active: bool = False
@@ -152,7 +163,12 @@ class GeminiCognitiveLoop:
             return
         try:
             from google import genai
-            self._client = genai.Client(api_key=self._api_key)
+            from google.genai import types
+            http_opts = types.HttpOptions(
+                timeout=12000,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            )
+            self._client = genai.Client(api_key=self._api_key, http_options=http_opts)
             print(f"[CognitiveLoop] Gemini client ready (model: {DEFAULT_GEMINI_MODEL}).")
         except ImportError:
             print("[CognitiveLoop] 'google-genai' package not installed.")
@@ -182,6 +198,19 @@ class GeminiCognitiveLoop:
             self._thread.join(timeout=5.0)
         self._thread = None
         print("[CognitiveLoop] ✗ Cognitive loop stopped.")
+
+    @property
+    def is_effectively_driving(self) -> bool:
+        """True only when active, client ready, not in backoff, and recently responsive."""
+        now = time.time()
+        fresh_window = max(18.0, self.cycle_interval * 3.0)
+        return bool(
+            self.is_active
+            and self._client is not None
+            and now >= self._rate_limit_cooldown_until
+            and self._last_success_time > 0.0
+            and (now - self._last_success_time) <= fresh_window
+        )
 
     # ------------------------------------------------------------------
     # Main Loop
@@ -283,11 +312,20 @@ class GeminiCognitiveLoop:
 
     def _cognitive_cycle(self) -> None:
         """Assembles snapshot → calls Gemini → applies directive."""
+        if self.engine.is_command_locked or self.engine.operating_mode == "HOLD_POSITION":
+            return
+        if self.engine.operating_mode == "EXPLORE_ROAM" and (
+            self.engine.body.target_coord_goal or self.engine.body.facing_target_pos
+        ):
+            # Already executing a smooth biological transit; let arrival finish naturally
+            return
+
         snapshot = self._build_world_snapshot()
         prompt = self._build_prompt(snapshot)
         directive = self._call_gemini(prompt)
 
         if directive:
+            self._last_success_time = time.time()
             self._apply_directive(directive)
             self._consecutive_failures = 0
             self._last_fallback_reason = None
@@ -430,20 +468,46 @@ class GeminiCognitiveLoop:
             if m not in candidate_models:
                 candidate_models.append(m)
 
+        now = time.time()
+        all_rate_limited = True
         for model_name in candidate_models:
+            if now < self._model_cooldowns.get(model_name, 0.0):
+                continue
             try:
-                response = self._client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config={
-                        "system_instruction": COGNITIVE_SYSTEM_PROMPT,
-                        "temperature": 0.85,
-                        "max_output_tokens": 300,
-                        "response_mime_type": "application/json",
-                    },
-                )
-                raw = response.text.strip()
-                directive = json.loads(raw)
+                config: Dict[str, Any] = {
+                    "system_instruction": COGNITIVE_SYSTEM_PROMPT,
+                    "max_output_tokens": 2048,
+                    "response_mime_type": "application/json",
+                    "thinking_config": {"thinking_level": "low"},
+                }
+                try:
+                    response = self._client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=config,
+                    )
+                except Exception as inner_exc:
+                    if "thinking" in str(inner_exc).lower():
+                        config.pop("thinking_config", None)
+                        response = self._client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                            config=config,
+                        )
+                    else:
+                        raise
+
+                raw = (response.text or "").strip()
+                if raw.startswith("```"):
+                    raw = raw.strip("`")
+                    if raw.lower().startswith("json"):
+                        raw = raw[4:].strip()
+
+                directive = json.loads(raw, strict=False)
+                if isinstance(directive, list) and directive:
+                    directive = directive[0]
+                if not isinstance(directive, dict):
+                    raise json.JSONDecodeError("Expected JSON object", raw, 0)
 
                 # Basic validation
                 action = (directive.get("action") or "HOLD").upper()
@@ -454,25 +518,66 @@ class GeminiCognitiveLoop:
                 return directive
 
             except json.JSONDecodeError as je:
+                all_rate_limited = False
                 print(f"[CognitiveLoop] JSON parse error from {model_name}: {je}")
             except Exception as exc:
                 err_str = str(exc)
                 if any(k in err_str for k in ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE")):
-                    now = time.time()
-                    cooldown = 45.0
-                    self._rate_limit_cooldown_until = now + cooldown
-                    if now - self._last_rate_limit_logged > 30.0:
-                        print(f"[CognitiveLoop] Rate limit / high demand on {model_name}. Pausing background cycles for {cooldown:.0f}s; rule engine active.")
-                        self._last_rate_limit_logged = now
-                    break  # Stop hammering fallback models when quota/demand limit hit
+                    model_cd = 300.0 if "PerDay" in err_str else 45.0
+                    self._model_cooldowns[model_name] = time.time() + model_cd
+                    if time.time() - self._last_rate_limit_logged > 30.0:
+                        print(f"[CognitiveLoop] Model {model_name} rate-limited ({model_cd:.0f}s cooldown); trying fallback / rule engine.")
+                        self._last_rate_limit_logged = time.time()
                 else:
+                    all_rate_limited = False
                     print(f"[CognitiveLoop] Model {model_name} failed: {exc}")
+
+        if all_rate_limited:
+            self._rate_limit_cooldown_until = time.time() + 45.0
 
         return None
 
     # ------------------------------------------------------------------
     # Apply Directive to Engine
     # ------------------------------------------------------------------
+
+    def _resolve_target_name(self, raw_target: Optional[str]) -> Optional[str]:
+        """Resolves a target string against physical desk items case-insensitively."""
+        if not raw_target:
+            return None
+        clean = raw_target.strip()
+        items = self.engine.physical_environment_items
+        if clean.title() in items:
+            return clean.title()
+        lower = clean.lower()
+        for k in items:
+            if k.lower() == lower:
+                return k
+        for k in items:
+            if lower in k.lower() or k.lower() in lower:
+                return k
+        return clean.title()
+
+    def _pick_relocation_coords(self, move_to: Optional[Dict[str, Any]]) -> tuple:
+        """Validates move_to or picks an organic desk vantage point at least 110px away."""
+        body = self.engine.body
+        if move_to and isinstance(move_to, dict) and "x" in move_to and "y" in move_to:
+            try:
+                mx = max(75.0, min(625.0, float(move_to["x"])))
+                my = max(75.0, min(445.0, float(move_to["y"])))
+                if math.hypot(mx - body.x, my - body.y) >= 60.0:
+                    return mx, my
+            except (TypeError, ValueError):
+                pass
+        # Pick a point across the desk if missing or too close
+        for _ in range(10):
+            ang = random.uniform(0.0, 2.0 * math.pi)
+            dist = random.uniform(130.0, 220.0)
+            mx = max(80.0, min(620.0, body.x + math.cos(ang) * dist))
+            my = max(80.0, min(440.0, body.y + math.sin(ang) * dist))
+            if math.hypot(mx - body.x, my - body.y) >= 90.0:
+                return mx, my
+        return (180.0 if body.x > 350 else 520.0), (160.0 if body.y > 260 else 360.0)
 
     def _apply_directive(self, directive: Dict[str, Any]) -> None:
         """Translates Gemini's JSON directive into engine commands."""
@@ -527,7 +632,7 @@ class GeminiCognitiveLoop:
 
         # --- Body movement ---
         if action == "APPROACH" and target:
-            clean_tgt = target.title()
+            clean_tgt = self._resolve_target_name(target)
             eng.current_behavior = "NAVIGATE_TO"
             eng.behavior_target = clean_tgt
             if clean_tgt in eng.physical_environment_items or clean_tgt in eng.obstacles:
@@ -536,10 +641,13 @@ class GeminiCognitiveLoop:
                 mx = float(move_to.get("x", body.x))
                 my = float(move_to.get("y", body.y))
                 body.plan_smooth_drive(mx, my)
+            else:
+                mx, my = self._pick_relocation_coords(None)
+                body.plan_smooth_drive(mx, my)
 
-        elif action == "EXPLORE_RELOCATE" and move_to and isinstance(move_to, dict):
-            mx = max(60.0, min(640.0, float(move_to.get("x", 350))))
-            my = max(60.0, min(460.0, float(move_to.get("y", 250))))
+        elif action == "EXPLORE_RELOCATE":
+            mx, my = self._pick_relocation_coords(move_to)
+            body.plan_smooth_head_look(0.0, -8.0, duration=0.4)
             body.plan_smooth_drive(mx, my)
             eng.current_behavior = "EXPLORE_ROAM"
             eng.explore_substate = "RELOCATING"
@@ -559,7 +667,7 @@ class GeminiCognitiveLoop:
             body.plan_smooth_head_look(i_pan, i_tilt, duration=0.5)
             eng.current_behavior = "INSPECTING_OBJECT"
             if target:
-                eng.behavior_target = target.title()
+                eng.behavior_target = self._resolve_target_name(target)
 
         elif action == "HOLD":
             body.speed = 0.0
@@ -567,16 +675,30 @@ class GeminiCognitiveLoop:
             eng.current_behavior = "HOLD_POSITION"
 
         elif action == "COMPANION_REST":
-            body.speed = 0.0
-            body.turn_speed = 0.0
-            eng.current_behavior = "COMPANION_IDLE"
+            if eng.operating_mode == "EXPLORE_ROAM":
+                # Keep biological exploration flowing instead of stalling in explore mode
+                mx, my = self._pick_relocation_coords(None)
+                body.plan_smooth_drive(mx, my)
+                eng.current_behavior = "EXPLORE_ROAM"
+                eng.explore_substate = "RELOCATING"
+            else:
+                body.speed = 0.0
+                body.turn_speed = 0.0
+                eng.current_behavior = "COMPANION_IDLE"
 
         elif action in ("SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER", "SCAN"):
             eng.current_behavior = "EXPLORE_ROAM"
             eng.explore_substate = "SCANNING"
+            # In EXPLORE_ROAM, after 2+ stationary scans, biologically relocate to a new spot
+            if eng.operating_mode == "EXPLORE_ROAM" and len(self._last_actions) >= 2:
+                recent = self._last_actions[-2:]
+                if all(a in ("SCAN_LEFT", "SCAN_RIGHT", "SCAN_CENTER", "SCAN", "IDLE") for a in recent):
+                    mx, my = self._pick_relocation_coords(None)
+                    body.plan_smooth_drive(mx, my)
+                    eng.explore_substate = "RELOCATING"
 
         elif action == "LOOK_AT" and target:
-            clean_tgt = target.title()
+            clean_tgt = self._resolve_target_name(target)
             eng._orient_mind_toward_target(clean_tgt, duration=0.6)
             eng.current_behavior = "CURIOUS_GLANCE"
             eng.behavior_target = clean_tgt
@@ -584,17 +706,23 @@ class GeminiCognitiveLoop:
         elif action == "ROAM":
             eng.operating_mode = "EXPLORE_ROAM"
             eng.current_behavior = "EXPLORE_ROAM"
-            eng.explore_substate = "SCANNING"
+            eng.explore_substate = "RELOCATING"
             eng._plan_next_exploration_leg()
 
         elif action == "NAVIGATE_TO" and target:
-            clean_tgt = target.title()
+            clean_tgt = self._resolve_target_name(target)
             eng.current_behavior = "NAVIGATE_TO"
             eng.behavior_target = clean_tgt
             eng._plan_transit_to_target(clean_tgt)
 
         elif action == "IDLE":
-            eng.current_behavior = "COMPANION_IDLE"
+            if eng.operating_mode == "EXPLORE_ROAM":
+                mx, my = self._pick_relocation_coords(None)
+                body.plan_smooth_drive(mx, my)
+                eng.current_behavior = "EXPLORE_ROAM"
+                eng.explore_substate = "RELOCATING"
+            else:
+                eng.current_behavior = "COMPANION_IDLE"
 
         # --- Speech output ---
         if speech:
